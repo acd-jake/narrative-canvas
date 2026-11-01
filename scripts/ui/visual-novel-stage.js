@@ -34,6 +34,7 @@ export class VisualNovelStage {
     if (!this.#vnStage) return;
 
     this.#vnStage.classList.toggle("has-speaker", Boolean(context.hasActiveSpeaker));
+    const fadeDuration = context.fadeDuration ?? 500;
 
     const targetActors = context.activeActors || [];
     const targetMap = new Map(targetActors.map(a => [a.id, a]));
@@ -54,7 +55,7 @@ export class VisualNovelStage {
     for (const el of activeCharEls) {
       const actorId = el.dataset.actorId;
       if (!targetMap.has(actorId)) {
-        this.#animateExit(el, firstRects.get(actorId), stageRect);
+        this.#animateExit(el, firstRects.get(actorId), stageRect, fadeDuration);
       }
     }
 
@@ -112,7 +113,7 @@ export class VisualNovelStage {
         const isSpeaker = el.classList.contains("is-speaker");
         const baseTransform = isSpeaker ? "scale(1.05) translateY(-8px)" : "";
 
-        el.style.transition = "transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s ease, filter 0.3s ease";
+        el.style.transition = `transform ${fadeDuration}ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity ${fadeDuration}ms ease, filter ${fadeDuration}ms ease`;
         el.style.transform = baseTransform;
         el.style.opacity = "1";
 
@@ -131,7 +132,7 @@ export class VisualNovelStage {
           el.style.transform = "";
         }
       }
-    }, 550);
+    }, fadeDuration);
   }
 
   /**
@@ -141,7 +142,7 @@ export class VisualNovelStage {
    * @param {DOMRect} rect
    * @param {DOMRect} stageRect
    */
-  #animateExit(el, rect, stageRect) {
+  #animateExit(el, rect, stageRect, fadeDuration) {
     if (!rect || !stageRect) {
       el.remove();
       return;
@@ -161,7 +162,7 @@ export class VisualNovelStage {
 
     // Softly fade out and glide slightly downward
     requestAnimationFrame(() => {
-      el.style.transition = "opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)";
+      el.style.transition = `opacity ${fadeDuration}ms ease, transform ${fadeDuration}ms cubic-bezier(0.2, 0.8, 0.2, 1)`;
       el.style.opacity = "0";
       el.style.transform = "translateY(24px) scale(0.92)";
     });
@@ -170,7 +171,7 @@ export class VisualNovelStage {
       if (el.parentNode === this.#vnStage) {
         el.remove();
       }
-    }, 450);
+    }, fadeDuration);
   }
 
   /**

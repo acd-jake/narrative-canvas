@@ -64,7 +64,11 @@ export class NarrativeManager {
       }
       await this.view.render(this.narrativeState);
     } else {
-      if (this.view) { this.view.close(); this.view = null; }
+      if (this.view) {
+        const closingView = this.view;
+        this.view = null;
+        await closingView.close();
+      }
     }
   }
 
@@ -87,8 +91,8 @@ export class NarrativeManager {
       this.narrativeState.active = active;
       if (!active) this.narrativeState.playerViewActive = false;
 
-      await this.refreshView();
       NarrativeSocket.emit("UPDATE_DISPLAY", this.narrativeState);
+      await this.refreshView();
     } else {
       if (NarrativeSettings.userHasPermission()) {
         this.narrativeState.active = active;
@@ -338,12 +342,13 @@ export class NarrativeManager {
   /**
    * Shuts down the canvas display if the active GM disconnects.
    */
-  forceShutdownDueToGMDisconnect() {
+  async forceShutdownDueToGMDisconnect() {
     this.narrativeState.active = false;
     this.narrativeState.playerViewActive = false;
     if (this.view) {
-      this.view.close();
+      const closingView = this.view;
       this.view = null;
+      await closingView.close();
     }
     if (NarrativeSettings.areToastsEnabled()) {
       ui.notifications.warn(game.i18n.localize("NARRATIVE_CANVAS.Notifications.GMDisconnected"));

@@ -30,13 +30,13 @@ export class NarrativePlayer extends NarrativeCanvas {
   }
 
   /** @override */
-  close() {
+  async close() {
     // Only fire deactivation toast if the player was actively seeing the canvas overlay
     if (this.stageElement && NarrativeSettings.areToastsEnabled()) {
       ui.notifications.info(game.i18n.localize("NARRATIVE_CANVAS.Notifications.Deactivated"));
     }
 
-    super.close();
+    await super.close();
     this.isAlreadyNotified = false;
   }
 }

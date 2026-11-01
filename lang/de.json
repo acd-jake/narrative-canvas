@@ -19,6 +19,8 @@
   "NARRATIVE_CANVAS.Settings.DefaultBgImageHint": "Legt ein Standard-Hintergrundbild fest, das auf dem Canvas angezeigt wird, wenn im Regiepult kein anderes Bild gewählt ist.",
   "NARRATIVE_CANVAS.Settings.ToastsLabel": "Toast-Benachrichtigungen erlauben",
   "NARRATIVE_CANVAS.Settings.ToastsHint": "Wenn aktiviert, erhalten Spieler kurze Benachrichtigungen oben rechts, sobald der Erzählmodus startet oder endet.",
+  "NARRATIVE_CANVAS.Settings.FadeDurationLabel": "Ausblenddauer",
+  "NARRATIVE_CANVAS.Settings.FadeDurationHint": "Dauer in Millisekunden für das Ein- und Ausblenden des Canvas und seiner visuellen Elemente. 0 deaktiviert die Überblendungen.",
   "NARRATIVE_CANVAS.Labels.PlayerVisibility": "Spieler-Sichtbarkeit",
   "NARRATIVE_CANVAS.Labels.PublishCanvas": "Für Spieler freigeben",
   "NARRATIVE_CANVAS.Labels.HideCanvas": "Vor Spielern verbergen",

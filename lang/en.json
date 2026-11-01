@@ -19,6 +19,8 @@
   "NARRATIVE_CANVAS.Settings.DefaultBgImageHint": "Sets a fallback background image displayed on the canvas whenever no other image has been chosen in the director panel.",
   "NARRATIVE_CANVAS.Settings.ToastsLabel": "Enable Toast Notifications",
   "NARRATIVE_CANVAS.Settings.ToastsHint": "If enabled, players receive short notification toasts when the narrative mode starts or ends.",
+  "NARRATIVE_CANVAS.Settings.FadeDurationLabel": "Fade Duration",
+  "NARRATIVE_CANVAS.Settings.FadeDurationHint": "Duration in milliseconds for fading the canvas and its visual elements. Set to 0 to disable fades.",
   "NARRATIVE_CANVAS.Labels.PlayerVisibility": "Player Visibility",
   "NARRATIVE_CANVAS.Labels.PublishCanvas": "Publish to Players",
   "NARRATIVE_CANVAS.Labels.HideCanvas": "Hide from Players",

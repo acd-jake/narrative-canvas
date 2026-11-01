@@ -79,6 +79,7 @@ Open the world's **Configure Settings** page and find the Narrative Canvas setti
 - **Canvas Background Color:** Fallback color shown when no background image is covering the canvas.
 - **Default Background Image:** Optional fallback image used when no background is selected.
 - **Enable Toast Notifications:** Show activation and deactivation notifications to players.
+- **Fade Duration:** Duration in milliseconds for canvas and presentation-element fades. The default is `500 ms`; set it to `0` to disable fades.
 
 ## Localization
 

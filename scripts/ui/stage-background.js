@@ -48,7 +48,7 @@ export class StageBackgroundController {
    * - If an empty path is supplied, fades out the active layer to reveal the stage background.
    * @param {string} newBackground - Target background image URL or empty string
    */
-  update(newBackground) {
+  update(newBackground, fadeDuration = 800) {
     const nextPath = (newBackground || "").trim();
     if (nextPath === this.#currentBackground) return;
 
@@ -74,7 +74,7 @@ export class StageBackgroundController {
           if (previousLayer.parentNode === this.#container) {
             previousLayer.remove();
           }
-        }, 850);
+        }, fadeDuration);
       }
     } else {
       if (previousLayer) {
@@ -83,7 +83,7 @@ export class StageBackgroundController {
           if (previousLayer.parentNode === this.#container) {
             previousLayer.remove();
           }
-        }, 850);
+        }, fadeDuration);
       }
       this.#activeLayer = null;
     }

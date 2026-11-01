@@ -38,10 +38,10 @@ export class NarrativeDirector extends NarrativeCanvas {
   }
 
   /** @override */
-  close() {
+  async close() {
     this.audioController?.stopAll();
+    await super.close();
     this.controls?.destroy();
-    super.close();
   }
 
   /** @override */

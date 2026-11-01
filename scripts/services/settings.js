@@ -6,6 +6,7 @@ export class NarrativeSettings {
   static SETTING_BG_COLOR = "canvasBackgroundColor";
   static SETTING_DEFAULT_BG_IMAGE = "defaultBackgroundImage";
   static SETTING_TOASTS = "enableToastNotifications";
+  static SETTING_FADE_DURATION = "fadeDuration";
   static SETTING_SCENES_DATA = "configuredScenesDataset";
   static SETTING_TILE_SIZE = "editorTileSize";
   static SETTING_ACTIVE_STATE = "activeNarrativeState";
@@ -65,6 +66,20 @@ export class NarrativeSettings {
       config: true,
       type: Boolean,
       default: true
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_FADE_DURATION, {
+      name: "NARRATIVE_CANVAS.Settings.FadeDurationLabel",
+      hint: "NARRATIVE_CANVAS.Settings.FadeDurationHint",
+      scope: "world",
+      config: true,
+      type: Number,
+      range: { min: 0, max: 5000, step: 50 },
+      default: 500,
+      onChange: () => {
+        const manager = game.modules?.get("narrative-canvas")?.manager;
+        manager?.refreshView();
+      }
     });
 
     game.settings.register("narrative-canvas", this.SETTING_SCENES_DATA, {
@@ -153,5 +168,9 @@ export class NarrativeSettings {
 
   static areToastsEnabled() {
     return game.settings.get("narrative-canvas", this.SETTING_TOASTS);
+  }
+
+  static getFadeDuration() {
+    return game.settings.get("narrative-canvas", this.SETTING_FADE_DURATION);
   }
 }

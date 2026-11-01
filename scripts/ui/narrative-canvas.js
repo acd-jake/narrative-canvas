@@ -21,8 +21,11 @@ export class NarrativeCanvas {
     this.stageElement = null;
     this._resizeHandler = null;
     this._lastContext = null;
+    this._opacityAnimations = new WeakMap();
     this._imageOverlayTransitionId = 0;
     this._imageOverlayAnimation = null;
+    this._imageOverlayAnimationTarget = null;
+    this._imageOverlayAnimationElement = null;
     this.bgController = new StageBackgroundController();
     this.vnStageController = new VisualNovelStage();
   }
@@ -49,7 +52,8 @@ export class NarrativeCanvas {
       activeActors,
       hasActiveSpeaker: Boolean(state.activeSpeakerId),
       isGM: game.user.isGM,
-      customBgColor: NarrativeSettings.getBackgroundColor()
+      customBgColor: NarrativeSettings.getBackgroundColor(),
+      fadeDuration: NarrativeSettings.getFadeDuration()
     };
 
     // If already rendered in DOM, check if we can update the stage in-place to prevent image flickering
@@ -71,6 +75,8 @@ export class NarrativeCanvas {
     newStage.id = this.id;
     newStage.classList.add("acd-nc", this.viewClass);
     newStage.style.setProperty("--nc-custom-bg", context.customBgColor || "#000000");
+    newStage.style.setProperty("--nc-fade-duration", `${context.fadeDuration}ms`);
+    newStage.style.opacity = "0";
 
     // Initialize background controller and visual novel character layer
     this.bgController.mount(newStage, context.background);
@@ -81,7 +87,9 @@ export class NarrativeCanvas {
     document.body.appendChild(newStage);
     this.stageElement = newStage;
     this._recordContext(context);
+    document.body.style.setProperty("--nc-fade-duration", `${context.fadeDuration}ms`);
     document.body.classList.add("acd-nc-active");
+    await this._animateElementOpacity(newStage, 1, context.fadeDuration);
 
     // Re-verify resize handler attachment
     if (!this._resizeHandler) {
@@ -128,16 +136,18 @@ export class NarrativeCanvas {
   async _updateInPlace(context) {
     if (!this.stageElement) return;
 
-    // 1. Smooth background crossfade
-    this.bgController.update(context.background);
+    const fadeDuration = context.fadeDuration;
+    this.stageElement.style.setProperty("--nc-fade-duration", `${fadeDuration}ms`);
+    document.body.style.setProperty("--nc-fade-duration", `${fadeDuration}ms`);
 
-    // 2. Smooth visual novel characters FLIP & fade transitions
-    this.vnStageController.update(context);
+    // 1. Update background and actor layers
+    this.bgController.update(context.background, fadeDuration);
+    this.vnStageController.update({ ...context, fadeDuration });
 
-    // 3. Update background color variable
+    // 2. Update background color variable
     this.stageElement.style.setProperty("--nc-custom-bg", context.customBgColor || "#000000");
 
-    // 4. Update dialogue and handout layers in-place
+    // 3. Update dialogue and handout layers in-place
     this._updateDialogueInPlace(context);
     this._updateHandoutInPlace(context);
     await this._updateImageOverlayInPlace(context);
@@ -157,7 +167,7 @@ export class NarrativeCanvas {
     const existingDialogue = this.stageElement.querySelector(".narrative-dialogue-stage");
 
     if (!context.activeDialogue) {
-      if (existingDialogue) existingDialogue.remove();
+      if (existingDialogue) this._fadeOutAndRemove(existingDialogue, context.fadeDuration);
       return;
     }
 
@@ -181,6 +191,9 @@ export class NarrativeCanvas {
       const textEl = existingDialogue.querySelector(".narrative-speech-text");
       if (nameEl) nameEl.textContent = context.activeDialogue.speaker;
       if (textEl) textEl.textContent = context.activeDialogue.text;
+      if (this._opacityAnimations.has(existingDialogue)) {
+        this._animateElementOpacity(existingDialogue, 1, context.fadeDuration);
+      }
     }
   }
 
@@ -194,7 +207,7 @@ export class NarrativeCanvas {
     const existingHandout = this.stageElement.querySelector(".narrative-handout-container");
 
     if (!context.handout) {
-      if (existingHandout) existingHandout.remove();
+      if (existingHandout) this._fadeOutAndRemove(existingHandout, context.fadeDuration);
       return;
     }
 
@@ -211,6 +224,9 @@ export class NarrativeCanvas {
       const title = existingHandout.querySelector(".narrative-handout-title");
       if (img) img.src = context.handout.src;
       if (title && context.handout.title) title.textContent = context.handout.title;
+      if (this._opacityAnimations.has(existingHandout)) {
+        this._animateElementOpacity(existingHandout, 1, context.fadeDuration);
+      }
     }
   }
 
@@ -222,7 +238,7 @@ export class NarrativeCanvas {
 
     if (!context.imageOverlay) {
       if (!overlay) return;
-      await this._animateImageOverlayOpacity(overlay, 0);
+      await this._animateImageOverlayOpacity(overlay, 0, context.fadeDuration);
       if (transitionId === this._imageOverlayTransitionId) overlay.remove();
       return;
     }
@@ -260,7 +276,7 @@ export class NarrativeCanvas {
       if (transitionId !== this._imageOverlayTransitionId) return;
 
       if (!isNewOverlay) {
-        await this._animateImageOverlayOpacity(overlay, 0);
+        await this._animateImageOverlayOpacity(overlay, 0, context.fadeDuration);
         if (transitionId !== this._imageOverlayTransitionId || !overlay.isConnected) return;
 
         image.src = nextSource;
@@ -268,19 +284,34 @@ export class NarrativeCanvas {
       }
     }
 
-    await this._animateImageOverlayOpacity(overlay, 1);
+    const opacity = Number.parseFloat(getComputedStyle(overlay).opacity);
+    const isAnimating = this._imageOverlayAnimation?.playState === "running";
+    if (isNewOverlay || currentSource !== nextSource || isAnimating || opacity < 1) {
+      await this._animateImageOverlayOpacity(overlay, 1, context.fadeDuration);
+    }
   }
 
-  async _animateImageOverlayOpacity(overlay, targetOpacity) {
+  async _animateImageOverlayOpacity(overlay, targetOpacity, duration) {
+    if (this._imageOverlayAnimation?.playState === "running"
+      && this._imageOverlayAnimationTarget === targetOpacity
+      && this._imageOverlayAnimationElement === overlay) {
+      try {
+        await this._imageOverlayAnimation.finished;
+      } catch {}
+      return;
+    }
+
     const currentOpacity = Number.parseFloat(getComputedStyle(overlay).opacity);
     this._imageOverlayAnimation?.cancel();
     overlay.style.opacity = String(currentOpacity);
 
     const animation = overlay.animate(
       [{ opacity: currentOpacity }, { opacity: targetOpacity }],
-      { duration: 280, easing: "ease-in-out", fill: "forwards" }
+      { duration, easing: "ease-in-out", fill: "forwards" }
     );
     this._imageOverlayAnimation = animation;
+    this._imageOverlayAnimationTarget = targetOpacity;
+    this._imageOverlayAnimationElement = overlay;
 
     try {
       await animation.finished;
@@ -292,6 +323,8 @@ export class NarrativeCanvas {
     overlay.style.opacity = String(targetOpacity);
     animation.cancel();
     this._imageOverlayAnimation = null;
+    this._imageOverlayAnimationTarget = null;
+    this._imageOverlayAnimationElement = null;
   }
 
   /**
@@ -300,6 +333,36 @@ export class NarrativeCanvas {
    * @param {object} context
    */
   async _onUpdateElements(context) {}
+
+  _fadeOutAndRemove(element, duration) {
+    this._animateElementOpacity(element, 0, duration).then(completed => {
+      if (completed && element.isConnected) element.remove();
+    });
+  }
+
+  async _animateElementOpacity(element, targetOpacity, duration) {
+    const currentOpacity = Number.parseFloat(getComputedStyle(element).opacity);
+    this._opacityAnimations.get(element)?.cancel();
+    element.style.opacity = String(currentOpacity);
+
+    const animation = element.animate(
+      [{ opacity: currentOpacity }, { opacity: targetOpacity }],
+      { duration, easing: "ease-in-out", fill: "forwards" }
+    );
+    this._opacityAnimations.set(element, animation);
+
+    try {
+      await animation.finished;
+    } catch {
+      return false;
+    }
+
+    if (this._opacityAnimations.get(element) !== animation) return false;
+    element.style.opacity = String(targetOpacity);
+    animation.cancel();
+    this._opacityAnimations.delete(element);
+    return true;
+  }
 
   /**
    * Abstract hook for subclasses to safely append interior template nodes.
@@ -310,24 +373,36 @@ export class NarrativeCanvas {
   /**
    * Completely tears down the element tree from the document body root.
    */
-  close() {
+  async close() {
+    const closingStage = this.stageElement;
+    this._imageOverlayTransitionId++;
+    if (closingStage?.isConnected) {
+      await this._animateElementOpacity(closingStage, 0, NarrativeSettings.getFadeDuration());
+    }
+
     this._imageOverlayAnimation?.cancel();
     this._imageOverlayAnimation = null;
+    this._imageOverlayAnimationTarget = null;
+    this._imageOverlayAnimationElement = null;
     this.bgController.destroy();
     this.vnStageController.destroy();
-
-    document.body.classList.remove("acd-nc-active");
 
     if (this._resizeHandler) {
       window.removeEventListener("resize", this._resizeHandler);
       this._resizeHandler = null;
     }
 
-    const node = document.getElementById(this.id);
-    if (node) node.remove();
+    closingStage?.remove();
 
-    this.stageElement = null;
-    this._lastContext = null;
+    if (!document.querySelector("#narrative-player-display, #narrative-canvas-director")) {
+      document.body.classList.remove("acd-nc-active");
+      document.body.style.removeProperty("--nc-fade-duration");
+    }
+
+    if (this.stageElement === closingStage) {
+      this.stageElement = null;
+      this._lastContext = null;
+    }
   }
 
   /**
