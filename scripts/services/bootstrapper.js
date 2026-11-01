@@ -19,6 +19,9 @@ export class NarrativeBootstrapper {
     Hooks.once("ready", () => {
       const manager = game.modules.get("narrative-canvas").manager;
       if (manager) {
+        if (game.user.isGM) {
+          manager.restorePersistedState();
+        }
         NarrativeSocket.listen(manager);
         
         if (!game.user.isGM) {

@@ -37,8 +37,13 @@ export class NarrativeCanvas {
       showName: actor.showName !== false
     }));
 
+    const defaultBg = NarrativeSettings.getDefaultBackgroundImage();
+    const effectiveBackground = (state.background || defaultBg || "").trim();
+
     const context = {
       ...state,
+      background: effectiveBackground,
+      selectedBackground: state.background || "",
       activeActors,
       hasActiveSpeaker: Boolean(state.activeSpeakerId),
       isGM: game.user.isGM,
@@ -104,6 +109,7 @@ export class NarrativeCanvas {
     this._lastContext = {
       activeSceneId: context.activeSceneId,
       background: context.background,
+      selectedBackground: context.selectedBackground,
       customBgColor: context.customBgColor,
       playerViewActive: context.playerViewActive,
       handout: context.handout,

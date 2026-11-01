@@ -79,6 +79,10 @@ export class NarrativeManager {
         return;
       }
 
+      if (active) {
+        this.restorePersistedState();
+      }
+
       this.narrativeState.active = active;
       if (!active) this.narrativeState.playerViewActive = false;
 
@@ -108,8 +112,98 @@ export class NarrativeManager {
    */
   async handleDisplayUpdate(data, isRemote = false) {
     this.narrativeState = { ...this.narrativeState, ...data };
-    if (game.user.isGM && !isRemote) { NarrativeSocket.emit("UPDATE_DISPLAY", data); }
+    if (game.user.isGM && !isRemote) {
+      NarrativeSocket.emit("UPDATE_DISPLAY", data);
+      await this.persistActiveState();
+    }
     await this.refreshView();
+  }
+
+  /**
+   * Persists the current active state (scene, background, active actors, active speaker)
+   * so it can be restored on world reload or upon opening the canvas.
+   */
+  async persistActiveState() {
+    if (!game.user.isGM) return;
+
+    const payload = {
+      activeSceneId: this.narrativeState.activeSceneId || "",
+      background: this.narrativeState.background || "",
+      activeActors: (this.narrativeState.activeActors || []).map(actor => ({
+        id: actor.id,
+        name: actor.name,
+        img: actor.img,
+        showName: actor.showName !== false
+      })),
+      activeSpeakerId: this.narrativeState.activeSpeakerId || null
+    };
+
+    await NarrativeSettings.saveActiveState(payload);
+  }
+
+  /**
+   * Restores and reconciles persisted active state against existing world scenes and actors.
+   * Validates that scenes and actors still exist before applying them.
+   */
+  restorePersistedState() {
+    const saved = NarrativeSettings.getActiveState();
+    if (!saved || typeof saved !== "object") return;
+
+    const scenes = NarrativeSceneRepository.getAll();
+    let validatedSceneId = "";
+    let validatedSceneData = null;
+
+    if (saved.activeSceneId) {
+      validatedSceneData = scenes.find(s => s.id === saved.activeSceneId) || null;
+      if (validatedSceneData) {
+        validatedSceneId = validatedSceneData.id;
+      }
+    }
+
+    // Background validation: if saved background is non-empty, verify it exists in the active scene backgrounds
+    // or keep it if it is a valid path string.
+    let validatedBackground = "";
+    if (typeof saved.background === "string" && saved.background.trim()) {
+      if (validatedSceneData?.backgrounds?.length) {
+        const bgExists = validatedSceneData.backgrounds.some(bg => bg.path === saved.background);
+        if (bgExists) {
+          validatedBackground = saved.background;
+        }
+      } else {
+        validatedBackground = saved.background;
+      }
+    }
+
+    // Validate active actors against the active scene actors
+    let validatedActors = [];
+    if (Array.isArray(saved.activeActors) && saved.activeActors.length) {
+      if (validatedSceneData?.actors?.length) {
+        const sceneActorMap = new Map(validatedSceneData.actors.map(a => [a.id, a]));
+        for (const savedActor of saved.activeActors) {
+          const matched = sceneActorMap.get(savedActor.id);
+          if (matched) {
+            validatedActors.push({
+              id: matched.id,
+              name: matched.name,
+              img: matched.img,
+              showName: matched.showName !== false
+            });
+          }
+        }
+      }
+    }
+
+    // Validate active speaker
+    let validatedSpeakerId = null;
+    if (saved.activeSpeakerId && validatedActors.some(a => a.id === saved.activeSpeakerId)) {
+      validatedSpeakerId = saved.activeSpeakerId;
+    }
+
+    this.narrativeState.activeSceneId = validatedSceneId;
+    this.narrativeState.currentSceneData = validatedSceneData;
+    this.narrativeState.background = validatedBackground;
+    this.narrativeState.activeActors = validatedActors;
+    this.narrativeState.activeSpeakerId = validatedSpeakerId;
   }
 
   _getGMCallbacks() {
@@ -222,6 +316,7 @@ export class NarrativeManager {
       onDialogueTrigger: (dialogue) => this.handleDisplayUpdate({ activeDialogue: dialogue }),
       onClearDisplay: () => {
         this.handleDisplayUpdate({
+          background: "",
           activeActors: [],
           activeSpeakerId: null,
           activeDialogue: null,

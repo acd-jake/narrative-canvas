@@ -31,7 +31,7 @@
         <legend><i class="fas fa-images"></i> {{localize "NARRATIVE_CANVAS.Labels.SceneBackgrounds"}}</legend>
         <div class="director-bg-grid">
             {{#each currentSceneData.backgrounds}}
-                <div class="bg-thumbnail-card {{#if (eq ../background this.path)}}is-active-bg{{/if}}" data-bg-path="{{this.path}}">
+                <div class="bg-thumbnail-card {{#if (eq ../selectedBackground this.path)}}is-active-bg{{/if}}" data-bg-path="{{this.path}}">
                     <img src="{{this.path}}" alt="{{this.name}}" />
                     <span class="bg-thumb-label">{{this.name}}</span>
                 </div>

@@ -4,9 +4,11 @@
 export class NarrativeSettings {
   static SETTING_PERMISSION = "activationPermission";
   static SETTING_BG_COLOR = "canvasBackgroundColor";
+  static SETTING_DEFAULT_BG_IMAGE = "defaultBackgroundImage";
   static SETTING_TOASTS = "enableToastNotifications";
   static SETTING_SCENES_DATA = "configuredScenesDataset";
   static SETTING_TILE_SIZE = "editorTileSize";
+  static SETTING_ACTIVE_STATE = "activeNarrativeState";
 
   /**
    * Registers all settings within Foundry VTT.
@@ -33,7 +35,27 @@ export class NarrativeSettings {
       scope: "world",
       config: true,
       type: String,
-      default: "#000000"
+      default: "#000000",
+      onChange: () => {
+        const manager = game.modules?.get("narrative-canvas")?.manager;
+        manager?.refreshView();
+      }
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_DEFAULT_BG_IMAGE, {
+      name: "NARRATIVE_CANVAS.Settings.DefaultBgImageLabel",
+      hint: "NARRATIVE_CANVAS.Settings.DefaultBgImageHint",
+      scope: "world",
+      config: true,
+      type: String,
+      default: "",
+      filePicker: "image",
+      onChange: () => {
+        const manager = game.modules?.get("narrative-canvas")?.manager;
+        if (manager && !manager.narrativeState.background) {
+          manager.refreshView();
+        }
+      }
     });
 
     game.settings.register("narrative-canvas", this.SETTING_TOASTS, {
@@ -57,6 +79,13 @@ export class NarrativeSettings {
       config: false,   // Hidden from global config menu, managed via custom slider
       type: Number,
       default: 200,    // Default size in pixels
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_ACTIVE_STATE, {
+      scope: "world",
+      config: false,
+      type: Object,
+      default: null
     });
   }
 
@@ -95,6 +124,31 @@ export class NarrativeSettings {
 
   static getBackgroundColor() {
     return game.settings.get("narrative-canvas", this.SETTING_BG_COLOR);
+  }
+
+  /**
+   * Retrieves the default canvas background image path.
+   * @returns {string}
+   */
+  static getDefaultBackgroundImage() {
+    return game.settings.get("narrative-canvas", this.SETTING_DEFAULT_BG_IMAGE) || "";
+  }
+
+  /**
+   * Retrieves the persisted active narrative state (scene, background, actors, speaker).
+   * @returns {object|null}
+   */
+  static getActiveState() {
+    return game.settings.get("narrative-canvas", this.SETTING_ACTIVE_STATE);
+  }
+
+  /**
+   * Persists the active narrative state.
+   * @param {object} state
+   */
+  static async saveActiveState(state) {
+    if (!game.user.isGM) return;
+    await game.settings.set("narrative-canvas", this.SETTING_ACTIVE_STATE, state);
   }
 
   static areToastsEnabled() {
