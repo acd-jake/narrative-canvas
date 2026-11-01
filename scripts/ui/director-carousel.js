@@ -6,6 +6,7 @@
 export class DirectorActorCarousel {
   #callbacks;
   #element = null;
+  #lastSceneId = "";
 
   /**
    * @param {object} callbacks
@@ -49,9 +50,46 @@ export class DirectorActorCarousel {
     const newElement = doc.body.firstElementChild;
 
     this.#element = newElement;
+    this.#lastSceneId = context.activeSceneId ?? "";
     this.#bindListeners(this.#element);
 
     return newElement;
+  }
+
+  /**
+   * Updates or re-renders the actor carousel within the stage element.
+   * If the active scene changed, replaces the carousel with the new scene's actors.
+   * If within the same scene, applies fast in-place card updates.
+   * @param {HTMLElement} stageElement
+   * @param {object} context
+   */
+  async update(stageElement, context = {}) {
+    const sceneActors = context.currentSceneData?.actors;
+    const hasActors = Array.isArray(sceneActors) && sceneActors.length > 0;
+
+    if (!hasActors) {
+      if (this.#element) {
+        this.#element.remove();
+        this.#element = null;
+      }
+      this.#lastSceneId = context.activeSceneId ?? "";
+      return;
+    }
+
+    // If scene changed or element is not mounted, re-render afresh
+    if (!this.#element || !stageElement.contains(this.#element) || this.#lastSceneId !== context.activeSceneId) {
+      if (this.#element) this.#element.remove();
+      const newEl = await this.render(context);
+      if (newEl) {
+        stageElement.appendChild(newEl);
+      }
+      this.#lastSceneId = context.activeSceneId ?? "";
+      return;
+    }
+
+    // Fast in-place update of card states within the same scene
+    this.updateInPlace(context);
+    this.#lastSceneId = context.activeSceneId ?? "";
   }
 
   /**

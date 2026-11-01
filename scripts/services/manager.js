@@ -118,12 +118,20 @@ export class NarrativeManager {
         const scenes = NarrativeSceneRepository.getAll();
         const selectedData = scenes.find(s => s.id === sceneId) || null;
 
+        // Retain only active actors present in the newly activated scene
+        const newSceneActorIds = new Set((selectedData?.actors || []).map(a => a.id));
+        const survivingActiveActors = (this.narrativeState.activeActors || []).filter(a => newSceneActorIds.has(a.id));
+        const survivingSpeakerId = newSceneActorIds.has(this.narrativeState.activeSpeakerId)
+          ? this.narrativeState.activeSpeakerId
+          : null;
+
+        // Activating a scene does not alter the canvas background directly.
+        // It updates the scene data so background quick-selection reflects the new scene.
         this.handleDisplayUpdate({
           activeSceneId: sceneId,
           currentSceneData: selectedData,
-          background: selectedData?.backgrounds[0]?.path || "",
-          activeActors: [], // Wipe current character staging lists on scene transitions
-          activeSpeakerId: null,
+          activeActors: survivingActiveActors,
+          activeSpeakerId: survivingSpeakerId,
           activeTrackId: null
         });
       },

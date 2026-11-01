@@ -57,6 +57,75 @@ export class DirectorSidebar {
     return newElement;
   }
 
+  /**
+   * Updates sidebar state in-place when scene or volume changes.
+   * @param {object} context
+   */
+  update(context = {}) {
+    if (!this.#element) return;
+    this.#activeSceneId = context.activeSceneId ?? this.#activeSceneId;
+    this.#scenesList = context.scenesList ?? this.#scenesList;
+    this.#currentSceneData = context.currentSceneData ?? (this.#activeSceneId ? this.#scenesList.find(s => s.id === this.#activeSceneId) : null);
+
+    // Update active highlight in scenes list
+    this.#element.querySelectorAll(".director-scene-item").forEach(item => {
+      item.classList.toggle("is-active", item.dataset.sceneId === this.#activeSceneId);
+    });
+
+    // Refresh audio tracks list for the active scene
+    this.#refreshAudioTracksList();
+  }
+
+  /**
+   * Refreshes the audio tracks list in the sidebar for the current scene.
+   * @private
+   */
+  #refreshAudioTracksList() {
+    if (!this.#element) return;
+    const tracksContainer = this.#element.querySelector(".director-audio-tracks-list");
+    if (!tracksContainer) return;
+
+    const rawTracks = this.#currentSceneData?.tracks ?? [];
+    if (rawTracks.length === 0) {
+      tracksContainer.innerHTML = `<div class="sidebar-empty-hint">${game.i18n.localize("NARRATIVE_CANVAS.Director.NoAudioTracks")}</div>`;
+      return;
+    }
+
+    const activeSceneTracks = rawTracks.map(track => {
+      const state = this.#audioController?.getTrackState(track.id) ?? "stopped";
+      const vol = this.#audioController?.getTrackVolume(track.id) ?? 1.0;
+      return {
+        ...track,
+        playState: state,
+        volume: vol,
+        volumePercent: Math.round(vol * 100)
+      };
+    });
+
+    tracksContainer.innerHTML = activeSceneTracks.map(track => `
+      <div class="director-audio-track-item ${track.playState === 'playing' ? 'is-playing' : ''} ${track.playState === 'paused' ? 'is-paused' : ''}" data-track-id="${track.id}" data-track-path="${track.path}" data-track-name="${track.name}">
+        <div class="audio-track-info">
+          <span class="audio-track-name" title="${Handlebars.escapeExpression(track.name)}">
+            <i class="fas fa-volume-up track-status-icon"></i> ${Handlebars.escapeExpression(track.name)}
+          </span>
+          <div class="audio-track-actions">
+            <button type="button" class="btn-track-toggle type-icon" title="${track.playState === 'playing' ? game.i18n.localize('NARRATIVE_CANVAS.Director.Pause') : game.i18n.localize('NARRATIVE_CANVAS.Director.Play')}">
+              <i class="fas ${track.playState === 'playing' ? 'fa-pause' : 'fa-play'}"></i>
+            </button>
+            <button type="button" class="btn-track-stop type-icon" title="${game.i18n.localize('NARRATIVE_CANVAS.Director.Stop')}">
+              <i class="fas fa-stop"></i>
+            </button>
+          </div>
+        </div>
+        <div class="audio-track-volume-row">
+          <i class="fas fa-volume-down volume-icon"></i>
+          <input type="range" class="slider-track-volume" min="0" max="1" step="0.05" value="${track.volume}" title="${game.i18n.localize('NARRATIVE_CANVAS.Director.TrackVolume')}" />
+          <span class="volume-val-display">${track.volumePercent}%</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
   async #prepareTemplateData() {
     const normalizedSceneQuery = this.#sceneQuery.trim().toLowerCase();
     const filteredScenes = this.#scenesList.filter(scene => {

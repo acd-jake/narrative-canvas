@@ -1,6 +1,7 @@
 import { NarrativeCanvas } from "./narrative-canvas.js";
 import { DirectorSidebar } from "./director-sidebar.js";
 import { DirectorActorCarousel } from "./director-carousel.js";
+import { DirectorControls } from "./director-controls.js";
 import { SceneAudioController } from "../services/audio-controller.js";
 
 /**
@@ -13,6 +14,7 @@ export class NarrativeDirector extends NarrativeCanvas {
   constructor(callbacks) {
     super("narrative-canvas-director", "director-view");
     this.callbacks = callbacks;
+    this.controls = new DirectorControls();
     this.audioController = new SceneAudioController({
       globalVolume: 0.5,
       onStateChange: (trackId) => this.sidebar?.updateAudioTrackItem(trackId)
@@ -37,17 +39,15 @@ export class NarrativeDirector extends NarrativeCanvas {
   /** @override */
   close() {
     this.audioController?.stopAll();
+    this.controls?.destroy();
     super.close();
   }
 
   /** @override */
   async _onPrepareElements(stageElement, context) {
     // 1. Right-side control panel
-    const controlsHtml = await renderTemplate("modules/narrative-canvas/templates/partials/director-controls.hbs", context);
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(controlsHtml, "text/html");
-    const panelElement = doc.body.firstElementChild;
-    stageElement.appendChild(panelElement);
+    const controlsElement = await this.controls.render(context);
+    stageElement.appendChild(controlsElement);
 
     // 2. Left-side scenes & journal sidebar
     const sidebarElement = await this.sidebar.render(context);
@@ -62,7 +62,9 @@ export class NarrativeDirector extends NarrativeCanvas {
 
   /** @override */
   async _onUpdateElements(context) {
-    this.carousel?.updateInPlace(context);
+    await this.controls?.updateInPlace(context);
+    this.sidebar?.update(context);
+    await this.carousel?.update(this.stageElement, context);
   }
 
   /**

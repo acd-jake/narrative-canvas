@@ -1,4 +1,6 @@
 import { NarrativeSettings } from "../services/settings.js";
+import { StageBackgroundController } from "./stage-background.js";
+import { VisualNovelStage } from "./visual-novel-stage.js";
 
 /**
  * Abstract base class for raw DOM injection overlays, completely detached 
@@ -19,6 +21,8 @@ export class NarrativeCanvas {
     this.stageElement = null;
     this._resizeHandler = null;
     this._lastContext = null;
+    this.bgController = new StageBackgroundController();
+    this.vnStageController = new VisualNovelStage();
   }
 
   /**
@@ -61,9 +65,9 @@ export class NarrativeCanvas {
     newStage.classList.add("acd-nc", this.viewClass);
     newStage.style.setProperty("--nc-custom-bg", context.customBgColor || "#000000");
 
-    if (context.background) {
-      newStage.style.backgroundImage = `url('${context.background}')`;
-    }
+    // Initialize background controller and visual novel character layer
+    this.bgController.mount(newStage, context.background);
+    this.vnStageController.mount(newStage);
 
     await this._onPrepareElements(newStage, context);
 
@@ -80,8 +84,8 @@ export class NarrativeCanvas {
   }
 
   /**
-   * Determines whether the visual novel stage can be updated in-place without rebuilding the canvas.
-   * Only allowed when within the exact same scene, background, and UI state.
+   * Determines whether the stage can be updated in-place without rebuilding the DOM.
+   * Updating in-place avoids full re-renders and enables smooth transitions.
    * @protected
    * @param {object} context
    * @returns {boolean}
@@ -89,25 +93,11 @@ export class NarrativeCanvas {
   _canUpdateInPlace(context) {
     if (!this.stageElement || !this._lastContext) return false;
     const existingNode = document.getElementById(this.id);
-    if (!existingNode || existingNode !== this.stageElement) return false;
-
-    // Must be the exact same active scene
-    if (context.activeSceneId !== this._lastContext.activeSceneId) return false;
-
-    // Must have identical background
-    if (context.background !== this._lastContext.background) return false;
-
-    // Must have identical dialog, handout, visibility, and color
-    if (context.customBgColor !== this._lastContext.customBgColor) return false;
-    if (context.playerViewActive !== this._lastContext.playerViewActive) return false;
-    if (context.handout !== this._lastContext.handout) return false;
-    if (context.activeDialogue !== this._lastContext.activeDialogue) return false;
-
-    return true;
+    return Boolean(existingNode && existingNode === this.stageElement);
   }
 
   /**
-   * Stores scalar context properties to detect scene, background, or overlay changes.
+   * Stores scalar context properties to detect changes.
    * @private
    */
   _recordContext(context) {
@@ -122,79 +112,96 @@ export class NarrativeCanvas {
   }
 
   /**
-   * Updates existing DOM elements in-place to avoid recreation and image flickering.
+   * Updates existing DOM elements in-place to avoid recreation and enable smooth animations.
    * @protected
    * @param {object} context
    */
   async _updateInPlace(context) {
-    const vnStage = this.stageElement?.querySelector(".narrative-visual-novel-stage");
-    if (!vnStage) return;
+    if (!this.stageElement) return;
 
-    vnStage.classList.toggle("has-speaker", Boolean(context.hasActiveSpeaker));
+    // 1. Smooth background crossfade
+    this.bgController.update(context.background);
 
-    const targetActors = context.activeActors || [];
-    const targetMap = new Map(targetActors.map(a => [a.id, a]));
+    // 2. Smooth visual novel characters FLIP & fade transitions
+    this.vnStageController.update(context);
 
-    // 1. Remove characters no longer active on stage
-    const renderedChars = Array.from(vnStage.querySelectorAll(".narrative-vn-character"));
-    for (const charEl of renderedChars) {
-      const actorId = charEl.dataset.actorId;
-      if (!targetMap.has(actorId)) {
-        charEl.remove();
-      }
-    }
+    // 3. Update background color variable
+    this.stageElement.style.setProperty("--nc-custom-bg", context.customBgColor || "#000000");
 
-    // 2. Add new characters or update existing ones in-place
-    for (const actor of targetActors) {
-      let charEl = vnStage.querySelector(`.narrative-vn-character[data-actor-id="${actor.id}"]`);
-      if (!charEl) {
-        charEl = document.createElement("div");
-        charEl.className = `narrative-vn-character ${actor.isSpeaker ? "is-speaker" : ""}`;
-        charEl.id = `nc-vn-${actor.id}`;
-        charEl.dataset.actorId = actor.id;
+    // 4. Update dialogue and handout layers in-place
+    this._updateDialogueInPlace(context);
+    this._updateHandoutInPlace(context);
 
-        const wrapper = document.createElement("div");
-        wrapper.className = "narrative-vn-image-wrapper";
-
-        const img = document.createElement("img");
-        img.src = actor.img;
-        img.alt = actor.name;
-        img.className = "narrative-vn-image";
-        wrapper.appendChild(img);
-
-        if (actor.showName) {
-          const namePlate = document.createElement("div");
-          namePlate.className = "narrative-vn-name-plate";
-          namePlate.innerHTML = `<span class="narrative-vn-name-text">${Handlebars.escapeExpression(actor.name)}</span>`;
-          wrapper.appendChild(namePlate);
-        }
-
-        charEl.appendChild(wrapper);
-        vnStage.appendChild(charEl);
-      } else {
-        charEl.classList.toggle("is-speaker", Boolean(actor.isSpeaker));
-
-        const imgWrapper = charEl.querySelector(".narrative-vn-image-wrapper");
-        let namePlate = charEl.querySelector(".narrative-vn-name-plate");
-
-        if (actor.showName) {
-          if (!namePlate && imgWrapper) {
-            namePlate = document.createElement("div");
-            namePlate.className = "narrative-vn-name-plate";
-            namePlate.innerHTML = `<span class="narrative-vn-name-text">${Handlebars.escapeExpression(actor.name)}</span>`;
-            imgWrapper.appendChild(namePlate);
-          } else if (namePlate) {
-            const textEl = namePlate.querySelector(".narrative-vn-name-text");
-            if (textEl) textEl.textContent = actor.name;
-          }
-        } else if (namePlate) {
-          namePlate.remove();
-        }
-      }
-    }
-
+    // 5. Allow subclass to update its auxiliary panels (e.g. director controls, sidebar, carousel)
     await this._onUpdateElements(context);
     this._recordContext(context);
+  }
+
+  /**
+   * Updates or mounts dialogue display in-place.
+   * @private
+   * @param {object} context
+   */
+  _updateDialogueInPlace(context) {
+    if (!this.stageElement) return;
+    const existingDialogue = this.stageElement.querySelector(".narrative-dialogue-stage");
+
+    if (!context.activeDialogue) {
+      if (existingDialogue) existingDialogue.remove();
+      return;
+    }
+
+    if (!existingDialogue) {
+      const div = document.createElement("div");
+      div.className = "narrative-dialogue-stage animate-slide-up";
+      div.innerHTML = `
+        ${context.activeDialogue.portrait ? `<div class="narrative-speaker-portrait"><img src="${context.activeDialogue.portrait}" alt="${context.activeDialogue.speaker}"/></div>` : ""}
+        <div class="narrative-speech-bubble">
+          <h2 class="narrative-speaker-name">${Handlebars.escapeExpression(context.activeDialogue.speaker)}</h2>
+          <p class="narrative-speech-text">${Handlebars.escapeExpression(context.activeDialogue.text)}</p>
+        </div>
+      `;
+      this.stageElement.appendChild(div);
+    } else {
+      const portraitImg = existingDialogue.querySelector(".narrative-speaker-portrait img");
+      if (portraitImg && context.activeDialogue.portrait) {
+        portraitImg.src = context.activeDialogue.portrait;
+      }
+      const nameEl = existingDialogue.querySelector(".narrative-speaker-name");
+      const textEl = existingDialogue.querySelector(".narrative-speech-text");
+      if (nameEl) nameEl.textContent = context.activeDialogue.speaker;
+      if (textEl) textEl.textContent = context.activeDialogue.text;
+    }
+  }
+
+  /**
+   * Updates or mounts handout display in-place.
+   * @private
+   * @param {object} context
+   */
+  _updateHandoutInPlace(context) {
+    if (!this.stageElement) return;
+    const existingHandout = this.stageElement.querySelector(".narrative-handout-container");
+
+    if (!context.handout) {
+      if (existingHandout) existingHandout.remove();
+      return;
+    }
+
+    if (!existingHandout) {
+      const div = document.createElement("div");
+      div.className = "narrative-handout-container animate-fade-in";
+      div.innerHTML = `
+        <img src="${context.handout.src}" alt="${context.handout.title || ''}" class="narrative-handout-image"/>
+        ${context.handout.title ? `<h3 class="narrative-handout-title">${Handlebars.escapeExpression(context.handout.title)}</h3>` : ""}
+      `;
+      this.stageElement.appendChild(div);
+    } else {
+      const img = existingHandout.querySelector(".narrative-handout-image");
+      const title = existingHandout.querySelector(".narrative-handout-title");
+      if (img) img.src = context.handout.src;
+      if (title && context.handout.title) title.textContent = context.handout.title;
+    }
   }
 
   /**
@@ -214,6 +221,9 @@ export class NarrativeCanvas {
    * Completely tears down the element tree from the document body root.
    */
   close() {
+    this.bgController.destroy();
+    this.vnStageController.destroy();
+
     document.body.classList.remove("acd-nc-active");
 
     if (this._resizeHandler) {

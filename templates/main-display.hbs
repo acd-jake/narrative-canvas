@@ -1,4 +1,10 @@
-<div class="narrative-canvas-stage" style="background-image: url('{{#if background}}{{background}}{{else}}icons/svg/mystery-man.svg{{/if}}');">
+<div class="narrative-canvas-stage">
+    <!-- Ambient Background Crossfade Container -->
+    <div class="narrative-bg-container">
+        {{#if background}}
+            <div class="narrative-bg-layer is-active" style="background-image: url('{{background}}');"></div>
+        {{/if}}
+    </div>
     
     <!-- Ambient Overlay Vignette -->
     <div class="narrative-overlay-vignette"></div>
