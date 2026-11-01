@@ -260,6 +260,111 @@ body.acd-nc-active {
         }
     }
 
+    /* ==========================================================================
+       Visual Novel Stage Rules
+       ========================================================================== */
+    .narrative-visual-novel-stage {
+        position: absolute;
+        bottom: 120px; /* Sits cleanly above the dialogue stage banner box */
+        left: 5%;
+        width: 90%;
+        height: 60%;
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 40px;
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    .narrative-vn-character {
+        max-width: 25%;
+        height: 100%;
+        display: flex;
+        align-items: flex-end;
+        
+        .narrative-vn-image {
+            max-height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
+        }
+    }
+
+    /* ==========================================================================
+       Director Interface Additions
+       ========================================================================== */
+    .narrative-director-audio-sidebar {
+        position: absolute;
+        top: 25px;
+        left: 25px;
+        z-index: 10;
+        width: 260px;
+        background: rgba(22, 22, 26, 0.96);
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 14px;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8);
+        color: #c8c8c8;
+    }
+
+    .narrative-director-actors-bar {
+        position: absolute;
+        bottom: 25px;
+        left: 25px;
+        z-index: 10;
+        width: calc(100vw - 450px);
+        background: rgba(22, 22, 26, 0.96);
+        border: 1px solid #444;
+        border-radius: 8px;
+        padding: 12px;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8);
+        color: #c8c8c8;
+    }
+
+    .actors-horizontal-list {
+        display: flex;
+        gap: 16px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+    }
+
+    .actor-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 75px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        
+        &:hover { transform: scale(1.05); }
+        &.is-active-on-stage { border: 2px solid #7a6842; border-radius: 6px; background: rgba(122, 104, 66, 0.2); }
+    }
+
+    .actor-card-thumb {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 4px;
+    }
+
+    .director-bg-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+
+    .bg-thumbnail-card {
+        position: relative;
+        cursor: pointer;
+        border: 1px solid #444;
+        border-radius: 4px;
+        overflow: hidden;
+        
+        img { width: 100%; height: 50px; object-fit: cover; }
+        &.is-active-bg { border: 2px solid #7a6842; }
+    }    
 }
 
 @keyframes nc-fadeIn {

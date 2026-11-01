@@ -1,0 +1,22 @@
+<div class="narrative-director-audio-sidebar font-foundry">
+    <header class="sidebar-header"><i class="fas fa-music"></i> <h3>{{localize "NARRATIVE_CANVAS.Director.Audio"}}</h3></header>
+    <div class="audio-tracks-list">
+        {{#each currentSceneData.tracks}}
+            <div class="audio-track-row {{#if (eq ../activeTrackId this.id)}}is-playing{{/if}}" data-track-id="{{this.id}}">
+                <span class="track-name" title="{{this.name}}">{{this.name}}</span>
+                <div class="track-actions">
+                    {{#if (eq ../activeTrackId this.id)}}
+                        <button type="button" class="btn-audio-stop type-icon"><i class="fas fa-stop"></i></button>
+                    {{else}}
+                        <button type="button" class="btn-audio-play type-icon"><i class="fas fa-play"></i></button>
+                    {{/if}}
+                </div>
+            </div>
+        {{/each}}
+    </div>
+    <!-- Global Volume Controller -->
+    <div class="audio-global-volume">
+        <i class="fas fa-volume-up"></i>
+        <input type="range" class="slider-global-volume" min="0" max="1" step="0.05" value="{{globalVolume}}" />
+    </div>
+</div>

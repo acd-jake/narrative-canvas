@@ -1,7 +1,16 @@
 <div class="narrative-canvas-stage" style="background-image: url('{{#if background}}{{background}}{{else}}icons/svg/mystery-man.svg{{/if}}');">
     
-    <!-- Ambient Overlay Grid -->
+    <!-- Ambient Overlay Vignette -->
     <div class="narrative-overlay-vignette"></div>
+
+    <!-- NEW LAYER: Visual Novel Character Overlays -->
+    <div class="narrative-visual-novel-stage">
+        {{#each activeActors}}
+            <div class="narrative-vn-character animate-fade-in" id="nc-vn-{{this.id}}">
+                <img src="{{this.img}}" alt="{{this.name}}" class="narrative-vn-image" />
+            </div>
+        {{/each}}
+    </div>
 
     <!-- Handout Component Layer -->
     {{#if handout}}

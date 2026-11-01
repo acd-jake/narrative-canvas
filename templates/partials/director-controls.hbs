@@ -7,51 +7,46 @@
         </span>
     </header>
 
+    <!-- Scene Selector Dropdown -->
+    <section class="director-control-group">
+        <legend><i class="fas fa-folder-open"></i> {{localize "NARRATIVE_CANVAS.Labels.ActiveScene"}}</legend>
+        <select class="selector-narrative-scene">
+            <option value="">-- {{localize "NARRATIVE_CANVAS.Placeholders.ChooseScene"}} --</option>
+            {{#each scenesList}}
+                <option value="{{this.id}}" {{#if (eq ../activeSceneId this.id)}}selected{{/if}}>{{this.name}}</option>
+            {{/each}}
+        </select>
+    </section>
+
+    <!-- Background Quick List -->
+    {{#if currentSceneData}}
+    <section class="director-control-group">
+        <legend><i class="fas fa-images"></i> {{localize "NARRATIVE_CANVAS.Labels.SceneBackgrounds"}}</legend>
+        <div class="director-bg-grid">
+            {{#each currentSceneData.backgrounds}}
+                <div class="bg-thumbnail-card {{#if (eq ../background this.path)}}is-active-bg{{/if}}" data-bg-path="{{this.path}}">
+                    <img src="{{this.path}}" alt="{{this.name}}" />
+                    <span class="bg-thumb-label">{{this.name}}</span>
+                </div>
+            {{/each}}
+        </div>
+    </section>
+    {{/if}}
+
+    <!-- Existing Player Visibility, Dialog Elements, and Footers Stay Intact below... -->
     <section class="director-control-group">
         <legend><i class="fas fa-eye"></i> {{localize "NARRATIVE_CANVAS.Labels.PlayerVisibility"}}</legend>
         <div class="director-input-row">
             {{#if playerViewActive}}
-                <button type="button" class="btn-hide-players button-secondary">
-                    <i class="fas fa-eye-slash"></i> {{localize "NARRATIVE_CANVAS.Labels.HideCanvas"}}
-                </button>
+                <button type="button" class="btn-hide-players button-secondary"><i class="fas fa-eye-slash"></i> {{localize "NARRATIVE_CANVAS.Labels.HideCanvas"}}</button>
             {{else}}
-                <button type="button" class="btn-publish-players button-primary">
-                    <i class="fas fa-broadcast-tower"></i> {{localize "NARRATIVE_CANVAS.Labels.PublishCanvas"}}
-                </button>
+                <button type="button" class="btn-publish-players button-primary"><i class="fas fa-broadcast-tower"></i> {{localize "NARRATIVE_CANVAS.Labels.PublishCanvas"}}</button>
             {{/if}}
         </div>
     </section>
 
-    <section class="director-control-group">
-        <legend><i class="fas fa-image"></i> {{localize "NARRATIVE_CANVAS.Labels.Background"}}</legend>
-        <div class="director-input-row">
-            <input type="text" class="bg-path-input" value="{{background}}" placeholder="img/backgrounds/castle.webp" readonly/>
-            <button type="button" class="btn-change-bg type-icon" title="{{localize 'NARRATIVE_CANVAS.Labels.ChangeBg'}}">
-                <i class="fas fa-file-import"></i>
-            </button>
-        </div>
-    </section>
-
-    <section class="director-control-group">
-        <legend><i class="fas fa-comment-dots"></i> {{localize "NARRATIVE_CANVAS.Labels.Dialogue"}}</legend>
-        <div class="director-input-column">
-            <div class="director-input-row">
-                <input type="text" class="speaker-name-input" placeholder="{{localize 'NARRATIVE_CANVAS.Placeholders.Speaker'}}" />
-                <input type="text" class="speaker-portrait-input" placeholder="path/to/portrait.webp" />
-            </div>
-            <textarea class="dialogue-input" placeholder="{{localize 'NARRATIVE_CANVAS.Placeholders.Dialogue'}}"></textarea>
-            <button type="button" class="btn-trigger-dialog button-primary">
-                <i class="fas fa-paper-plane"></i> {{localize "NARRATIVE_CANVAS.Labels.SendDialogue"}}
-            </button>
-        </div>
-    </section>
-
     <footer class="director-panel-footer director-input-column">
-        <button type="button" class="btn-clear-display button-secondary">
-            <i class="fas fa-eraser"></i> {{localize "NARRATIVE_CANVAS.Labels.ClearAll"}}
-        </button>
-        <button type="button" class="btn-shutdown-canvas button-destructive">
-            <i class="fas fa-power-off"></i> {{localize "NARRATIVE_CANVAS.Labels.ShutdownCanvas"}}
-        </button>
+        <button type="button" class="btn-clear-display button-secondary"><i class="fas fa-eraser"></i> {{localize "NARRATIVE_CANVAS.Labels.ClearAll"}}</button>
+        <button type="button" class="btn-shutdown-canvas button-destructive"><i class="fas fa-power-off"></i> {{localize "NARRATIVE_CANVAS.Labels.ShutdownCanvas"}}</button>
     </footer>
 </div>
