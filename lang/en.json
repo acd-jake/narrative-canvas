@@ -40,5 +40,6 @@
   "NARRATIVE_CANVAS.Editor.DeleteScene": "Delete Scene",
   "NARRATIVE_CANVAS.Editor.NewSceneDefault": "New Narrative Scene",
   "NARRATIVE_CANVAS.Editor.NoSceneSelected": "Select a narrative scene from the left archive list to begin editing.",
+  "NARRATIVE_CANVAS.Editor.DropToCreateHint": "Drop an actor or audio track here to create a new scene.",
   "NARRATIVE_CANVAS.Editor.TileSizeLabel": "Tile Size (Scaling)"
 }

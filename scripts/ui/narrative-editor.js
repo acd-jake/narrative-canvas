@@ -1,20 +1,37 @@
 import { NarrativeSettings } from "../services/settings.js";
+import { NarrativeSceneRepository } from "../services/scene-repository.js";
+import { JournalDockController } from "../services/journal-dock.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
+/** Dropzone type that accepts any supported asset and creates a scene for it. */
+const ANY_ASSET_TYPE = "*";
+
 /**
- * Advanced scene builder interface featuring scene management list, 
- * FilePicker background addition, and Drag & Drop compendium rules.
+ * Window for building narrative scenes. It renders scene data and forwards user actions;
+ * persistence lives in NarrativeSceneRepository, journal docking in JournalDockController.
  */
 export class NarrativeSceneEditor extends HandlebarsApplicationMixin(ApplicationV2) {
+  /** Scene that was selected before docking; reselected when the dock is released. */
+  #freeSceneId = null;
+  #dock;
+
   constructor(options = {}) {
     super(options);
     
-    this.activeJournalId = null;
-    this.selectedSceneId = null; // Currently clicked scene item track link
-    this._savedPosition = null;
+    this.selectedSceneId = null;
+    this.#dock = new JournalDockController(this, {
+      onDocked: ({ journalId, previousJournalId }) => {
+        if (!previousJournalId) this.#freeSceneId = this.selectedSceneId;
+        if (journalId !== previousJournalId) this.selectedSceneId = null;
+      },
+      onReleased: () => {
+        this.selectedSceneId = this.#freeSceneId;
+        this.#freeSceneId = null;
+      }
+    });
     
-    this._setupJournalTrackingHooks();
+    this.#dock.register();
   }
 
   static DEFAULT_OPTIONS = {
@@ -31,239 +48,202 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
 
   /** @override */
   async _prepareContext(options) {
-    const scenes = NarrativeSettings.getAllScenes();
-    
-    if (!this.selectedSceneId && scenes.length > 0) {
-      this.selectedSceneId = scenes[0].id;
-    }
+    const scenes = NarrativeSceneRepository.getVisible(this.#dock.journalId)
+      .map(scene => scene.journalId
+        ? { ...scene, journalName: this.#journalNameOf(scene.journalId) ?? scene.journalName }
+        : scene);
 
-    const activeScene = scenes.find(s => s.id === this.selectedSceneId) || null;
+    if (!scenes.some(scene => scene.id === this.selectedSceneId)) {
+      this.selectedSceneId = scenes[0]?.id ?? null;
+    }
 
     return {
       allScenes: scenes,
       selectedSceneId: this.selectedSceneId,
-      activeScene: activeScene,
-      // Pass the persistent tile size out to the compiler context
+      activeScene: scenes.find(scene => scene.id === this.selectedSceneId) ?? null,
       tileSize: NarrativeSettings.getTileSize()
     };
+  }
+
+  /** @override */
+  _onFirstRender(context, options) {
+    super._onFirstRender(context, options);
+    this.#dock.dockToActiveJournal();
+  }
+
+  /** @override */
+  _onClose(options) {
+    super._onClose(options);
+    this.#dock.release();
   }
   /** @override */
   _onRender(context, options) {
     super._onRender(context, options);
     
     if (this.element) {
-      this._dragDrop = this._dragDrop || this._initializeDragDropRules();
+      this._dragDrop = this._dragDrop || this.#createDragDrop();
       this._dragDrop.bind(this.element);
-      this._activateLocalListeners();
+      this.#bindListeners();
     }
   }
 
-  _initializeDragDropRules() {
+  #createDragDrop() {
     return new DragDrop({
       dropSelector: ".editor-dropzone",
       permissions: { drop: () => game.user.isGM },
       callbacks: {
-        dragover: (e) => e.currentTarget.classList.add("drag-over"),
-        dragleave: (e) => e.currentTarget.classList.remove("drag-over"),
-        drop: this._onAssetDrop.bind(this)
+        dragover: (event) => event.currentTarget.classList.add("drag-over"),
+        dragleave: (event) => event.currentTarget.classList.remove("drag-over"),
+        drop: (event) => this.#onAssetDrop(event)
       }
     });
   }
 
-  /** @override */
-  _activateLocalListeners() {
-    // ... keep your existing listeners (create-scene, delete-scene, rename-field, filepicker) ...
+  #bindListeners() {
     const html = this.element;
-
-    // Call your existing click handlers
-    this._wireExistingClickHandlers(html);
-
-    // NEW LISTENERS: Dynamic slider tracking with instant database cache commits
-    html.querySelector(".slider-tile-scale")?.addEventListener("input", (e) => {
-      const newSize = parseInt(e.target.value);
-
-      // Apply immediately; persisting is async and must not delay the visual update.
-      html.querySelector(".narrative-editor-window")?.style.setProperty("--nc-tile-size", `${newSize}px`);
-      NarrativeSettings.setTileSize(newSize);
-    });
+    this.#bindSceneList(html);
+    this.#bindSceneHeader(html);
+    this.#bindBackgroundPicker(html);
+    this.#bindTileDeletion(html);
+    this.#bindTileSizeSlider(html);
   }
 
-  // Abstract helper block to keep code clean and readable
-  _wireExistingClickHandlers(html) {
+  #bindSceneList(html) {
     html.querySelectorAll(".scene-navigation-item").forEach(item => {
-      item.addEventListener("click", (e) => {
-        if (e.target.closest(".btn-delete-scene")) return;
+      item.addEventListener("click", (event) => {
+        if (event.target.closest(".btn-delete-scene")) return;
         this.selectedSceneId = item.dataset.sceneId;
         this.render();
       });
     });
 
     html.querySelector(".btn-create-scene")?.addEventListener("click", async () => {
-      const scenes = NarrativeSettings.getAllScenes();
-      const newId = `scene-${foundry.utils.randomID()}`;
-      const newScene = { id: newId, name: game.i18n.localize("NARRATIVE_CANVAS.Editor.NewSceneDefault"), backgrounds: [], actors: [], tracks: [] };
-      scenes.push(newScene);
-      await game.settings.set("narrative-canvas", NarrativeSettings.SETTING_SCENES_DATA, scenes);
-      this.selectedSceneId = newId;
-      this.render();
-      this._notifyManagerRefresh();
+      const scene = await NarrativeSceneRepository.create({
+        name: game.i18n.localize("NARRATIVE_CANVAS.Editor.NewSceneDefault"),
+        journalId: this.#dock.journalId
+      });
+      this.selectedSceneId = scene.id;
+      await this.#refreshViews();
     });
 
-    html.querySelectorAll(".btn-delete-scene").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        e.preventDefault();
-        const sceneId = btn.closest(".scene-navigation-item").dataset.sceneId;
-        let scenes = NarrativeSettings.getAllScenes();
-        scenes = scenes.filter(s => s.id !== sceneId);
-        await game.settings.set("narrative-canvas", NarrativeSettings.SETTING_SCENES_DATA, scenes);
+    html.querySelectorAll(".btn-delete-scene").forEach(button => {
+      button.addEventListener("click", async (event) => {
+        event.preventDefault();
+        const sceneId = button.closest(".scene-navigation-item").dataset.sceneId;
         if (this.selectedSceneId === sceneId) this.selectedSceneId = null;
-        this.render();
-        this._notifyManagerRefresh();
+        await this.#persistAndRefresh(NarrativeSceneRepository.remove(sceneId));
       });
     });
+  }
 
-    html.querySelector(".input-scene-rename-field")?.addEventListener("change", async (e) => {
-      const sceneId = e.target.dataset.sceneId;
-      const scenes = NarrativeSettings.getAllScenes();
-      const scene = scenes.find(s => s.id === sceneId);
-      if (scene) {
-        scene.name = e.target.value || "Unnamed Scene";
-        await game.settings.set("narrative-canvas", NarrativeSettings.SETTING_SCENES_DATA, scenes);
-        this.render();
-        this._notifyManagerRefresh();
-      }
+  #bindSceneHeader(html) {
+    html.querySelector(".input-scene-rename-field")?.addEventListener("change", (event) => {
+      const name = event.target.value || game.i18n.localize("NARRATIVE_CANVAS.Editor.NewSceneDefault");
+      this.#persistAndRefresh(NarrativeSceneRepository.rename(event.target.dataset.sceneId, name));
     });
+  }
 
-    html.querySelector(".btn-editor-add-bg")?.addEventListener("click", (e) => {
-      const sceneId = e.currentTarget.dataset.sceneId;
+  #bindBackgroundPicker(html) {
+    html.querySelector(".btn-editor-add-bg")?.addEventListener("click", (event) => {
+      const sceneId = event.currentTarget.dataset.sceneId;
       new FilePicker({
         type: "image",
         classes: ["filepicker", "acd-nc-elevation"],
-        callback: async (path) => {
-          const scenes = NarrativeSettings.getAllScenes();
-          const scene = scenes.find(s => s.id === sceneId);
-          if (scene) {
-            const fileName = path.split("/").pop();
-            scene.backgrounds.push({ name: fileName, path: path });
-            await game.settings.set("narrative-canvas", NarrativeSettings.SETTING_SCENES_DATA, scenes);
-            this.render();
-            this._notifyManagerRefresh();
-          }
-        }
+        callback: (path) => this.#persistAndRefresh(NarrativeSceneRepository.addBackground(sceneId, path))
       }).browse();
     });
+  }
 
-    html.querySelectorAll(".btn-delete-item").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        e.preventDefault();
-        const card = btn.closest(".tile-thumbnail-card");
-        const type = card.dataset.type;
-        const scenes = NarrativeSettings.getAllScenes();
-        const scene = scenes.find(s => s.id === this.selectedSceneId);
-        if (!scene) return;
+  #bindTileDeletion(html) {
+    html.querySelectorAll(".btn-delete-item").forEach(button => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        const { type, index, id } = button.closest(".tile-thumbnail-card").dataset;
+        const sceneId = this.selectedSceneId;
 
-        if (type === "background") scene.backgrounds.splice(parseInt(card.dataset.index), 1);
-        if (type === "Actor") scene.actors = scene.actors.filter(a => a.id !== card.dataset.id);
-        if (type === "PlaylistSound") scene.tracks = scene.tracks.filter(t => t.id !== card.dataset.id);
-
-        await game.settings.set("narrative-canvas", NarrativeSettings.SETTING_SCENES_DATA, scenes);
-        this.render();
-        this._notifyManagerRefresh();
+        const removals = {
+          background: () => NarrativeSceneRepository.removeBackground(sceneId, parseInt(index)),
+          Actor: () => NarrativeSceneRepository.removeActor(sceneId, id),
+          PlaylistSound: () => NarrativeSceneRepository.removeTrack(sceneId, id)
+        };
+        if (sceneId && removals[type]) this.#persistAndRefresh(removals[type]());
       });
     });
   }
+
+  #bindTileSizeSlider(html) {
+    html.querySelector(".slider-tile-scale")?.addEventListener("input", (event) => {
+      const size = parseInt(event.target.value);
+
+      // Apply visually first; persisting is async and must not delay the update.
+      html.querySelector(".narrative-editor-window")?.style.setProperty("--nc-tile-size", `${size}px`);
+      NarrativeSettings.setTileSize(size);
+    });
+  }
   
-  async _onAssetDrop(event) {
-    event.currentTarget.classList.remove("drag-over");
+  async #onAssetDrop(event) {
     const dropzone = event.currentTarget;
-    const dropzoneType = dropzone.dataset.type;
-    const sceneId = dropzone.dataset.sceneId;
+    dropzone.classList.remove("drag-over");
+    const { type: dropzoneType, sceneId } = dropzone.dataset;
     
     try {
-      const data = JSON.parse(event.dataTransfer.getData("text/plain"));
-      if (!data || !data.type) return;
+      const asset = this.#toSceneAsset(JSON.parse(event.dataTransfer.getData("text/plain")));
+      if (!asset || (dropzoneType !== ANY_ASSET_TYPE && asset.type !== dropzoneType)) return;
 
-      const scenes = NarrativeSettings.getAllScenes();
-      const scene = scenes.find(s => s.id === sceneId);
-      if (!scene) return;
-
-      if (data.type === "Actor" && dropzoneType === "Actor") {
-        const actor = game.actors.get(data.uuid.split(".").pop());
-        if (actor && !scene.actors.some(a => a.id === actor.id)) {
-          scene.actors.push({ id: actor.id, name: actor.name, img: actor.img });
-        }
-      } else if (data.type === "PlaylistSound" && dropzoneType === "PlaylistSound") {
-        scene.tracks.push({ id: data.soundId || foundry.utils.randomID(), name: data.name, path: data.path || "" });
-      }
-
-      await game.settings.set("narrative-canvas", NarrativeSettings.SETTING_SCENES_DATA, scenes);
-      this.render();
-      this._notifyManagerRefresh();
-
-    } catch (err) {
-      console.error("Narrative Canvas | Drop error:", err);
+      const targetSceneId = sceneId || await this.#createSceneFor(asset);
+      await this.#persistAndRefresh(asset.addTo(targetSceneId));
+    } catch (error) {
+      console.error("Narrative Canvas | Drop error:", error);
     }
   }
 
-  _notifyManagerRefresh() {
-    const manager = game.modules.get("narrative-canvas").manager;
-    if (manager) manager.refreshView();
-  }
-
-  async anchorToJournal(journalId) {
-    if (journalId) {
-      const targetId = `journal-${journalId}`;
-      const scenes = NarrativeSettings.getAllScenes();
-      let scene = scenes.find(s => s.id === targetId);
-      
-      // Auto-create linked journal scene structure if absent
-      if (!scene) {
-        scene = {
-          id: targetId,
-          name: game.journals.get(journalId)?.name || "Linked Journal Scene",
-          journalId: journalId,
-          journalName: game.journals.get(journalId)?.name,
-          backgrounds: [],
-          actors: [],
-          tracks: []
-        };
-        scenes.push(scene);
-        await game.settings.set("narrative-canvas", NarrativeSettings.SETTING_SCENES_DATA, scenes);
-      }
-
-      this.selectedSceneId = targetId;
-      const journalApp = Object.values(ui.windows).find(app => app.document?.id === journalId);
-      const journalHtml = journalApp?.element;
-
-      if (journalHtml) {
-        if (!this._savedPosition) this._savedPosition = { ...this.position };
-        const jBounds = journalHtml.getBoundingClientRect();
-        
-        this.setPosition({
-          top: jBounds.top,
-          left: jBounds.right + 8, 
-          height: jBounds.height,
-          width: 450 
-        });
-      }
-    } else {
-      if (this._savedPosition) {
-        this.setPosition(this._savedPosition);
-        this._savedPosition = null;
-      }
+  /** Translates dropped Foundry data into a scene asset, or null if it is not supported. */
+  #toSceneAsset(dropped) {
+    if (dropped?.type === "Actor") {
+      const actor = game.actors.get(dropped.uuid.split(".").pop());
+      if (!actor) return null;
+      return {
+        type: "Actor",
+        name: actor.name,
+        addTo: (sceneId) => NarrativeSceneRepository.addActor(sceneId, { id: actor.id, name: actor.name, img: actor.img })
+      };
     }
-    this.render();
+
+    if (dropped?.type === "PlaylistSound") {
+      const track = { id: dropped.soundId || foundry.utils.randomID(), name: dropped.name, path: dropped.path || "" };
+      return {
+        type: "PlaylistSound",
+        name: track.name,
+        addTo: (sceneId) => NarrativeSceneRepository.addTrack(sceneId, track)
+      };
+    }
+
+    return null;
   }
 
-  _setupJournalTrackingHooks() {
-    Hooks.on("renderJournalSheet", (app, html, data) => {
-      if (!this.rendered) return;
-      this.anchorToJournal(app.document.id);
+  /** Creates and selects a scene named after the docked journal, or after the dropped asset. */
+  async #createSceneFor(asset) {
+    const journalId = this.#dock.journalId;
+    const scene = await NarrativeSceneRepository.create({
+      name: this.#journalNameOf(journalId) || asset.name,
+      journalId
     });
+    this.selectedSceneId = scene.id;
+    return scene.id;
+  }
 
-    Hooks.on("closeJournalSheet", (app, html) => {
-      if (!this.rendered || !this.selectedSceneId?.startsWith("journal-")) return;
-      this.anchorToJournal(null);
-    });
+  #journalNameOf(journalId) {
+    return journalId ? game.collections.get("JournalEntry").get(journalId)?.name : undefined;
+  }
+
+  /** Waits for a repository change, then refreshes every view that shows scene data. */
+  async #persistAndRefresh(change) {
+    await change;
+    await this.#refreshViews();
+  }
+
+  async #refreshViews() {
+    await this.render();
+    await game.modules.get("narrative-canvas").manager?.refreshView();
   }
 }

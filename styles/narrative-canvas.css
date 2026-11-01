@@ -485,12 +485,28 @@ body.acd-nc-active {
         &:hover { .btn-delete-scene { opacity: 1; } }
     }
 
+    .scene-nav-text {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
     .scene-nav-name {
         flex-grow: 1;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: 0.9rem;
+    }
+
+    .scene-nav-journal {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.7rem;
+        font-style: italic;
+        color: #a4b3d6;
     }
 
     /* Right Workspace */
@@ -650,5 +666,11 @@ body.acd-nc-active {
     }
 
     .tile-thumbnail-card ~ .inline-drop-hint { display: none; }
-    .workspace-empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #555; font-size: 1.2rem; gap: 8px; }
+    .workspace-empty-state {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        height: 100%; color: #555; font-size: 1.2rem; gap: 8px;
+
+        &.drag-over { background: rgba(122, 104, 66, 0.08); color: #7a6842; }
+        .empty-state-drop-hint { font-size: 0.85rem; margin: 0; }
+    }
 }

@@ -17,7 +17,12 @@
         <div class="scenes-navigation-list">
             {{#each allScenes}}
                 <div class="scene-navigation-item {{#if (eq ../selectedSceneId this.id)}}is-selected{{/if}}" data-scene-id="{{this.id}}">
-                    <span class="scene-nav-name" title="{{this.name}}">{{this.name}}</span>
+                    <div class="scene-nav-text">
+                        <span class="scene-nav-name" title="{{this.name}}">{{this.name}}</span>
+                        {{#if this.journalName}}
+                            <span class="scene-nav-journal" title="{{this.journalName}}"><i class="fas fa-book-open"></i> {{this.journalName}}</span>
+                        {{/if}}
+                    </div>
                     <button type="button" class="btn-delete-scene type-icon" title="{{localize 'NARRATIVE_CANVAS.Editor.DeleteScene'}}">
                         <i class="fas fa-trash"></i>
                     </button>
@@ -97,9 +102,10 @@
                 </section>
             </div>
         {{else}}
-            <div class="workspace-empty-state">
+            <div class="workspace-empty-state editor-dropzone" data-type="*" data-scene-id="">
                 <i class="fas fa-cubes"></i>
                 <p>{{localize "NARRATIVE_CANVAS.Editor.NoSceneSelected"}}</p>
+                <p class="empty-state-drop-hint"><i class="fas fa-download"></i> {{localize "NARRATIVE_CANVAS.Editor.DropToCreateHint"}}</p>
             </div>
         {{/if}}
     </main>

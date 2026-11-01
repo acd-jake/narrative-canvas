@@ -13,10 +13,9 @@ export class NarrativeManager {
       activeDialogue: null,
       handout: null,
 
-      // NEW STATE MANAGEMENT VARIABLES
       activeSceneId: "",
       currentSceneData: null,
-      activeActors: [],        // Holds active character objects rendered on screen
+      activeActors: [],        // Characters currently shown on stage
       activeTrackId: null,
       globalVolume: 0.5,
       scenesList: []
@@ -128,8 +127,8 @@ export class NarrativeManager {
   }
 
   /**
- * Toggles the open/close state of the V14 ApplicationV2 Creator Scene Editor panel.
- */
+   * Opens the scene editor, or closes it if it is already open. GM only.
+   */
   toggleEditorWindow() {
     if (!game.user.isGM) return;
 

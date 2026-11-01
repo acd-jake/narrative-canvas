@@ -40,5 +40,6 @@
   "NARRATIVE_CANVAS.Editor.DeleteScene": "Szene löschen",
   "NARRATIVE_CANVAS.Editor.NewSceneDefault": "Neue Erzählszene",
   "NARRATIVE_CANVAS.Editor.NoSceneSelected": "Wähle links eine Erzählkulisse aus, um sie zu bearbeiten.",
+  "NARRATIVE_CANVAS.Editor.DropToCreateHint": "Ziehe einen Actor oder Audiotrack hierher, um eine neue Szene anzulegen.",
   "NARRATIVE_CANVAS.Editor.TileSizeLabel": "Kachel-Größe (Skalierung)"
 }

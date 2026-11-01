@@ -6,7 +6,7 @@ export class NarrativeSettings {
   static SETTING_BG_COLOR = "canvasBackgroundColor";
   static SETTING_TOASTS = "enableToastNotifications";
   static SETTING_SCENES_DATA = "configuredScenesDataset";
-  static SETTING_TILE_SIZE = "editorTileSize"; // New persistence key for grid size
+  static SETTING_TILE_SIZE = "editorTileSize";
 
   /**
    * Registers all settings within Foundry VTT.
@@ -62,6 +62,14 @@ export class NarrativeSettings {
 
   static getAllScenes() {
     return game.settings.get("narrative-canvas", this.SETTING_SCENES_DATA);
+  }
+
+  /**
+   * Persists the complete scene list.
+   * @param {object[]} scenes
+   */
+  static async saveAllScenes(scenes) {
+    await game.settings.set("narrative-canvas", this.SETTING_SCENES_DATA, scenes);
   }
 
   /**
