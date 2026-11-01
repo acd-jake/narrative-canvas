@@ -21,6 +21,8 @@ export class NarrativeCanvas {
     this.stageElement = null;
     this._resizeHandler = null;
     this._lastContext = null;
+    this._imageOverlayTransitionId = 0;
+    this._imageOverlayAnimation = null;
     this.bgController = new StageBackgroundController();
     this.vnStageController = new VisualNovelStage();
   }
@@ -138,7 +140,7 @@ export class NarrativeCanvas {
     // 4. Update dialogue and handout layers in-place
     this._updateDialogueInPlace(context);
     this._updateHandoutInPlace(context);
-    this._updateImageOverlayInPlace(context);
+    await this._updateImageOverlayInPlace(context);
 
     // 5. Allow subclass to update its auxiliary panels (e.g. director controls, sidebar, carousel)
     await this._onUpdateElements(context);
@@ -212,19 +214,23 @@ export class NarrativeCanvas {
     }
   }
 
-  _updateImageOverlayInPlace(context) {
+  async _updateImageOverlayInPlace(context) {
     if (!this.stageElement) return;
-    const existingOverlay = this.stageElement.querySelector(".narrative-image-overlay");
+    const transitionId = ++this._imageOverlayTransitionId;
+    let overlay = this.stageElement.querySelector(".narrative-image-overlay");
+    let isNewOverlay = false;
 
     if (!context.imageOverlay) {
-      existingOverlay?.remove();
+      if (!overlay) return;
+      await this._animateImageOverlayOpacity(overlay, 0);
+      if (transitionId === this._imageOverlayTransitionId) overlay.remove();
       return;
     }
 
-    let overlay = existingOverlay;
     if (!overlay) {
       overlay = document.createElement("div");
-      overlay.className = "narrative-image-overlay animate-fade-in";
+      overlay.className = "narrative-image-overlay";
+      overlay.style.opacity = "0";
       overlay.innerHTML = `
         <div class="narrative-image-overlay-frame">
           <img class="narrative-image-overlay-image" />
@@ -232,13 +238,60 @@ export class NarrativeCanvas {
         </div>
       `;
       this.stageElement.appendChild(overlay);
+      isNewOverlay = true;
     }
 
     const image = overlay.querySelector(".narrative-image-overlay-image");
-    if (image) {
-      image.src = context.imageOverlay.src;
-      image.alt = context.imageOverlay.title || "";
+    if (!image) return;
+
+    const nextSource = context.imageOverlay.src;
+    const currentSource = image.getAttribute("src");
+    if (isNewOverlay) {
+      image.src = nextSource;
     }
+    image.alt = context.imageOverlay.title || "";
+
+    if (currentSource !== nextSource) {
+      const preloadedImage = new Image();
+      preloadedImage.src = nextSource;
+      if (typeof preloadedImage.decode === "function") {
+        await preloadedImage.decode().catch(() => {});
+      }
+      if (transitionId !== this._imageOverlayTransitionId) return;
+
+      if (!isNewOverlay) {
+        await this._animateImageOverlayOpacity(overlay, 0);
+        if (transitionId !== this._imageOverlayTransitionId || !overlay.isConnected) return;
+
+        image.src = nextSource;
+        image.alt = context.imageOverlay.title || "";
+      }
+    }
+
+    await this._animateImageOverlayOpacity(overlay, 1);
+  }
+
+  async _animateImageOverlayOpacity(overlay, targetOpacity) {
+    const currentOpacity = Number.parseFloat(getComputedStyle(overlay).opacity);
+    this._imageOverlayAnimation?.cancel();
+    overlay.style.opacity = String(currentOpacity);
+
+    const animation = overlay.animate(
+      [{ opacity: currentOpacity }, { opacity: targetOpacity }],
+      { duration: 280, easing: "ease-in-out", fill: "forwards" }
+    );
+    this._imageOverlayAnimation = animation;
+
+    try {
+      await animation.finished;
+    } catch {
+      return;
+    }
+
+    if (this._imageOverlayAnimation !== animation) return;
+    overlay.style.opacity = String(targetOpacity);
+    animation.cancel();
+    this._imageOverlayAnimation = null;
   }
 
   /**
@@ -258,6 +311,8 @@ export class NarrativeCanvas {
    * Completely tears down the element tree from the document body root.
    */
   close() {
+    this._imageOverlayAnimation?.cancel();
+    this._imageOverlayAnimation = null;
     this.bgController.destroy();
     this.vnStageController.destroy();
 
