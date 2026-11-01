@@ -42,6 +42,8 @@
   "NARRATIVE_CANVAS.Editor.NoSceneSelected": "Select a narrative scene from the left archive list to begin editing.",
   "NARRATIVE_CANVAS.Editor.DropToCreateHint": "Drop an actor or audio track here to create a new scene.",
   "NARRATIVE_CANVAS.Editor.TileSizeLabel": "Tile Size (Scaling)",
+  "NARRATIVE_CANVAS.Editor.ShowActorName": "Show actor name on stage",
+  "NARRATIVE_CANVAS.Editor.HideActorName": "Hide actor name on stage",
   "NARRATIVE_CANVAS.Director.FilterScenes": "Filter scenes...",
   "NARRATIVE_CANVAS.Director.NoScenes": "No matching scenes",
   "NARRATIVE_CANVAS.Director.JournalViewer": "Journal Viewer",
@@ -58,5 +60,12 @@
   "NARRATIVE_CANVAS.Director.MasterVolume": "Audio Volume",
   "NARRATIVE_CANVAS.Director.NoAudioTracks": "No audio tracks assigned to this scene",
   "NARRATIVE_CANVAS.Director.AddAudio": "Add Audio",
-  "NARRATIVE_CANVAS.Director.InvalidAudioPath": "This audio track has no valid file path."
+  "NARRATIVE_CANVAS.Director.InvalidAudioPath": "This audio track has no valid file path.",
+  "NARRATIVE_CANVAS.Director.ScrollLeft": "Scroll left",
+  "NARRATIVE_CANVAS.Director.ScrollRight": "Scroll right",
+  "NARRATIVE_CANVAS.Director.SetSpeaker": "Set as active speaker",
+  "NARRATIVE_CANVAS.Director.RemoveSpeaker": "Remove active speaker highlight",
+  "NARRATIVE_CANVAS.Director.ShowName": "Show name on stage",
+  "NARRATIVE_CANVAS.Director.HideName": "Hide name on stage",
+  "NARRATIVE_CANVAS.Director.RemoveFromStage": "Remove from stage (or right-click)"
 }

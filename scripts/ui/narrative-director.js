@@ -1,5 +1,6 @@
 import { NarrativeCanvas } from "./narrative-canvas.js";
 import { DirectorSidebar } from "./director-sidebar.js";
+import { DirectorActorCarousel } from "./director-carousel.js";
 import { SceneAudioController } from "../services/audio-controller.js";
 
 /**
@@ -24,6 +25,12 @@ export class NarrativeDirector extends NarrativeCanvas {
       },
       onVolumeChange: (volume) => this.callbacks.onVolumeChange?.(volume)
     });
+    this.carousel = new DirectorActorCarousel({
+      onActorStageToggle: (actorId) => this.callbacks.onActorStageToggle?.(actorId),
+      onActorStageRemove: (actorId) => this.callbacks.onActorStageRemove?.(actorId),
+      onActorSpeakerToggle: (actorId) => this.callbacks.onActorSpeakerToggle?.(actorId),
+      onActorToggleName: (actorId) => this.callbacks.onActorToggleName?.(actorId)
+    });
     this._setupGlobalDelegatedListeners();
   }
 
@@ -45,6 +52,17 @@ export class NarrativeDirector extends NarrativeCanvas {
     // 2. Left-side scenes & journal sidebar
     const sidebarElement = await this.sidebar.render(context);
     stageElement.appendChild(sidebarElement);
+
+    // 3. Bottom actor carousel (if actors exist in scene)
+    const carouselElement = await this.carousel.render(context);
+    if (carouselElement) {
+      stageElement.appendChild(carouselElement);
+    }
+  }
+
+  /** @override */
+  async _onUpdateElements(context) {
+    this.carousel?.updateInPlace(context);
   }
 
   /**

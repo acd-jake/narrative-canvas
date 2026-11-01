@@ -106,6 +106,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     this.#bindBackgroundPicker(html);
     this.#bindAudioPicker(html);
     this.#bindTileDeletion(html);
+    this.#bindActorNameToggle(html);
     this.#bindTileSizeSlider(html);
   }
 
@@ -191,6 +192,21 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     });
   }
 
+  #bindActorNameToggle(html) {
+    html.querySelectorAll(".btn-toggle-actor-name").forEach(button => {
+      button.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const card = button.closest(".tile-thumbnail-card");
+        const actorId = card?.dataset.id;
+        const sceneId = this.selectedSceneId;
+        if (sceneId && actorId) {
+          await this.#persistAndRefresh(NarrativeSceneRepository.toggleActorName(sceneId, actorId));
+        }
+      });
+    });
+  }
+
   #bindTileSizeSlider(html) {
     html.querySelector(".slider-tile-scale")?.addEventListener("input", (event) => {
       const size = parseInt(event.target.value);
@@ -236,7 +252,12 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       return {
         type: "Actor",
         name: actor.name,
-        addTo: (sceneId) => NarrativeSceneRepository.addActor(sceneId, { id: actor.id, name: actor.name, img: actor.img })
+        addTo: (sceneId) => NarrativeSceneRepository.addActor(sceneId, {
+          id: actor.id,
+          name: actor.name,
+          img: actor.img,
+          showName: true
+        })
       };
     }
 

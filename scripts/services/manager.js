@@ -17,6 +17,7 @@ export class NarrativeManager {
       activeSceneId: "",
       currentSceneData: null,
       activeActors: [],        // Characters currently shown on stage
+      activeSpeakerId: null,   // Currently active speaker actor ID
       activeTrackId: null,
       globalVolume: 0.5,
       scenesList: []
@@ -30,6 +31,29 @@ export class NarrativeManager {
     this.narrativeState.scenesList = NarrativeSceneRepository.getAll();
     if (this.narrativeState.activeSceneId) {
       this.narrativeState.currentSceneData = this.narrativeState.scenesList.find(s => s.id === this.narrativeState.activeSceneId) || null;
+    }
+
+    // Synchronize active actors and current scene actor statuses
+    if (this.narrativeState.currentSceneData?.actors) {
+      const activeIds = new Set(this.narrativeState.activeActors.map(a => a.id));
+      this.narrativeState.currentSceneData.actors.forEach(actor => {
+        actor.isOnStage = activeIds.has(actor.id);
+        actor.isActiveOnCanvas = actor.isOnStage;
+        actor.isSpeaker = this.narrativeState.activeSpeakerId === actor.id;
+        actor.showName = actor.showName !== false;
+      });
+
+      // Update activeActors to mirror current scene data & speaker status
+      this.narrativeState.activeActors = this.narrativeState.activeActors.map(active => {
+        const sceneActor = this.narrativeState.currentSceneData.actors.find(a => a.id === active.id);
+        return {
+          ...active,
+          name: sceneActor?.name ?? active.name,
+          img: sceneActor?.img ?? active.img,
+          showName: sceneActor ? (sceneActor.showName !== false) : (active.showName !== false),
+          isSpeaker: this.narrativeState.activeSpeakerId === active.id
+        };
+      });
     }
 
     const shouldRender = game.user.isGM ? this.narrativeState.active : this.narrativeState.playerViewActive;
@@ -99,6 +123,7 @@ export class NarrativeManager {
           currentSceneData: selectedData,
           background: selectedData?.backgrounds[0]?.path || "",
           activeActors: [], // Wipe current character staging lists on scene transitions
+          activeSpeakerId: null,
           activeTrackId: null
         });
       },
@@ -107,20 +132,93 @@ export class NarrativeManager {
         if (!actorData) return;
 
         let activeList = [...this.narrativeState.activeActors];
+        let activeSpeakerId = this.narrativeState.activeSpeakerId;
         const existingIndex = activeList.findIndex(a => a.id === actorId);
 
         if (existingIndex > -1) {
-          activeList.splice(existingIndex, 1); // Remove character if clicked again
+          activeList.splice(existingIndex, 1);
+          if (activeSpeakerId === actorId) {
+            activeSpeakerId = null;
+          }
         } else {
-          activeList.push(actorData); // Deploy character on Visual Novel Layer
+          activeList.push({
+            id: actorData.id,
+            name: actorData.name,
+            img: actorData.img,
+            showName: actorData.showName !== false,
+            isSpeaker: activeSpeakerId === actorData.id
+          });
         }
 
-        // Add visibility indicator helper variables back inside the dataset tracking
-        this.narrativeState.currentSceneData.actors.forEach(a => {
-          a.isActiveOnCanvas = activeList.some(active => active.id === a.id);
+        this.handleDisplayUpdate({ activeActors: activeList, activeSpeakerId });
+      },
+      onActorStageRemove: (actorId) => {
+        const activeList = this.narrativeState.activeActors.filter(a => a.id !== actorId);
+        let activeSpeakerId = this.narrativeState.activeSpeakerId;
+        if (activeSpeakerId === actorId) {
+          activeSpeakerId = null;
+        }
+        this.handleDisplayUpdate({ activeActors: activeList, activeSpeakerId });
+      },
+      onActorSpeakerToggle: (actorId) => {
+        let activeSpeakerId = this.narrativeState.activeSpeakerId;
+        let activeList = [...this.narrativeState.activeActors];
+
+        if (activeSpeakerId === actorId) {
+          activeSpeakerId = null;
+        } else {
+          activeSpeakerId = actorId;
+          if (!activeList.some(a => a.id === actorId)) {
+            const actorData = this.narrativeState.currentSceneData?.actors.find(a => a.id === actorId);
+            if (actorData) {
+              activeList.push({
+                id: actorData.id,
+                name: actorData.name,
+                img: actorData.img,
+                showName: actorData.showName !== false,
+                isSpeaker: true
+              });
+            }
+          }
+        }
+
+        activeList = activeList.map(a => ({
+          ...a,
+          isSpeaker: a.id === activeSpeakerId
+        }));
+
+        this.handleDisplayUpdate({ activeActors: activeList, activeSpeakerId });
+      },
+      onActorToggleName: async (actorId) => {
+        const sceneId = this.narrativeState.activeSceneId;
+        if (!sceneId) return;
+
+        await NarrativeSceneRepository.toggleActorName(sceneId, actorId);
+        const scenes = NarrativeSceneRepository.getAll();
+        const updatedScene = scenes.find(s => s.id === sceneId) || null;
+
+        const activeList = this.narrativeState.activeActors.map(a => {
+          if (a.id === actorId) {
+            const scActor = updatedScene?.actors.find(sa => sa.id === actorId);
+            return { ...a, showName: scActor ? scActor.showName !== false : !a.showName };
+          }
+          return a;
         });
 
-        this.handleDisplayUpdate({ activeActors: activeList });
+        this.handleDisplayUpdate({
+          scenesList: scenes,
+          currentSceneData: updatedScene,
+          activeActors: activeList
+        });
+      },
+      onDialogueTrigger: (dialogue) => this.handleDisplayUpdate({ activeDialogue: dialogue }),
+      onClearDisplay: () => {
+        this.handleDisplayUpdate({
+          activeActors: [],
+          activeSpeakerId: null,
+          activeDialogue: null,
+          handout: null
+        });
       },
       onBackgroundChange: (path) => this.handleDisplayUpdate({ background: path }),
       onTrackPlay: (trackId) => this.handleDisplayUpdate({ activeTrackId: trackId }),
@@ -128,6 +226,21 @@ export class NarrativeManager {
       onVisibilityChange: (visible) => this.handleDisplayUpdate({ playerViewActive: visible }),
       onShutdown: () => this.toggleCanvasState(false)
     };
+  }
+
+  /**
+   * Shuts down the canvas display if the active GM disconnects.
+   */
+  forceShutdownDueToGMDisconnect() {
+    this.narrativeState.active = false;
+    this.narrativeState.playerViewActive = false;
+    if (this.view) {
+      this.view.close();
+      this.view = null;
+    }
+    if (NarrativeSettings.areToastsEnabled()) {
+      ui.notifications.warn(game.i18n.localize("NARRATIVE_CANVAS.Notifications.GMDisconnected"));
+    }
   }
 
   /**

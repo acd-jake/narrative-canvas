@@ -1,11 +1,45 @@
 <div class="narrative-director-actors-bar font-foundry">
-    <header class="bar-header"><i class="fas fa-users"></i> <h3>{{localize "NARRATIVE_CANVAS.Director.Actors"}}</h3></header>
-    <div class="actors-horizontal-list">
-        {{#each currentSceneData.actors}}
-            <div class="actor-card {{#if this.isActiveOnCanvas}}is-active-on-stage{{/if}}" data-actor-id="{{this.id}}">
-                <img src="{{this.img}}" alt="{{this.name}}" class="actor-card-thumb" />
-                <span class="actor-card-name">{{this.name}}</span>
+    <div class="carousel-nav-control">
+        <button type="button" class="btn-carousel-scroll btn-carousel-scroll-left" title="{{localize 'NARRATIVE_CANVAS.Director.ScrollLeft'}}">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    </div>
+
+    <div class="actors-carousel-track">
+        {{#each actors}}
+            <div class="actor-carousel-card {{#if this.isOnStage}}is-on-stage{{/if}} {{#if this.isSpeaker}}is-active-speaker{{/if}}" data-actor-id="{{this.id}}" title="{{this.name}}">
+                <div class="actor-card-thumbnail-box">
+                    <img src="{{this.img}}" alt="{{this.name}}" class="actor-card-thumb" />
+                    
+                    <!-- Top Overlay: Speaker & Name visibility controls -->
+                    <div class="actor-card-overlay-actions">
+                        <!-- Toggle Active Speaker -->
+                        <button type="button" class="btn-carousel-action btn-carousel-toggle-speaker {{#if this.isSpeaker}}is-active{{/if}}" title="{{#if this.isSpeaker}}{{localize 'NARRATIVE_CANVAS.Director.RemoveSpeaker'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.SetSpeaker'}}{{/if}}">
+                            <i class="fas fa-comment-dots"></i>
+                        </button>
+
+                        <!-- Toggle Name Visibility -->
+                        <button type="button" class="btn-carousel-action btn-carousel-toggle-name {{#if this.showName}}is-active{{/if}}" title="{{#if this.showName}}{{localize 'NARRATIVE_CANVAS.Director.HideName'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowName'}}{{/if}}">
+                            <i class="fas {{#if this.showName}}fa-id-badge{{else}}fa-eye-slash{{/if}}"></i>
+                        </button>
+                    </div>
+
+                    <!-- Remove from Stage Overlay Button -->
+                    {{#if this.isOnStage}}
+                        <button type="button" class="btn-carousel-action btn-carousel-remove-stage" title="{{localize 'NARRATIVE_CANVAS.Director.RemoveFromStage'}}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    {{/if}}
+                </div>
+                
+                <span class="actor-card-name" title="{{this.name}}">{{this.name}}</span>
             </div>
         {{/each}}
+    </div>
+
+    <div class="carousel-nav-control">
+        <button type="button" class="btn-carousel-scroll btn-carousel-scroll-right" title="{{localize 'NARRATIVE_CANVAS.Director.ScrollRight'}}">
+            <i class="fas fa-chevron-right"></i>
+        </button>
     </div>
 </div>

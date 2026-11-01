@@ -3,11 +3,18 @@
     <!-- Ambient Overlay Vignette -->
     <div class="narrative-overlay-vignette"></div>
 
-    <!-- NEW LAYER: Visual Novel Character Overlays -->
-    <div class="narrative-visual-novel-stage">
+    <!-- Visual Novel Character Overlays Layer -->
+    <div class="narrative-visual-novel-stage {{#if hasActiveSpeaker}}has-speaker{{/if}}">
         {{#each activeActors}}
-            <div class="narrative-vn-character animate-fade-in" id="nc-vn-{{this.id}}">
-                <img src="{{this.img}}" alt="{{this.name}}" class="narrative-vn-image" />
+            <div class="narrative-vn-character {{#if this.isSpeaker}}is-speaker{{/if}}" id="nc-vn-{{this.id}}" data-actor-id="{{this.id}}">
+                <div class="narrative-vn-image-wrapper">
+                    <img src="{{this.img}}" alt="{{this.name}}" class="narrative-vn-image" />
+                    {{#if this.showName}}
+                        <div class="narrative-vn-name-plate">
+                            <span class="narrative-vn-name-text">{{this.name}}</span>
+                        </div>
+                    {{/if}}
+                </div>
             </div>
         {{/each}}
     </div>

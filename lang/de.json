@@ -42,6 +42,8 @@
   "NARRATIVE_CANVAS.Editor.NoSceneSelected": "Wähle links eine Erzählkulisse aus, um sie zu bearbeiten.",
   "NARRATIVE_CANVAS.Editor.DropToCreateHint": "Ziehe einen Actor oder Audiotrack hierher, um eine neue Szene anzulegen.",
   "NARRATIVE_CANVAS.Editor.TileSizeLabel": "Kachel-Größe (Skalierung)",
+  "NARRATIVE_CANVAS.Editor.ShowActorName": "Charakternamen auf der Bühne anzeigen",
+  "NARRATIVE_CANVAS.Editor.HideActorName": "Charakternamen auf der Bühne verbergen",
   "NARRATIVE_CANVAS.Director.FilterScenes": "Szenen filtern...",
   "NARRATIVE_CANVAS.Director.NoScenes": "Keine passenden Szenen",
   "NARRATIVE_CANVAS.Director.JournalViewer": "Journalviewer",
@@ -58,5 +60,12 @@
   "NARRATIVE_CANVAS.Director.MasterVolume": "Wiedergabelautstärke",
   "NARRATIVE_CANVAS.Director.NoAudioTracks": "Keine Audiotitel in dieser Szene vorhanden",
   "NARRATIVE_CANVAS.Director.AddAudio": "Audio hinzufügen",
-  "NARRATIVE_CANVAS.Director.InvalidAudioPath": "Dieser Audiotitel hat keinen gültigen Dateipfad."
+  "NARRATIVE_CANVAS.Director.InvalidAudioPath": "Dieser Audiotitel hat keinen gültigen Dateipfad.",
+  "NARRATIVE_CANVAS.Director.ScrollLeft": "Nach links scrollen",
+  "NARRATIVE_CANVAS.Director.ScrollRight": "Nach rechts scrollen",
+  "NARRATIVE_CANVAS.Director.SetSpeaker": "Als aktiven Sprecher auswählen",
+  "NARRATIVE_CANVAS.Director.RemoveSpeaker": "Sprecher-Hervorhebung zurücknehmen",
+  "NARRATIVE_CANVAS.Director.ShowName": "Name auf der Bühne anzeigen",
+  "NARRATIVE_CANVAS.Director.HideName": "Name auf der Bühne verbergen",
+  "NARRATIVE_CANVAS.Director.RemoveFromStage": "Von der Bühne entfernen (oder Rechtsklick)"
 }

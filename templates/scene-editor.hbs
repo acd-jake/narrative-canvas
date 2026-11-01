@@ -75,6 +75,9 @@
                             <div class="tile-thumbnail-card" data-id="{{this.id}}" data-type="Actor">
                                 <div class="tile-image-wrapper">
                                     <img src="{{this.img}}" alt="{{this.name}}" />
+                                    <button type="button" class="btn-toggle-actor-name tile-overlay-toggle-name {{#if (ne this.showName false)}}is-active{{/if}}" title="{{#if (ne this.showName false)}}{{localize 'NARRATIVE_CANVAS.Editor.HideActorName'}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.ShowActorName'}}{{/if}}">
+                                        <i class="fas {{#if (ne this.showName false)}}fa-id-badge{{else}}fa-eye-slash{{/if}}"></i>
+                                    </button>
                                     <button type="button" class="btn-delete-item tile-overlay-delete"><i class="fas fa-times"></i></button>
                                 </div>
                                 <span class="tile-label-text">{{this.name}}</span>

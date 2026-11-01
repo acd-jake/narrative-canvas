@@ -16,7 +16,18 @@ export class NarrativeSceneRepository {
     if (Array.isArray(scene.tracks)) {
       scene.tracks.forEach(track => this.#healTrack(track));
     }
+    if (Array.isArray(scene.actors)) {
+      scene.actors.forEach(actor => this.#healActor(actor));
+    }
     return scene;
+  }
+
+  static #healActor(actor) {
+    if (!actor) return actor;
+    if (actor.showName === undefined) {
+      actor.showName = true;
+    }
+    return actor;
   }
 
   static #healTrack(track) {
@@ -112,7 +123,30 @@ export class NarrativeSceneRepository {
 
   static async addActor(sceneId, actor) {
     await this.#update(sceneId, scene => {
-      if (!scene.actors.some(existing => existing.id === actor.id)) scene.actors.push(actor);
+      if (!scene.actors.some(existing => existing.id === actor.id)) {
+        scene.actors.push({
+          id: actor.id,
+          name: actor.name,
+          img: actor.img,
+          showName: actor.showName ?? true
+        });
+      }
+    });
+  }
+
+  static async updateActor(sceneId, actorId, updates) {
+    await this.#update(sceneId, scene => {
+      const actor = scene.actors.find(a => a.id === actorId);
+      if (actor) Object.assign(actor, updates);
+    });
+  }
+
+  static async toggleActorName(sceneId, actorId) {
+    await this.#update(sceneId, scene => {
+      const actor = scene.actors.find(a => a.id === actorId);
+      if (actor) {
+        actor.showName = actor.showName === undefined ? false : !actor.showName;
+      }
     });
   }
 
