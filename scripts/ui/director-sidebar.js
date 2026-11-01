@@ -26,10 +26,11 @@ export class DirectorSidebar {
    * @param {SceneAudioController} options.audioController
    * @param {(sceneId: string) => void} options.onSceneSelect
    * @param {(volume: number) => void} [options.onVolumeChange]
+   * @param {(image: {src: string, title: string}) => void} [options.onImageOverlay]
    */
-  constructor({ audioController, onSceneSelect, onVolumeChange }) {
+  constructor({ audioController, onSceneSelect, onVolumeChange, onImageOverlay }) {
     this.#audioController = audioController;
-    this.#callbacks = { onSceneSelect, onVolumeChange };
+    this.#callbacks = { onSceneSelect, onVolumeChange, onImageOverlay };
   }
 
   /**
@@ -291,7 +292,27 @@ export class DirectorSidebar {
     this.#bindJournalControls(root);
     this.#bindTocScrolling(root);
     this.#bindPageSelection(root);
+    this.#addImageOverlayButtons(root);
     this.#bindAudioControls(root);
+  }
+
+  #addImageOverlayButtons(root) {
+    root.querySelectorAll(".journal-page-body img").forEach(image => {
+      if (image.closest(".journal-image-overlay-target")) return;
+
+      const wrapper = document.createElement("span");
+      wrapper.className = "journal-image-overlay-target";
+      image.before(wrapper);
+      wrapper.appendChild(image);
+
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn-journal-image-overlay";
+      button.title = game.i18n.localize("NARRATIVE_CANVAS.Director.ShowImageOverlay");
+      button.setAttribute("aria-label", button.title);
+      button.innerHTML = '<i class="fas fa-expand-alt" aria-hidden="true"></i>';
+      wrapper.appendChild(button);
+    });
   }
 
   #bindCollapseControls(root) {
@@ -475,6 +496,7 @@ export class DirectorSidebar {
       </div>
     `;
 
+    this.#addImageOverlayButtons(bodyContainer);
     this.#bindTocScrolling(bodyContainer);
   }
 
@@ -538,6 +560,19 @@ export class DirectorSidebar {
   #bindPageSelection(root) {
     const journalSection = root.querySelector(".sidebar-journal-section") || root;
     journalSection.addEventListener("click", (event) => {
+      const overlayButton = event.target.closest(".btn-journal-image-overlay");
+      if (overlayButton) {
+        event.preventDefault();
+        const image = overlayButton.parentElement.querySelector("img");
+        if (image) {
+          this.#callbacks.onImageOverlay?.({
+            src: image.currentSrc || image.src,
+            title: image.alt || this.#element.querySelector(".journal-page-title")?.textContent || ""
+          });
+        }
+        return;
+      }
+
       const badge = event.target.closest(".journal-toc-badge");
       if (!badge) return;
 
@@ -572,6 +607,7 @@ export class DirectorSidebar {
         <h3 class="journal-page-title">${Handlebars.escapeExpression(page.name)}</h3>
         <div class="journal-page-body">${page.content || `<p class="journal-empty-page-hint"><em>${emptyText}</em></p>`}</div>
       `;
+      this.#addImageOverlayButtons(contentContainer);
       contentContainer.scrollTop = 0;
     }
   }

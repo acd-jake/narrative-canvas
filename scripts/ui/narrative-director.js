@@ -25,6 +25,7 @@ export class NarrativeDirector extends NarrativeCanvas {
         this.audioController.stopAll();
         this.callbacks.onSceneSelect?.(sceneId);
       },
+      onImageOverlay: (image) => this.callbacks.onImageOverlay?.(image),
       onVolumeChange: (volume) => this.callbacks.onVolumeChange?.(volume)
     });
     this.carousel = new DirectorActorCarousel({
@@ -130,6 +131,12 @@ export class NarrativeDirector extends NarrativeCanvas {
       if (target.closest(".btn-clear-display")) {
         event.preventDefault();
         this.callbacks.onClearDisplay();
+        return;
+      }
+
+      if (target.closest(".btn-close-image-overlay")) {
+        event.preventDefault();
+        this.callbacks.onImageOverlayClose?.();
         return;
       }
 

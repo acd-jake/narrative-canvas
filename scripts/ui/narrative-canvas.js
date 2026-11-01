@@ -113,6 +113,7 @@ export class NarrativeCanvas {
       customBgColor: context.customBgColor,
       playerViewActive: context.playerViewActive,
       handout: context.handout,
+      imageOverlay: context.imageOverlay,
       activeDialogue: context.activeDialogue
     };
   }
@@ -137,6 +138,7 @@ export class NarrativeCanvas {
     // 4. Update dialogue and handout layers in-place
     this._updateDialogueInPlace(context);
     this._updateHandoutInPlace(context);
+    this._updateImageOverlayInPlace(context);
 
     // 5. Allow subclass to update its auxiliary panels (e.g. director controls, sidebar, carousel)
     await this._onUpdateElements(context);
@@ -207,6 +209,35 @@ export class NarrativeCanvas {
       const title = existingHandout.querySelector(".narrative-handout-title");
       if (img) img.src = context.handout.src;
       if (title && context.handout.title) title.textContent = context.handout.title;
+    }
+  }
+
+  _updateImageOverlayInPlace(context) {
+    if (!this.stageElement) return;
+    const existingOverlay = this.stageElement.querySelector(".narrative-image-overlay");
+
+    if (!context.imageOverlay) {
+      existingOverlay?.remove();
+      return;
+    }
+
+    let overlay = existingOverlay;
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.className = "narrative-image-overlay animate-fade-in";
+      overlay.innerHTML = `
+        <div class="narrative-image-overlay-frame">
+          <img class="narrative-image-overlay-image" />
+          ${game.user.isGM ? `<button type="button" class="btn-close-image-overlay" title="${game.i18n.localize("NARRATIVE_CANVAS.Director.CloseImageOverlay")}" aria-label="${game.i18n.localize("NARRATIVE_CANVAS.Director.CloseImageOverlay")}"><i class="fas fa-times" aria-hidden="true"></i></button>` : ""}
+        </div>
+      `;
+      this.stageElement.appendChild(overlay);
+    }
+
+    const image = overlay.querySelector(".narrative-image-overlay-image");
+    if (image) {
+      image.src = context.imageOverlay.src;
+      image.alt = context.imageOverlay.title || "";
     }
   }
 

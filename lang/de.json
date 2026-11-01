@@ -61,6 +61,8 @@
   "NARRATIVE_CANVAS.Director.NoPages": "Dieses Journal enthält keine Seiten",
   "NARRATIVE_CANVAS.Director.NoJournalSelected": "Wähle ein Journal aus, um den Inhalt anzuzeigen",
   "NARRATIVE_CANVAS.Director.EmptyPage": "Diese Seite hat keinen Inhalt.",
+  "NARRATIVE_CANVAS.Director.ShowImageOverlay": "Bild den Spielern zeigen",
+  "NARRATIVE_CANVAS.Director.CloseImageOverlay": "Bild-Overlay schließen",
   "NARRATIVE_CANVAS.Director.Play": "Abspielen",
   "NARRATIVE_CANVAS.Director.Pause": "Pause",
   "NARRATIVE_CANVAS.Director.Stop": "Stopp",

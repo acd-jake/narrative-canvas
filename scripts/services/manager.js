@@ -13,6 +13,7 @@ export class NarrativeManager {
       background: "",
       activeDialogue: null,
       handout: null,
+      imageOverlay: null,
 
       activeSceneId: "",
       currentSceneData: null,
@@ -320,9 +321,12 @@ export class NarrativeManager {
           activeActors: [],
           activeSpeakerId: null,
           activeDialogue: null,
-          handout: null
+          handout: null,
+          imageOverlay: null
         });
       },
+      onImageOverlay: (imageOverlay) => this.handleDisplayUpdate({ imageOverlay }),
+      onImageOverlayClose: () => this.handleDisplayUpdate({ imageOverlay: null }),
       onBackgroundChange: (path) => this.handleDisplayUpdate({ background: path }),
       onTrackPlay: (trackId) => this.handleDisplayUpdate({ activeTrackId: trackId }),
       onVolumeChange: (volume) => this.handleDisplayUpdate({ globalVolume: volume }),
