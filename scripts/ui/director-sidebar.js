@@ -2,11 +2,13 @@ import { JournalBrowser } from "../services/journal-browser.js";
 import { NarrativeSceneRepository } from "../services/scene-repository.js";
 
 /**
- * Controller for the Director Left Sidebar, managing filterable scenes
- * and a filterable journal viewer with a draggable/scrollable badge TOC.
+ * Controller for the Director Left Sidebar, managing filterable scenes,
+ * a filterable journal viewer with a draggable/scrollable badge TOC,
+ * and the active scene's audio playback & volume controls.
  */
 export class DirectorSidebar {
   #callbacks;
+  #audioController = null;
   #element = null;
   #sceneQuery = "";
   #selectedFolderId = "";
@@ -15,13 +17,17 @@ export class DirectorSidebar {
   #selectedPageId = "";
   #activeSceneId = "";
   #scenesList = [];
+  #currentSceneData = null;
 
   /**
-   * @param {object} callbacks
-   * @param {(sceneId: string) => void} callbacks.onSceneSelect
+   * @param {object} options
+   * @param {SceneAudioController} options.audioController
+   * @param {(sceneId: string) => void} options.onSceneSelect
+   * @param {(volume: number) => void} [options.onVolumeChange]
    */
-  constructor({ onSceneSelect }) {
-    this.#callbacks = { onSceneSelect };
+  constructor({ audioController, onSceneSelect, onVolumeChange }) {
+    this.#audioController = audioController;
+    this.#callbacks = { onSceneSelect, onVolumeChange };
   }
 
   /**
@@ -32,6 +38,11 @@ export class DirectorSidebar {
   async render(context = {}) {
     this.#activeSceneId = context.activeSceneId ?? this.#activeSceneId;
     this.#scenesList = context.scenesList ?? NarrativeSceneRepository.getAll();
+    this.#currentSceneData = context.currentSceneData ?? (this.#activeSceneId ? this.#scenesList.find(s => s.id === this.#activeSceneId) : null);
+
+    if (context.globalVolume !== undefined && this.#audioController) {
+      this.#audioController.globalVolume = context.globalVolume;
+    }
 
     const templateData = await this.#prepareTemplateData();
     const htmlString = await renderTemplate("modules/narrative-canvas/templates/partials/director-sidebar.hbs", templateData);
@@ -71,6 +82,20 @@ export class DirectorSidebar {
       if (activePage) this.#selectedPageId = activePage.id;
     }
 
+    const rawTracks = this.#currentSceneData?.tracks ?? [];
+    const activeSceneTracks = rawTracks.map(track => {
+      const state = this.#audioController?.getTrackState(track.id) ?? "stopped";
+      const vol = this.#audioController?.getTrackVolume(track.id) ?? 1.0;
+      return {
+        ...track,
+        playState: state,
+        volume: vol,
+        volumePercent: Math.round(vol * 100)
+      };
+    });
+
+    const gVol = this.#audioController?.globalVolume ?? 0.5;
+
     return {
       sceneQuery: this.#sceneQuery,
       activeSceneId: this.#activeSceneId,
@@ -82,7 +107,10 @@ export class DirectorSidebar {
       selectedJournalId: this.#selectedJournalId,
       activeJournal,
       selectedPageId: this.#selectedPageId,
-      activePage
+      activePage,
+      activeSceneTracks,
+      globalVolume: gVol,
+      masterVolumePercent: Math.round(gVol * 100)
     };
   }
 
@@ -92,6 +120,7 @@ export class DirectorSidebar {
     this.#bindJournalControls(root);
     this.#bindTocScrolling(root);
     this.#bindPageSelection(root);
+    this.#bindAudioControls(root);
   }
 
   #bindSceneFilter(root) {
@@ -334,6 +363,100 @@ export class DirectorSidebar {
         <div class="journal-page-body">${page.content || `<p class="journal-empty-page-hint"><em>${emptyText}</em></p>`}</div>
       `;
       contentContainer.scrollTop = 0;
+    }
+  }
+
+  #bindAudioControls(root) {
+    const audioSection = root.querySelector(".sidebar-audio-section");
+    if (!audioSection) return;
+
+    // Track play/pause and stop clicks
+    audioSection.addEventListener("click", async (event) => {
+      const toggleBtn = event.target.closest(".btn-track-toggle");
+      const stopBtn = event.target.closest(".btn-track-stop");
+      const item = event.target.closest(".director-audio-track-item");
+      if (!item) return;
+
+      const trackId = item.dataset.trackId;
+      const track = this.#currentSceneData?.tracks?.find(t => t.id === trackId)
+        ?? { id: trackId, path: item.dataset.trackPath, name: item.dataset.trackName };
+
+      if (!track?.path) {
+        ui.notifications?.warn(game.i18n.localize("NARRATIVE_CANVAS.Director.InvalidAudioPath"));
+        return;
+      }
+
+      if (toggleBtn) {
+        event.preventDefault();
+        await this.#audioController?.playOrPause(track);
+        this.updateAudioTrackItem(trackId);
+        return;
+      }
+
+      if (stopBtn) {
+        event.preventDefault();
+        await this.#audioController?.stop(trackId);
+        this.updateAudioTrackItem(trackId);
+        return;
+      }
+    });
+
+    // Individual Track Volume Slider
+    audioSection.addEventListener("input", (event) => {
+      const slider = event.target.closest(".slider-track-volume");
+      if (!slider) return;
+
+      const item = slider.closest(".director-audio-track-item");
+      const trackId = item?.dataset.trackId;
+      if (!trackId) return;
+
+      const val = parseFloat(slider.value);
+      this.#audioController?.setTrackVolume(trackId, val);
+
+      const valDisplay = item.querySelector(".volume-val-display");
+      if (valDisplay) {
+        valDisplay.textContent = `${Math.round(val * 100)}%`;
+      }
+    });
+
+    // Master / Global Volume Slider
+    const masterSlider = audioSection.querySelector(".slider-master-volume");
+    masterSlider?.addEventListener("input", (event) => {
+      const val = parseFloat(event.target.value);
+      if (this.#audioController) {
+        this.#audioController.globalVolume = val;
+      }
+      this.#callbacks.onVolumeChange?.(val);
+
+      const percentSpan = audioSection.querySelector(".master-volume-percent");
+      if (percentSpan) {
+        percentSpan.textContent = `${Math.round(val * 100)}%`;
+      }
+    });
+  }
+
+  /**
+   * Updates the UI state of a single track row without a full re-render.
+   * @param {string} trackId
+   */
+  updateAudioTrackItem(trackId) {
+    if (!this.#element) return;
+    const item = this.#element.querySelector(`.director-audio-track-item[data-track-id="${trackId}"]`);
+    if (!item) return;
+
+    const state = this.#audioController?.getTrackState(trackId) ?? "stopped";
+    item.classList.toggle("is-playing", state === "playing");
+    item.classList.toggle("is-paused", state === "paused");
+
+    const toggleBtn = item.querySelector(".btn-track-toggle");
+    if (toggleBtn) {
+      if (state === "playing") {
+        toggleBtn.innerHTML = `<i class="fas fa-pause"></i>`;
+        toggleBtn.title = game.i18n.localize("NARRATIVE_CANVAS.Director.Pause");
+      } else {
+        toggleBtn.innerHTML = `<i class="fas fa-play"></i>`;
+        toggleBtn.title = game.i18n.localize("NARRATIVE_CANVAS.Director.Play");
+      }
     }
   }
 }

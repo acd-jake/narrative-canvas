@@ -50,5 +50,13 @@
   "NARRATIVE_CANVAS.Director.SelectJournal": "-- Select Journal --",
   "NARRATIVE_CANVAS.Director.NoPages": "This journal has no pages",
   "NARRATIVE_CANVAS.Director.NoJournalSelected": "Select a journal to view its contents",
-  "NARRATIVE_CANVAS.Director.EmptyPage": "This page has no content."
+  "NARRATIVE_CANVAS.Director.EmptyPage": "This page has no content.",
+  "NARRATIVE_CANVAS.Director.Play": "Play",
+  "NARRATIVE_CANVAS.Director.Pause": "Pause",
+  "NARRATIVE_CANVAS.Director.Stop": "Stop",
+  "NARRATIVE_CANVAS.Director.TrackVolume": "Track Volume",
+  "NARRATIVE_CANVAS.Director.MasterVolume": "Audio Volume",
+  "NARRATIVE_CANVAS.Director.NoAudioTracks": "No audio tracks assigned to this scene",
+  "NARRATIVE_CANVAS.Director.AddAudio": "Add Audio",
+  "NARRATIVE_CANVAS.Director.InvalidAudioPath": "This audio track has no valid file path."
 }

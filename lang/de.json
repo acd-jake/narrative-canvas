@@ -35,7 +35,7 @@
   "NARRATIVE_CANVAS.Editor.DropImageHint": "Ziehe ein Text-Seitenbild hierher für Hintergründe",
   "NARRATIVE_CANVAS.Editor.DropActorHint": "Ziehe Akteure aus der Sidebar hierher",
   "NARRATIVE_CANVAS.Editor.DropAudioHint": "Ziehe Sounddateien hierher",
-  "NARRATIVE_CANVAS.Editor.Scenes": "Kulissen-Archiv",
+  "NARRATIVE_CANVAS.Editor.Scenes": "Szenen-Archiv",
   "NARRATIVE_CANVAS.Editor.CreateScene": "Neue Szene anlegen",
   "NARRATIVE_CANVAS.Editor.DeleteScene": "Szene löschen",
   "NARRATIVE_CANVAS.Editor.NewSceneDefault": "Neue Erzählszene",
@@ -50,5 +50,13 @@
   "NARRATIVE_CANVAS.Director.SelectJournal": "-- Journal auswählen --",
   "NARRATIVE_CANVAS.Director.NoPages": "Dieses Journal enthält keine Seiten",
   "NARRATIVE_CANVAS.Director.NoJournalSelected": "Wähle ein Journal aus, um den Inhalt anzuzeigen",
-  "NARRATIVE_CANVAS.Director.EmptyPage": "Diese Seite hat keinen Inhalt."
+  "NARRATIVE_CANVAS.Director.EmptyPage": "Diese Seite hat keinen Inhalt.",
+  "NARRATIVE_CANVAS.Director.Play": "Abspielen",
+  "NARRATIVE_CANVAS.Director.Pause": "Pause",
+  "NARRATIVE_CANVAS.Director.Stop": "Stopp",
+  "NARRATIVE_CANVAS.Director.TrackVolume": "Track-Lautstärke",
+  "NARRATIVE_CANVAS.Director.MasterVolume": "Wiedergabelautstärke",
+  "NARRATIVE_CANVAS.Director.NoAudioTracks": "Keine Audiotitel in dieser Szene vorhanden",
+  "NARRATIVE_CANVAS.Director.AddAudio": "Audio hinzufügen",
+  "NARRATIVE_CANVAS.Director.InvalidAudioPath": "Dieser Audiotitel hat keinen gültigen Dateipfad."
 }

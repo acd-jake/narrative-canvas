@@ -5,9 +5,62 @@ import { NarrativeSettings } from "./settings.js";
  * Every mutation reads the stored scenes, applies one change and saves the result.
  */
 export class NarrativeSceneRepository {
-  /** @returns {object[]} All stored scenes. */
+  /** @returns {object[]} All stored scenes with healed tracks and assets. */
   static getAll() {
-    return NarrativeSettings.getAllScenes();
+    const raw = NarrativeSettings.getAllScenes() ?? [];
+    return raw.map(scene => this.#healScene(scene));
+  }
+
+  static #healScene(scene) {
+    if (!scene) return scene;
+    if (Array.isArray(scene.tracks)) {
+      scene.tracks.forEach(track => this.#healTrack(track));
+    }
+    return scene;
+  }
+
+  static #healTrack(track) {
+    if (!track) return track;
+
+    // 1. Look up track in game.playlists if name or path is missing
+    if ((!track.name || !track.path) && track.id) {
+      const playlists = game.playlists ?? game.collections?.get("Playlist");
+      if (playlists) {
+        for (const pl of playlists) {
+          const sound = pl.sounds?.get(track.id);
+          if (sound) {
+            track.name ||= sound.name;
+            track.path ||= sound.path;
+            break;
+          }
+        }
+      }
+    }
+
+    // 2. Check by track.uuid if available
+    if ((!track.name || !track.path) && track.uuid) {
+      try {
+        const sound = foundry.utils.fromUuidSync(track.uuid);
+        if (sound) {
+          track.name ||= sound.name;
+          track.path ||= sound.path;
+        }
+      } catch (e) {}
+    }
+
+    // 3. Fallback to filename if path exists
+    if (!track.name && track.path) {
+      const filename = track.path.split("/").pop() || "";
+      const baseName = filename.replace(/\.[^/.]+$/, "");
+      track.name = decodeURIComponent(baseName) || "Track";
+    }
+
+    // 4. Default fallback name
+    if (!track.name) {
+      track.name = game.i18n?.localize("NARRATIVE_CANVAS.Director.Audio") || "Track";
+    }
+
+    return track;
   }
 
   /**

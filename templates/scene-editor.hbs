@@ -86,7 +86,12 @@
 
                 <!-- Section 3: Audio Tracks -->
                 <section class="workspace-section editor-dropzone" data-type="PlaylistSound" data-scene-id="{{activeScene.id}}">
-                    <h4><i class="fas fa-music"></i> {{localize "NARRATIVE_CANVAS.Director.Audio"}}</h4>
+                    <header class="section-component-header">
+                        <h4><i class="fas fa-music"></i> {{localize "NARRATIVE_CANVAS.Director.Audio"}}</h4>
+                        <button type="button" class="btn-editor-add-audio button-secondary" data-scene-id="{{activeScene.id}}">
+                            <i class="fas fa-plus"></i> {{localize "NARRATIVE_CANVAS.Director.AddAudio"}}
+                        </button>
+                    </header>
                     <div class="tiles-wrapping-grid">
                         {{#each activeScene.tracks}}
                             <div class="tile-thumbnail-card" data-id="{{this.id}}" data-type="PlaylistSound">

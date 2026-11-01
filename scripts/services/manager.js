@@ -1,5 +1,6 @@
 import { NarrativeSocket } from "./socket.js";
 import { NarrativeSettings } from "./settings.js";
+import { NarrativeSceneRepository } from "./scene-repository.js";
 import { NarrativePlayer } from "../ui/narrative-player.js";
 import { NarrativeDirector } from "../ui/narrative-director.js";
 import { NarrativeSceneEditor } from "../ui/narrative-editor.js";
@@ -26,7 +27,10 @@ export class NarrativeManager {
 
   async refreshView() {
     // Populate scene dropdown array compilation dynamically on refresh step
-    this.narrativeState.scenesList = NarrativeSettings.getAllScenes();
+    this.narrativeState.scenesList = NarrativeSceneRepository.getAll();
+    if (this.narrativeState.activeSceneId) {
+      this.narrativeState.currentSceneData = this.narrativeState.scenesList.find(s => s.id === this.narrativeState.activeSceneId) || null;
+    }
 
     const shouldRender = game.user.isGM ? this.narrativeState.active : this.narrativeState.playerViewActive;
     if (shouldRender) {
@@ -87,7 +91,7 @@ export class NarrativeManager {
   _getGMCallbacks() {
     return {
       onSceneSelect: (sceneId) => {
-        const scenes = NarrativeSettings.getAllScenes();
+        const scenes = NarrativeSceneRepository.getAll();
         const selectedData = scenes.find(s => s.id === sceneId) || null;
 
         this.handleDisplayUpdate({

@@ -95,4 +95,57 @@
             {{/if}}
         </div>
     </section>
+
+    <!-- Bottom Section: Scene Audio Elements & Volume Controls -->
+    <section class="sidebar-audio-section">
+        <header class="sidebar-section-header">
+            <h4><i class="fas fa-music"></i> {{localize "NARRATIVE_CANVAS.Director.Audio"}}</h4>
+        </header>
+
+        <div class="director-audio-tracks-list">
+            {{#each activeSceneTracks}}
+                <div class="director-audio-track-item {{#if (eq this.playState 'playing')}}is-playing{{/if}} {{#if (eq this.playState 'paused')}}is-paused{{/if}}" data-track-id="{{this.id}}" data-track-path="{{this.path}}" data-track-name="{{this.name}}">
+                    <div class="audio-track-info">
+                        <span class="audio-track-name" title="{{this.name}}">
+                            <i class="fas fa-volume-up track-status-icon"></i> {{this.name}}
+                        </span>
+                        <div class="audio-track-actions">
+                            <button type="button" class="btn-track-toggle type-icon" title="{{#if (eq this.playState 'playing')}}{{localize 'NARRATIVE_CANVAS.Director.Pause'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.Play'}}{{/if}}">
+                                {{#if (eq this.playState 'playing')}}
+                                    <i class="fas fa-pause"></i>
+                                {{else}}
+                                    <i class="fas fa-play"></i>
+                                {{/if}}
+                            </button>
+                            <button type="button" class="btn-track-stop type-icon" title="{{localize 'NARRATIVE_CANVAS.Director.Stop'}}">
+                                <i class="fas fa-stop"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Individual Track Volume Slider -->
+                    <div class="audio-track-volume-row">
+                        <i class="fas fa-volume-down volume-icon"></i>
+                        <input type="range" class="slider-track-volume" min="0" max="1" step="0.05" value="{{this.volume}}" title="{{localize 'NARRATIVE_CANVAS.Director.TrackVolume'}}" />
+                        <span class="volume-val-display">{{this.volumePercent}}%</span>
+                    </div>
+                </div>
+            {{else}}
+                <div class="sidebar-empty-hint">{{localize "NARRATIVE_CANVAS.Director.NoAudioTracks"}}</div>
+            {{/each}}
+        </div>
+
+        <!-- Master / Global Volume Slider for Active Scene Elements -->
+        <div class="audio-master-volume-box">
+            <label class="master-volume-label">
+                <i class="fas fa-sliders-h"></i> {{localize "NARRATIVE_CANVAS.Director.MasterVolume"}}
+            </label>
+            <div class="master-volume-control">
+                <i class="fas fa-volume-off"></i>
+                <input type="range" class="slider-master-volume" min="0" max="1" step="0.05" value="{{globalVolume}}" />
+                <i class="fas fa-volume-up"></i>
+                <span class="master-volume-percent">{{masterVolumePercent}}%</span>
+            </div>
+        </div>
+    </section>
 </aside>

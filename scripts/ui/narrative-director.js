@@ -1,5 +1,6 @@
 import { NarrativeCanvas } from "./narrative-canvas.js";
 import { DirectorSidebar } from "./director-sidebar.js";
+import { SceneAudioController } from "../services/audio-controller.js";
 
 /**
  * Interactive master control interface layout for Gamemasters.
@@ -11,10 +12,25 @@ export class NarrativeDirector extends NarrativeCanvas {
   constructor(callbacks) {
     super("narrative-canvas-director", "director-view");
     this.callbacks = callbacks;
+    this.audioController = new SceneAudioController({
+      globalVolume: 0.5,
+      onStateChange: (trackId) => this.sidebar?.updateAudioTrackItem(trackId)
+    });
     this.sidebar = new DirectorSidebar({
-      onSceneSelect: (sceneId) => this.callbacks.onSceneSelect?.(sceneId)
+      audioController: this.audioController,
+      onSceneSelect: (sceneId) => {
+        this.audioController.stopAll();
+        this.callbacks.onSceneSelect?.(sceneId);
+      },
+      onVolumeChange: (volume) => this.callbacks.onVolumeChange?.(volume)
     });
     this._setupGlobalDelegatedListeners();
+  }
+
+  /** @override */
+  close() {
+    this.audioController?.stopAll();
+    super.close();
   }
 
   /** @override */

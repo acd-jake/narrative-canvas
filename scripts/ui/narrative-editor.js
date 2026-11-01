@@ -104,6 +104,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     this.#bindSceneList(html);
     this.#bindSceneHeader(html);
     this.#bindBackgroundPicker(html);
+    this.#bindAudioPicker(html);
     this.#bindTileDeletion(html);
     this.#bindTileSizeSlider(html);
   }
@@ -154,6 +155,25 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     });
   }
 
+  #bindAudioPicker(html) {
+    html.querySelector(".btn-editor-add-audio")?.addEventListener("click", (event) => {
+      const sceneId = event.currentTarget.dataset.sceneId;
+      new FilePicker({
+        type: "audio",
+        classes: ["filepicker", "acd-nc-elevation"],
+        callback: (path) => {
+          const filename = path.split("/").pop() || "";
+          const name = decodeURIComponent(filename.replace(/\.[^/.]+$/, "")) || "Track";
+          this.#persistAndRefresh(NarrativeSceneRepository.addTrack(sceneId, {
+            id: foundry.utils.randomID(),
+            name,
+            path
+          }));
+        }
+      }).browse();
+    });
+  }
+
   #bindTileDeletion(html) {
     html.querySelectorAll(".btn-delete-item").forEach(button => {
       button.addEventListener("click", (event) => {
@@ -187,7 +207,8 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     const { type: dropzoneType, sceneId } = dropzone.dataset;
     
     try {
-      const asset = this.#toSceneAsset(JSON.parse(event.dataTransfer.getData("text/plain")));
+      const raw = JSON.parse(event.dataTransfer.getData("text/plain"));
+      const asset = await this.#toSceneAsset(raw);
       if (!asset || (dropzoneType !== ANY_ASSET_TYPE && asset.type !== dropzoneType)) return;
 
       const targetSceneId = sceneId || await this.#createSceneFor(asset);
@@ -198,9 +219,19 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   }
 
   /** Translates dropped Foundry data into a scene asset, or null if it is not supported. */
-  #toSceneAsset(dropped) {
-    if (dropped?.type === "Actor") {
-      const actor = game.actors.get(dropped.uuid.split(".").pop());
+  async #toSceneAsset(dropped) {
+    if (!dropped) return null;
+    let doc = null;
+    if (dropped.uuid) {
+      try {
+        doc = await foundry.utils.fromUuid(dropped.uuid);
+      } catch (err) {
+        console.warn("Narrative Canvas | Failed to resolve dropped UUID:", dropped.uuid, err);
+      }
+    }
+
+    if (dropped.type === "Actor" || doc?.documentName === "Actor") {
+      const actor = doc || game.actors.get(dropped.id) || game.actors.get(dropped.uuid?.split(".").pop());
       if (!actor) return null;
       return {
         type: "Actor",
@@ -209,12 +240,43 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       };
     }
 
-    if (dropped?.type === "PlaylistSound") {
-      const track = { id: dropped.soundId || foundry.utils.randomID(), name: dropped.name, path: dropped.path || "" };
+    if (dropped.type === "PlaylistSound" || doc?.documentName === "PlaylistSound") {
+      const soundDoc = doc;
+      const name = soundDoc?.name || dropped.name || "Track";
+      const path = soundDoc?.path || dropped.path || "";
+      if (!path) return null;
+      const track = {
+        id: soundDoc?.id || dropped.soundId || dropped.id || foundry.utils.randomID(),
+        name,
+        path,
+        uuid: soundDoc?.uuid || dropped.uuid || ""
+      };
       return {
         type: "PlaylistSound",
         name: track.name,
         addTo: (sceneId) => NarrativeSceneRepository.addTrack(sceneId, track)
+      };
+    }
+
+    if (dropped.type === "Playlist" || doc?.documentName === "Playlist") {
+      const playlist = doc || (dropped.id ? game.playlists?.get(dropped.id) : null);
+      const sounds = Array.from(playlist?.sounds ?? []);
+      if (!sounds.length) return null;
+      return {
+        type: "PlaylistSound",
+        name: playlist.name,
+        addTo: async (sceneId) => {
+          for (const sound of sounds) {
+            if (sound.path) {
+              await NarrativeSceneRepository.addTrack(sceneId, {
+                id: sound.id,
+                name: sound.name,
+                path: sound.path,
+                uuid: sound.uuid
+              });
+            }
+          }
+        }
       };
     }
 
