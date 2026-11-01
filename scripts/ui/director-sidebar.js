@@ -11,6 +11,8 @@ export class DirectorSidebar {
   #audioController = null;
   #element = null;
   #sceneQuery = "";
+  #filterByJournal = true;
+  #isCollapsed = false;
   #selectedFolderId = "";
   #journalQuery = "";
   #selectedJournalId = "";
@@ -28,6 +30,52 @@ export class DirectorSidebar {
   constructor({ audioController, onSceneSelect, onVolumeChange }) {
     this.#audioController = audioController;
     this.#callbacks = { onSceneSelect, onVolumeChange };
+  }
+
+  /**
+   * Returns whether the sidebar is currently collapsed.
+   * @returns {boolean}
+   */
+  get isCollapsed() {
+    return this.#isCollapsed;
+  }
+
+  /**
+   * Toggles or sets the collapsed state of the sidebar.
+   * @param {boolean} [forceState] - Optional explicit state
+   */
+  toggleCollapse(forceState) {
+    this.#isCollapsed = typeof forceState === "boolean" ? forceState : !this.#isCollapsed;
+    this.#updateCollapseState();
+  }
+
+  /**
+   * Synchronizes DOM classes, icons, and tooltip titles with current collapse state.
+   * @private
+   */
+  #updateCollapseState() {
+    if (!this.#element) return;
+    this.#element.classList.toggle("is-collapsed", this.#isCollapsed);
+
+    const toggleBtn = this.#element.querySelector(".sidebar-collapse-toggle");
+    if (toggleBtn) {
+      const title = this.#isCollapsed
+        ? game.i18n.localize("NARRATIVE_CANVAS.Director.ExpandSidebar")
+        : game.i18n.localize("NARRATIVE_CANVAS.Director.CollapseSidebar");
+      toggleBtn.title = title;
+      toggleBtn.setAttribute("aria-expanded", String(!this.#isCollapsed));
+      const icon = toggleBtn.querySelector("i");
+      if (icon) {
+        icon.className = `fas ${this.#isCollapsed ? "fa-chevron-right" : "fa-chevron-left"}`;
+      }
+    }
+
+    const headerCollapseBtn = this.#element.querySelector(".btn-sidebar-collapse");
+    if (headerCollapseBtn) {
+      headerCollapseBtn.title = this.#isCollapsed
+        ? game.i18n.localize("NARRATIVE_CANVAS.Director.ExpandSidebar")
+        : game.i18n.localize("NARRATIVE_CANVAS.Director.CollapseSidebar");
+    }
   }
 
   /**
@@ -53,6 +101,8 @@ export class DirectorSidebar {
 
     this.#element = newElement;
     this.#bindListeners(this.#element);
+    this.#updateCollapseState();
+    this.#applySceneFilters();
 
     return newElement;
   }
@@ -64,16 +114,60 @@ export class DirectorSidebar {
   update(context = {}) {
     if (!this.#element) return;
     this.#activeSceneId = context.activeSceneId ?? this.#activeSceneId;
+
+    const previousScenes = this.#scenesList;
     this.#scenesList = context.scenesList ?? this.#scenesList;
     this.#currentSceneData = context.currentSceneData ?? (this.#activeSceneId ? this.#scenesList.find(s => s.id === this.#activeSceneId) : null);
 
-    // Update active highlight in scenes list
-    this.#element.querySelectorAll(".director-scene-item").forEach(item => {
-      item.classList.toggle("is-active", item.dataset.sceneId === this.#activeSceneId);
-    });
+    // If the scenes collection reference changed, re-render the scenes list
+    if (this.#scenesList !== previousScenes) {
+      this.#refreshScenesList();
+    } else {
+      // Update active highlight in scenes list
+      this.#element.querySelectorAll(".director-scene-item").forEach(item => {
+        item.classList.toggle("is-active", item.dataset.sceneId === this.#activeSceneId);
+      });
+    }
+
+    this.#updateCollapseState();
 
     // Refresh audio tracks list for the active scene
     this.#refreshAudioTracksList();
+  }
+
+  /**
+   * Re-renders the scene items list when the collection of scenes changes.
+   * @private
+   */
+  #refreshScenesList() {
+    if (!this.#element) return;
+    const container = this.#element.querySelector(".director-scenes-list");
+    if (!container) return;
+
+    if (!this.#scenesList.length) {
+      container.innerHTML = `<div class="sidebar-empty-hint">${game.i18n.localize("NARRATIVE_CANVAS.Director.NoScenes")}</div>`;
+      return;
+    }
+
+    container.innerHTML = this.#scenesList.map(scene => {
+      const isActive = scene.id === this.#activeSceneId;
+      const journalName = scene.journalName
+        ?? (scene.journalId ? (game.journal?.get(scene.journalId)?.name ?? game.collections?.get("JournalEntry")?.get(scene.journalId)?.name) : null);
+      const journalBadge = journalName
+        ? `<span class="scene-item-journal" title="${Handlebars.escapeExpression(journalName)}"><i class="fas fa-book-open"></i> ${Handlebars.escapeExpression(journalName)}</span>`
+        : "";
+
+      return `
+        <div class="director-scene-item ${isActive ? "is-active" : ""}" data-scene-id="${scene.id}" data-journal-id="${scene.journalId || ""}">
+          <span class="scene-item-name" title="${Handlebars.escapeExpression(scene.name)}">
+            <i class="fas fa-film"></i> ${Handlebars.escapeExpression(scene.name)}
+          </span>
+          ${journalBadge}
+        </div>
+      `;
+    }).join("");
+
+    this.#applySceneFilters();
   }
 
   /**
@@ -127,12 +221,16 @@ export class DirectorSidebar {
   }
 
   async #prepareTemplateData() {
-    const normalizedSceneQuery = this.#sceneQuery.trim().toLowerCase();
-    const filteredScenes = this.#scenesList.filter(scene => {
-      if (!normalizedSceneQuery) return true;
-      const nameMatch = scene.name?.toLowerCase().includes(normalizedSceneQuery);
-      const journalMatch = scene.journalName?.toLowerCase().includes(normalizedSceneQuery);
-      return nameMatch || journalMatch;
+    const scenesWithJournalNames = this.#scenesList.map(scene => {
+      let journalName = scene.journalName;
+      if (scene.journalId && !journalName) {
+        journalName = game.journal?.get(scene.journalId)?.name
+          ?? game.collections?.get("JournalEntry")?.get(scene.journalId)?.name;
+      }
+      return {
+        ...scene,
+        journalName
+      };
     });
 
     const folders = JournalBrowser.getFolders();
@@ -166,9 +264,12 @@ export class DirectorSidebar {
     const gVol = this.#audioController?.globalVolume ?? 0.5;
 
     return {
+      scenes: scenesWithJournalNames,
+      filteredScenes: scenesWithJournalNames,
       sceneQuery: this.#sceneQuery,
+      filterByJournal: this.#filterByJournal,
+      isCollapsed: this.#isCollapsed,
       activeSceneId: this.#activeSceneId,
-      filteredScenes,
       folders,
       selectedFolderId: this.#selectedFolderId,
       journalQuery: this.#journalQuery,
@@ -184,6 +285,7 @@ export class DirectorSidebar {
   }
 
   #bindListeners(root) {
+    this.#bindCollapseControls(root);
     this.#bindSceneFilter(root);
     this.#bindSceneSelection(root);
     this.#bindJournalControls(root);
@@ -192,32 +294,69 @@ export class DirectorSidebar {
     this.#bindAudioControls(root);
   }
 
+  #bindCollapseControls(root) {
+    root.querySelector(".sidebar-collapse-toggle")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      this.toggleCollapse();
+    });
+
+    root.querySelector(".btn-sidebar-collapse")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      this.toggleCollapse();
+    });
+  }
+
   #bindSceneFilter(root) {
     const input = root.querySelector(".input-scenes-filter");
     input?.addEventListener("input", (event) => {
-      const query = event.target.value.trim().toLowerCase();
-      this.#sceneQuery = query;
-
-      const items = root.querySelectorAll(".director-scene-item");
-      let visibleCount = 0;
-      items.forEach(item => {
-        const name = item.querySelector(".scene-item-name")?.textContent.toLowerCase() ?? "";
-        const journal = item.querySelector(".scene-item-journal")?.textContent.toLowerCase() ?? "";
-        const matches = !query || name.includes(query) || journal.includes(query);
-        item.style.display = matches ? "" : "none";
-        if (matches) visibleCount++;
-      });
-
-      let hint = root.querySelector(".sidebar-scenes-section .sidebar-empty-hint");
-      if (!hint && visibleCount === 0) {
-        hint = document.createElement("div");
-        hint.className = "sidebar-empty-hint";
-        hint.textContent = game.i18n.localize("NARRATIVE_CANVAS.Director.NoScenes");
-        root.querySelector(".director-scenes-list")?.appendChild(hint);
-      } else if (hint) {
-        hint.style.display = visibleCount === 0 ? "" : "none";
-      }
+      this.#sceneQuery = event.target.value.trim().toLowerCase();
+      this.#applySceneFilters();
     });
+
+    const journalCheckbox = root.querySelector(".input-filter-by-journal");
+    journalCheckbox?.addEventListener("change", (event) => {
+      this.#filterByJournal = event.target.checked;
+      this.#applySceneFilters();
+    });
+  }
+
+  /**
+   * Filters the scenes list in the DOM based on current text query and journal selection filter.
+   * NOTE: Filtering does NOT modify the currently active scene.
+   * @private
+   */
+  #applySceneFilters() {
+    if (!this.#element) return;
+
+    const query = this.#sceneQuery;
+    const filterByJournal = this.#filterByJournal;
+    const selectedJournalId = this.#selectedJournalId;
+
+    const items = this.#element.querySelectorAll(".director-scene-item");
+    let visibleCount = 0;
+
+    items.forEach(item => {
+      const sceneJournalId = item.dataset.journalId || "";
+      const name = item.querySelector(".scene-item-name")?.textContent.toLowerCase() ?? "";
+      const journalName = item.querySelector(".scene-item-journal")?.textContent.toLowerCase() ?? "";
+
+      const matchesText = !query || name.includes(query) || journalName.includes(query);
+      const matchesJournal = !filterByJournal || !selectedJournalId || sceneJournalId === selectedJournalId;
+
+      const isVisible = matchesText && matchesJournal;
+      item.style.display = isVisible ? "" : "none";
+      if (isVisible) visibleCount++;
+    });
+
+    let hint = this.#element.querySelector(".sidebar-scenes-section .sidebar-empty-hint");
+    if (!hint && visibleCount === 0) {
+      hint = document.createElement("div");
+      hint.className = "sidebar-empty-hint";
+      hint.textContent = game.i18n.localize("NARRATIVE_CANVAS.Director.NoScenes");
+      this.#element.querySelector(".director-scenes-list")?.appendChild(hint);
+    } else if (hint) {
+      hint.style.display = visibleCount === 0 ? "" : "none";
+    }
   }
 
   #bindSceneSelection(root) {
@@ -268,6 +407,7 @@ export class DirectorSidebar {
         this.#selectedJournalId = "";
         this.#selectedPageId = "";
         this.#refreshJournalBody();
+        this.#applySceneFilters();
       }
     };
 
@@ -285,6 +425,7 @@ export class DirectorSidebar {
       this.#selectedJournalId = event.target.value;
       this.#selectedPageId = "";
       this.#refreshJournalBody();
+      this.#applySceneFilters();
     });
   }
 

@@ -7,15 +7,22 @@
         </span>
     </header>
 
-    <!-- Scene Selector Dropdown -->
-    <section class="director-control-group">
+    <!-- Active Scene Display & Sidebar Toggle -->
+    <section class="director-control-group active-scene-group">
         <legend><i class="fas fa-folder-open"></i> {{localize "NARRATIVE_CANVAS.Labels.ActiveScene"}}</legend>
-        <select class="selector-narrative-scene">
-            <option value="">-- {{localize "NARRATIVE_CANVAS.Placeholders.ChooseScene"}} --</option>
-            {{#each scenesList}}
-                <option value="{{this.id}}" {{#if (eq ../activeSceneId this.id)}}selected{{/if}}>{{this.name}}</option>
-            {{/each}}
-        </select>
+        <div class="active-scene-row">
+            <div class="active-scene-display">
+                <i class="fas fa-film"></i>
+                {{#if currentSceneData}}
+                    <span class="active-scene-name" title="{{currentSceneData.name}}">{{currentSceneData.name}}</span>
+                {{else}}
+                    <span class="active-scene-empty">-- {{localize "NARRATIVE_CANVAS.Placeholders.ChooseScene"}} --</span>
+                {{/if}}
+            </div>
+            <button type="button" class="btn-toggle-sidebar button-secondary" title="{{localize 'NARRATIVE_CANVAS.Director.ToggleSidebar'}}">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
     </section>
 
     <!-- Background Quick List -->

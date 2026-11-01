@@ -72,20 +72,16 @@ export class NarrativeDirector extends NarrativeCanvas {
    * @private
    */
   _setupGlobalDelegatedListeners() {
-    document.body.addEventListener("change", (event) => {
-      if (!this.stageElement) return;
-
-      const sceneSelect = event.target.closest(".selector-narrative-scene");
-      if (sceneSelect) {
-        event.preventDefault();
-        this.callbacks.onSceneSelect?.(sceneSelect.value);
-      }
-    });
-
     document.body.addEventListener("click", (event) => {
       if (!this.stageElement) return;
 
       const target = event.target;
+
+      if (target.closest(".btn-toggle-sidebar")) {
+        event.preventDefault();
+        this.sidebar?.toggleCollapse();
+        return;
+      }
 
       const bgCard = target.closest(".bg-thumbnail-card");
       if (bgCard?.dataset.bgPath) {
