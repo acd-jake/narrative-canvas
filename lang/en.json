@@ -41,5 +41,14 @@
   "NARRATIVE_CANVAS.Editor.NewSceneDefault": "New Narrative Scene",
   "NARRATIVE_CANVAS.Editor.NoSceneSelected": "Select a narrative scene from the left archive list to begin editing.",
   "NARRATIVE_CANVAS.Editor.DropToCreateHint": "Drop an actor or audio track here to create a new scene.",
-  "NARRATIVE_CANVAS.Editor.TileSizeLabel": "Tile Size (Scaling)"
+  "NARRATIVE_CANVAS.Editor.TileSizeLabel": "Tile Size (Scaling)",
+  "NARRATIVE_CANVAS.Director.FilterScenes": "Filter scenes...",
+  "NARRATIVE_CANVAS.Director.NoScenes": "No matching scenes",
+  "NARRATIVE_CANVAS.Director.JournalViewer": "Journal Viewer",
+  "NARRATIVE_CANVAS.Director.AllFolders": "-- All Folders --",
+  "NARRATIVE_CANVAS.Director.FilterJournals": "Filter journals...",
+  "NARRATIVE_CANVAS.Director.SelectJournal": "-- Select Journal --",
+  "NARRATIVE_CANVAS.Director.NoPages": "This journal has no pages",
+  "NARRATIVE_CANVAS.Director.NoJournalSelected": "Select a journal to view its contents",
+  "NARRATIVE_CANVAS.Director.EmptyPage": "This page has no content."
 }

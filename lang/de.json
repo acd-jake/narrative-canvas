@@ -41,5 +41,14 @@
   "NARRATIVE_CANVAS.Editor.NewSceneDefault": "Neue Erzählszene",
   "NARRATIVE_CANVAS.Editor.NoSceneSelected": "Wähle links eine Erzählkulisse aus, um sie zu bearbeiten.",
   "NARRATIVE_CANVAS.Editor.DropToCreateHint": "Ziehe einen Actor oder Audiotrack hierher, um eine neue Szene anzulegen.",
-  "NARRATIVE_CANVAS.Editor.TileSizeLabel": "Kachel-Größe (Skalierung)"
+  "NARRATIVE_CANVAS.Editor.TileSizeLabel": "Kachel-Größe (Skalierung)",
+  "NARRATIVE_CANVAS.Director.FilterScenes": "Szenen filtern...",
+  "NARRATIVE_CANVAS.Director.NoScenes": "Keine passenden Szenen",
+  "NARRATIVE_CANVAS.Director.JournalViewer": "Journalviewer",
+  "NARRATIVE_CANVAS.Director.AllFolders": "-- Alle Ordner --",
+  "NARRATIVE_CANVAS.Director.FilterJournals": "Journale filtern...",
+  "NARRATIVE_CANVAS.Director.SelectJournal": "-- Journal auswählen --",
+  "NARRATIVE_CANVAS.Director.NoPages": "Dieses Journal enthält keine Seiten",
+  "NARRATIVE_CANVAS.Director.NoJournalSelected": "Wähle ein Journal aus, um den Inhalt anzuzeigen",
+  "NARRATIVE_CANVAS.Director.EmptyPage": "Diese Seite hat keinen Inhalt."
 }
