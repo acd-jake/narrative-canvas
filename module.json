@@ -1,0 +1,41 @@
+{
+  "id": "narrative-canvas",
+  "title": "Narrative Canvas",
+  "description": "Introduces a Theatre of the Mind mode to display backgrounds, play audio, show handouts, and display actor dialogues seamlessly.",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14"
+  },
+  "authors": [
+    {
+      "name": "Acd-Jake",
+      "discord": "Acd-Jake",
+      "flags": {
+        "github": "acd-jake"
+      }
+    }
+  ],
+  "relationships": {
+    "systems": []
+  },
+  "esmodules": [
+    "scripts/main.js"
+  ],
+  "styles": [
+    "styles/narrative-canvas.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+    {
+      "lang": "de",
+      "name": "Deutsch",
+      "path": "lang/de.json"
+    }
+  ],
+  "socket": true
+}

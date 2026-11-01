@@ -1,0 +1,57 @@
+<div class="narrative-director-panel font-foundry">
+    <header class="director-panel-header">
+        <i class="fas fa-film"></i> 
+        <h3>{{localize "NARRATIVE_CANVAS.DirectorTitle"}}</h3>
+        <span class="nc-status-badge {{#if playerViewActive}}status-live{{else}}status-preparing{{/if}}">
+            {{#if playerViewActive}}{{localize "NARRATIVE_CANVAS.Status.Live"}}{{else}}{{localize "NARRATIVE_CANVAS.Status.Preparing"}}{{/if}}
+        </span>
+    </header>
+
+    <section class="director-control-group">
+        <legend><i class="fas fa-eye"></i> {{localize "NARRATIVE_CANVAS.Labels.PlayerVisibility"}}</legend>
+        <div class="director-input-row">
+            {{#if playerViewActive}}
+                <button type="button" class="btn-hide-players button-secondary">
+                    <i class="fas fa-eye-slash"></i> {{localize "NARRATIVE_CANVAS.Labels.HideCanvas"}}
+                </button>
+            {{else}}
+                <button type="button" class="btn-publish-players button-primary">
+                    <i class="fas fa-broadcast-tower"></i> {{localize "NARRATIVE_CANVAS.Labels.PublishCanvas"}}
+                </button>
+            {{/if}}
+        </div>
+    </section>
+
+    <section class="director-control-group">
+        <legend><i class="fas fa-image"></i> {{localize "NARRATIVE_CANVAS.Labels.Background"}}</legend>
+        <div class="director-input-row">
+            <input type="text" class="bg-path-input" value="{{background}}" placeholder="img/backgrounds/castle.webp" readonly/>
+            <button type="button" class="btn-change-bg type-icon" title="{{localize 'NARRATIVE_CANVAS.Labels.ChangeBg'}}">
+                <i class="fas fa-file-import"></i>
+            </button>
+        </div>
+    </section>
+
+    <section class="director-control-group">
+        <legend><i class="fas fa-comment-dots"></i> {{localize "NARRATIVE_CANVAS.Labels.Dialogue"}}</legend>
+        <div class="director-input-column">
+            <div class="director-input-row">
+                <input type="text" class="speaker-name-input" placeholder="{{localize 'NARRATIVE_CANVAS.Placeholders.Speaker'}}" />
+                <input type="text" class="speaker-portrait-input" placeholder="path/to/portrait.webp" />
+            </div>
+            <textarea class="dialogue-input" placeholder="{{localize 'NARRATIVE_CANVAS.Placeholders.Dialogue'}}"></textarea>
+            <button type="button" class="btn-trigger-dialog button-primary">
+                <i class="fas fa-paper-plane"></i> {{localize "NARRATIVE_CANVAS.Labels.SendDialogue"}}
+            </button>
+        </div>
+    </section>
+
+    <footer class="director-panel-footer director-input-column">
+        <button type="button" class="btn-clear-display button-secondary">
+            <i class="fas fa-eraser"></i> {{localize "NARRATIVE_CANVAS.Labels.ClearAll"}}
+        </button>
+        <button type="button" class="btn-shutdown-canvas button-destructive">
+            <i class="fas fa-power-off"></i> {{localize "NARRATIVE_CANVAS.Labels.ShutdownCanvas"}}
+        </button>
+    </footer>
+</div>

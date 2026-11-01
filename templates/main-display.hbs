@@ -1,0 +1,31 @@
+<div class="narrative-canvas-stage" style="background-image: url('{{#if background}}{{background}}{{else}}icons/svg/mystery-man.svg{{/if}}');">
+    
+    <!-- Ambient Overlay Grid -->
+    <div class="narrative-overlay-vignette"></div>
+
+    <!-- Handout Component Layer -->
+    {{#if handout}}
+    <div class="narrative-handout-container animate-fade-in">
+        <img src="{{handout.src}}" alt="{{handout.title}}" class="narrative-handout-image"/>
+        {{#if handout.title}}
+            <h3 class="narrative-handout-title">{{handout.title}}</h3>
+        {{/if}}
+    </div>
+    {{/if}}
+
+    <!-- Dialogue Stage Component -->
+    {{#if activeDialogue}}
+    <div class="narrative-dialogue-stage animate-slide-up">
+        {{#if activeDialogue.portrait}}
+            <div class="narrative-speaker-portrait">
+                <img src="{{activeDialogue.portrait}}" alt="{{activeDialogue.speaker}}"/>
+            </div>
+        {{/if}}
+        
+        <div class="narrative-speech-bubble">
+            <h2 class="narrative-speaker-name">{{activeDialogue.speaker}}</h2>
+            <p class="narrative-speech-text">{{activeDialogue.text}}</p>
+        </div>
+    </div>
+    {{/if}}
+</div>
