@@ -11,27 +11,34 @@
   "NARRATIVE_CANVAS.Placeholders.Dialogue": "What does the character say?...",
   "NARRATIVE_CANVAS.Controls.CategoryTitle": "Narrative Canvas",
   "NARRATIVE_CANVAS.Controls.ToggleCanvas": "Enable Narrative Canvas",
-  
   "NARRATIVE_CANVAS.Settings.PermissionLabel": "Activation Permission Role",
   "NARRATIVE_CANVAS.Settings.PermissionHint": "Defines the minimum user role required to activate the Narrative Canvas mode.",
   "NARRATIVE_CANVAS.Settings.BgColorLabel": "Canvas Background Color",
   "NARRATIVE_CANVAS.Settings.BgColorHint": "Choose the default color that covers the screen when no background asset image is displayed.",
   "NARRATIVE_CANVAS.Settings.ToastsLabel": "Enable Toast Notifications",
   "NARRATIVE_CANVAS.Settings.ToastsHint": "If enabled, players receive short notification toasts when the narrative mode starts or ends.",
-  
   "NARRATIVE_CANVAS.Labels.PlayerVisibility": "Player Visibility",
   "NARRATIVE_CANVAS.Labels.PublishCanvas": "Publish to Players",
   "NARRATIVE_CANVAS.Labels.HideCanvas": "Hide from Players",
   "NARRATIVE_CANVAS.Status.Live": "LIVE",
   "NARRATIVE_CANVAS.Status.Preparing": "PREPARING",
-  
   "NARRATIVE_CANVAS.Notifications.Activated": "Theatre of the Mind narrative mode has been activated.",
   "NARRATIVE_CANVAS.Notifications.Deactivated": "Theatre of the Mind narrative mode has ended.",
   "NARRATIVE_CANVAS.Notifications.GMDisconnected": "Theatre of the Mind mode ended because the Gamemaster disconnected.",
-  
   "NARRATIVE_CANVAS.Director.Audio": "Scene Audio",
   "NARRATIVE_CANVAS.Director.Actors": "Stage Actors",
   "NARRATIVE_CANVAS.Labels.ActiveScene": "Active Narrative Scene",
   "NARRATIVE_CANVAS.Labels.SceneBackgrounds": "Quick Backgrounds",
-  "NARRATIVE_CANVAS.Placeholders.ChooseScene": "Select a scene"
+  "NARRATIVE_CANVAS.Placeholders.ChooseScene": "Select a scene",
+  "NARRATIVE_CANVAS.Editor.WindowTitle": "Narrative Scene Editor",
+  "NARRATIVE_CANVAS.Editor.FreeScene": "Free Scene (Global)",
+  "NARRATIVE_CANVAS.Editor.DropImageHint": "Drop a journal image page here for backgrounds",
+  "NARRATIVE_CANVAS.Editor.DropActorHint": "Drop Actor profiles from sidebar here",
+  "NARRATIVE_CANVAS.Editor.DropAudioHint": "Drop Audio tracks here",
+  "NARRATIVE_CANVAS.Editor.Scenes": "Scenes Collection",
+  "NARRATIVE_CANVAS.Editor.CreateScene": "Create New Scene",
+  "NARRATIVE_CANVAS.Editor.DeleteScene": "Delete Scene",
+  "NARRATIVE_CANVAS.Editor.NewSceneDefault": "New Narrative Scene",
+  "NARRATIVE_CANVAS.Editor.NoSceneSelected": "Select a narrative scene from the left archive list to begin editing.",
+  "NARRATIVE_CANVAS.Editor.TileSizeLabel": "Tile Size (Scaling)"
 }

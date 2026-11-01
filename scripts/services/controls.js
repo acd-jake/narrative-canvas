@@ -1,35 +1,32 @@
 import { NarrativeSettings } from "./settings.js";
 
-/**
- * Intercepts and manipulates the core Foundry VTT sidebar controls.
- */
 export class NarrativeControls {
-  /**
-   * Appends the custom action tool button into the existing V14 Scene Controls structure.
-   * @param {object} controls - The existing core control structures mapping
-   */
   static initialize(controls) {
-    // V14 Race-Condition Fix: Wrap in a try-catch block to prevent startup crashes
-    // if Foundry queries controls before the game or settings object is initialized.
     try {
-      if (!game || !game.settings || !NarrativeSettings.userHasPermission()) {
-        return;
-      }
-    } catch (error) {
-      // Quietly return if game state isn't ready yet
-      return;
-    }
+      if (!game || !game.settings || !NarrativeSettings.userHasPermission()) return;
+    } catch (e) { return; }
 
-    // Safely inject our action tool button into the existing notes category
     if (controls.notes && controls.notes.tools) {
+      // 1. Existing Play-Mode Activation Button
       controls.notes.tools["activate-canvas"] = {
         name: "activate-canvas",
         title: "NARRATIVE_CANVAS.Controls.ToggleCanvas",
         icon: "fa-solid fa-film",
         button: true,
         visible: true,
+        onClick: () => game.modules.get("narrative-canvas").manager.toggleCanvasState(true)
+      };
+
+      // 2. NEW: Creator Scene Editor Button Configuration
+      controls.notes.tools["open-scene-editor"] = {
+        name: "open-scene-editor",
+        title: "NARRATIVE_CANVAS.Editor.WindowTitle",
+        icon: "fa-solid fa-clapperboard", // Beautiful clapperboard icon for editor mode
+        button: true,
+        visible: game.user.isGM, // Reserved strictly for Gamemasters
         onClick: () => {
-          game.modules.get("narrative-canvas").manager.toggleCanvasState(true);
+          const manager = game.modules.get("narrative-canvas").manager;
+          if (manager) manager.toggleEditorWindow();
         }
       };
     }

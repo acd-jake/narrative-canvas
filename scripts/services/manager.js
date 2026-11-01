@@ -2,6 +2,7 @@ import { NarrativeSocket } from "./socket.js";
 import { NarrativeSettings } from "./settings.js";
 import { NarrativePlayer } from "../ui/narrative-player.js";
 import { NarrativeDirector } from "../ui/narrative-director.js";
+import { NarrativeSceneEditor } from "../ui/narrative-editor.js";
 
 export class NarrativeManager {
   constructor() {
@@ -11,7 +12,7 @@ export class NarrativeManager {
       background: "",
       activeDialogue: null,
       handout: null,
-      
+
       // NEW STATE MANAGEMENT VARIABLES
       activeSceneId: "",
       currentSceneData: null,
@@ -21,6 +22,7 @@ export class NarrativeManager {
       scenesList: []
     };
     this.view = null;
+    this.editorApp = null;
   }
 
   async refreshView() {
@@ -52,7 +54,7 @@ export class NarrativeManager {
 
       this.narrativeState.active = active;
       if (!active) this.narrativeState.playerViewActive = false;
-      
+
       await this.refreshView();
       NarrativeSocket.emit("UPDATE_DISPLAY", this.narrativeState);
     } else {
@@ -88,7 +90,7 @@ export class NarrativeManager {
       onSceneSelect: (sceneId) => {
         const scenes = NarrativeSettings.getAllScenes();
         const selectedData = scenes.find(s => s.id === sceneId) || null;
-        
+
         this.handleDisplayUpdate({
           activeSceneId: sceneId,
           currentSceneData: selectedData,
@@ -123,5 +125,19 @@ export class NarrativeManager {
       onVisibilityChange: (visible) => this.handleDisplayUpdate({ playerViewActive: visible }),
       onShutdown: () => this.toggleCanvasState(false)
     };
+  }
+
+  /**
+ * Toggles the open/close state of the V14 ApplicationV2 Creator Scene Editor panel.
+ */
+  toggleEditorWindow() {
+    if (!game.user.isGM) return;
+
+    if (this.editorApp && this.editorApp.rendered) {
+      this.editorApp.close();
+    } else {
+      if (!this.editorApp) this.editorApp = new NarrativeSceneEditor();
+      this.editorApp.render({ force: true });
+    }
   }
 }

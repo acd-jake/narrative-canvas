@@ -1,0 +1,106 @@
+<div class="narrative-editor-window font-foundry" style="--nc-tile-size: {{tileSize}}px;">
+    <!-- Left Sidebar: Scene List Management (Independently Scrollable) -->
+    <aside class="editor-scenes-sidebar">
+        <header class="sidebar-action-header">
+            <h3><i class="fas fa-cubes"></i> {{localize "NARRATIVE_CANVAS.Editor.Scenes"}}</h3>
+            <button type="button" class="btn-create-scene button-primary type-icon" title="{{localize 'NARRATIVE_CANVAS.Editor.CreateScene'}}">
+                <i class="fas fa-plus"></i>
+            </button>
+        </header>
+        
+        <!-- NEW CONTROL: Dynamic Persistent Size Slider -->
+        <div class="sidebar-scale-controller">
+            <label><i class="fas fa-th-large"></i> {{localize "NARRATIVE_CANVAS.Editor.TileSizeLabel"}}</label>
+            <input type="range" class="slider-tile-scale" min="50" max="300" step="5" value="{{tileSize}}" />
+        </div>
+
+        <div class="scenes-navigation-list">
+            {{#each allScenes}}
+                <div class="scene-navigation-item {{#if (eq ../selectedSceneId this.id)}}is-selected{{/if}}" data-scene-id="{{this.id}}">
+                    <span class="scene-nav-name" title="{{this.name}}">{{this.name}}</span>
+                    <button type="button" class="btn-delete-scene type-icon" title="{{localize 'NARRATIVE_CANVAS.Editor.DeleteScene'}}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            {{/each}}
+        </div>
+    </aside>
+
+    <!-- Right Workspace: Selected Scene Details (Independently Scrollable) -->
+    <main class="editor-workspace-details">
+        {{#if activeScene}}
+            <header class="editor-workspace-header">
+                <div class="scene-title-edit-row">
+                    <input type="text" class="input-scene-rename-field" value="{{activeScene.name}}" data-scene-id="{{activeScene.id}}" />
+                </div>
+                {{#if activeScene.journalName}}
+                    <span class="journal-link-badge"><i class="fas fa-book-open"></i> {{activeScene.journalName}}</span>
+                {{else}}
+                    <span class="free-scene-badge"><i class="fas fa-globe"></i> {{localize "NARRATIVE_CANVAS.Editor.FreeScene"}}</span>
+                {{/if}}
+            </header>
+
+            <div class="workspace-scroll-container">
+                <!-- Section 1: Background Images -->
+                <section class="workspace-section">
+                    <header class="section-component-header">
+                        <h4><i class="fas fa-images"></i> {{localize "NARRATIVE_CANVAS.Labels.SceneBackgrounds"}}</h4>
+                        <button type="button" class="btn-editor-add-bg button-secondary" data-scene-id="{{activeScene.id}}">
+                            <i class="fas fa-plus"></i> {{localize "NARRATIVE_CANVAS.Labels.ChangeBg"}}
+                        </button>
+                    </header>
+                    <div class="tiles-wrapping-grid">
+                        {{#each activeScene.backgrounds}}
+                            <div class="tile-thumbnail-card" data-index="{{@index}}" data-type="background">
+                                <div class="tile-image-wrapper">
+                                    <img src="{{this.path}}" alt="{{this.name}}" />
+                                    <button type="button" class="btn-delete-item tile-overlay-delete"><i class="fas fa-times"></i></button>
+                                </div>
+                                <span class="tile-label-text">{{this.name}}</span>
+                            </div>
+                        {{/each}}
+                    </div>
+                </section>
+
+                <!-- Section 2: Actors -->
+                <section class="workspace-section editor-dropzone" data-type="Actor" data-scene-id="{{activeScene.id}}">
+                    <h4><i class="fas fa-users"></i> {{localize "NARRATIVE_CANVAS.Director.Actors"}}</h4>
+                    <div class="tiles-wrapping-grid">
+                        {{#each activeScene.actors}}
+                            <div class="tile-thumbnail-card" data-id="{{this.id}}" data-type="Actor">
+                                <div class="tile-image-wrapper">
+                                    <img src="{{this.img}}" alt="{{this.name}}" />
+                                    <button type="button" class="btn-delete-item tile-overlay-delete"><i class="fas fa-times"></i></button>
+                                </div>
+                                <span class="tile-label-text">{{this.name}}</span>
+                            </div>
+                        {{/each}}
+                        <div class="inline-drop-hint"><i class="fas fa-download"></i> {{localize "NARRATIVE_CANVAS.Editor.DropActorHint"}}</div>
+                    </div>
+                </section>
+
+                <!-- Section 3: Audio Tracks -->
+                <section class="workspace-section editor-dropzone" data-type="PlaylistSound" data-scene-id="{{activeScene.id}}">
+                    <h4><i class="fas fa-music"></i> {{localize "NARRATIVE_CANVAS.Director.Audio"}}</h4>
+                    <div class="tiles-wrapping-grid">
+                        {{#each activeScene.tracks}}
+                            <div class="tile-thumbnail-card" data-id="{{this.id}}" data-type="PlaylistSound">
+                                <div class="tile-image-wrapper">
+                                    <div class="audio-tile-placeholder"><i class="fas fa-music"></i></div>
+                                    <button type="button" class="btn-delete-item tile-overlay-delete"><i class="fas fa-times"></i></button>
+                                </div>
+                                <span class="tile-label-text">{{this.name}}</span>
+                            </div>
+                        {{/each}}
+                        <div class="inline-drop-hint"><i class="fas fa-download"></i> {{localize "NARRATIVE_CANVAS.Editor.DropAudioHint"}}</div>
+                    </div>
+                </section>
+            </div>
+        {{else}}
+            <div class="workspace-empty-state">
+                <i class="fas fa-cubes"></i>
+                <p>{{localize "NARRATIVE_CANVAS.Editor.NoSceneSelected"}}</p>
+            </div>
+        {{/if}}
+    </main>
+</div>

@@ -11,27 +11,34 @@
   "NARRATIVE_CANVAS.Placeholders.Dialogue": "Was sagt der Charakter?...",
   "NARRATIVE_CANVAS.Controls.CategoryTitle": "Narrative Canvas",
   "NARRATIVE_CANVAS.Controls.ToggleCanvas": "Narrative Canvas einschalten",
-  
   "NARRATIVE_CANVAS.Settings.PermissionLabel": "Mindestberechtigung zum Aktivieren",
   "NARRATIVE_CANVAS.Settings.PermissionHint": "Legt fest, ab welcher Benutzerrolle der Narrative Canvas gestartet werden darf.",
   "NARRATIVE_CANVAS.Settings.BgColorLabel": "Canvas Hintergrundfarbe",
   "NARRATIVE_CANVAS.Settings.BgColorHint": "Wähle die Standardfarbe, die den Bildschirm überlagert, wenn kein Hintergrundbild aktiv ist.",
   "NARRATIVE_CANVAS.Settings.ToastsLabel": "Toast-Benachrichtigungen erlauben",
   "NARRATIVE_CANVAS.Settings.ToastsHint": "Wenn aktiviert, erhalten Spieler kurze Benachrichtigungen oben rechts, sobald der Erzählmodus startet oder endet.",
-  
   "NARRATIVE_CANVAS.Labels.PlayerVisibility": "Spieler-Sichtbarkeit",
   "NARRATIVE_CANVAS.Labels.PublishCanvas": "Für Spieler freigeben",
   "NARRATIVE_CANVAS.Labels.HideCanvas": "Vor Spielern verbergen",
   "NARRATIVE_CANVAS.Status.Live": "LIVE",
   "NARRATIVE_CANVAS.Status.Preparing": "VORBEREITUNG",
-  
   "NARRATIVE_CANVAS.Notifications.Activated": "Der Erzählmodus (Theatre of the Mind) wurde gestartet.",
   "NARRATIVE_CANVAS.Notifications.Deactivated": "Der Erzählmodus (Theatre of the Mind) wurde beendet.",
   "NARRATIVE_CANVAS.Notifications.GMDisconnected": "Der Erzählmodus wurde beendet, da der Spielleiter das Spiel verlassen hat.",
-  
   "NARRATIVE_CANVAS.Director.Audio": "Szenen-Akustik",
   "NARRATIVE_CANVAS.Director.Actors": "Bühnen-Akteure",
   "NARRATIVE_CANVAS.Labels.ActiveScene": "Aktive Erzählkulisse",
   "NARRATIVE_CANVAS.Labels.SceneBackgrounds": "Schnellauswahl Hintergründe",
-  "NARRATIVE_CANVAS.Placeholders.ChooseScene": "Szene auswählen"
+  "NARRATIVE_CANVAS.Placeholders.ChooseScene": "Szene auswählen",
+  "NARRATIVE_CANVAS.Editor.WindowTitle": "Szenen-Konfigurator",
+  "NARRATIVE_CANVAS.Editor.FreeScene": "Freie Szene (Global)",
+  "NARRATIVE_CANVAS.Editor.DropImageHint": "Ziehe ein Text-Seitenbild hierher für Hintergründe",
+  "NARRATIVE_CANVAS.Editor.DropActorHint": "Ziehe Akteure aus der Sidebar hierher",
+  "NARRATIVE_CANVAS.Editor.DropAudioHint": "Ziehe Sounddateien hierher",
+  "NARRATIVE_CANVAS.Editor.Scenes": "Kulissen-Archiv",
+  "NARRATIVE_CANVAS.Editor.CreateScene": "Neue Szene anlegen",
+  "NARRATIVE_CANVAS.Editor.DeleteScene": "Szene löschen",
+  "NARRATIVE_CANVAS.Editor.NewSceneDefault": "Neue Erzählszene",
+  "NARRATIVE_CANVAS.Editor.NoSceneSelected": "Wähle links eine Erzählkulisse aus, um sie zu bearbeiten.",
+  "NARRATIVE_CANVAS.Editor.TileSizeLabel": "Kachel-Größe (Skalierung)"
 }
