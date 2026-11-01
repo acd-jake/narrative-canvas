@@ -37,5 +37,10 @@
       "path": "lang/de.json"
     }
   ],
-  "socket": true
+  "socket": true,
+  "url": "#{URL}#",
+  "download": "#{DOWNLOAD}#",
+  "manifest": "#{MANIFEST}#",
+  "bugs": "https://github.com/acd-jake/narrative-canvas/issues"
+
 }
