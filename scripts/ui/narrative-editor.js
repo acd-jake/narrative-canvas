@@ -69,6 +69,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   _onFirstRender(context, options) {
     super._onFirstRender(context, options);
     this.#dock.dockToActiveJournal();
+    if (this.#dock.journalId) this.render();
   }
 
   /** @override */
