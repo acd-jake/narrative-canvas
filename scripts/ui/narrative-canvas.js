@@ -1,6 +1,7 @@
 import { NarrativeSettings } from "../services/settings.js";
 import { StageBackgroundController } from "./stage-background.js";
 import { VisualNovelStage } from "./visual-novel-stage.js";
+import { HandoutImageOverlayController } from "./handout-image-overlay-controller.js";
 
 /**
  * Abstract base class for raw DOM injection overlays, completely detached 
@@ -23,9 +24,13 @@ export class NarrativeCanvas {
     this._lastContext = null;
     this._opacityAnimations = new WeakMap();
     this._backgroundDescriptionTransitionId = 0;
-    this._handoutImageTransitionId = 0;
     this.bgController = new StageBackgroundController();
     this.vnStageController = new VisualNovelStage();
+    this.handoutImageOverlayController = new HandoutImageOverlayController({
+      animateOpacity: (element, opacity, duration) => this._animateElementOpacity(element, opacity, duration),
+      fadeOutAndRemove: (element, duration) => this._fadeOutAndRemove(element, duration),
+      isAnimatingOpacity: element => this._opacityAnimations.has(element)
+    });
   }
 
   /**
@@ -43,9 +48,6 @@ export class NarrativeCanvas {
     const defaultBg = NarrativeSettings.getDefaultBackgroundImage();
     const activeBackground = state.currentSceneData?.backgrounds
       ?.find(background => background.path === state.background);
-    const activeHandoutImage = state.currentSceneData?.handoutImages
-      ?.find(image => image.path === state.handoutImage);
-    const journalImage = state.journalImage;
     const effectiveBackground = (state.background || defaultBg || "").trim();
     const enrichedBackgroundDescription = activeBackground?.showDescription === true
       ? await TextEditor.enrichHTML(activeBackground.description || "", {
@@ -57,10 +59,12 @@ export class NarrativeCanvas {
           async: true
         })
       : "";
-    const handoutImageDescription = journalImage?.description
-      ?? (activeHandoutImage?.showDescription === true ? activeHandoutImage.description : "");
-    const enrichedHandoutDescription = handoutImageDescription
-      ? await TextEditor.enrichHTML(handoutImageDescription, {
+    const handoutImageOverlays = await Promise.all((state.handoutImageOverlays || []).map(async overlay => {
+      const description = overlay.showDescription === true ? overlay.description : "";
+      return {
+        ...overlay,
+        description: description
+          ? await TextEditor.enrichHTML(description, {
           secrets: game.user.isGM,
           documents: true,
           links: true,
@@ -68,7 +72,9 @@ export class NarrativeCanvas {
           embeds: true,
           async: true
         })
-      : "";
+          : ""
+      };
+    }));
 
     const context = {
       ...state,
@@ -76,19 +82,7 @@ export class NarrativeCanvas {
       selectedBackground: state.background || "",
       selectedHandoutImage: state.handoutImage || "",
       backgroundDescription: enrichedBackgroundDescription,
-      handoutImageOverlay: journalImage
-        ? {
-            src: journalImage.src,
-            title: journalImage.title || "",
-            description: enrichedHandoutDescription
-          }
-        : activeHandoutImage && state.handoutImage
-        ? {
-            src: activeHandoutImage.path,
-            title: activeHandoutImage.name || "",
-            description: enrichedHandoutDescription
-          }
-        : null,
+      handoutImageOverlays,
       activeActors,
       hasActiveSpeaker: Boolean(state.activeSpeakerId),
       isGM: game.user.isGM,
@@ -126,6 +120,7 @@ export class NarrativeCanvas {
 
     document.body.appendChild(newStage);
     this.stageElement = newStage;
+    this.handoutImageOverlayController.mount(newStage);
     this._recordContext(context);
     document.body.style.setProperty("--nc-fade-duration", `${context.fadeDuration}ms`);
     document.body.classList.add("acd-nc-active");
@@ -161,7 +156,7 @@ export class NarrativeCanvas {
       background: context.background,
       selectedBackground: context.selectedBackground,
       backgroundDescription: context.backgroundDescription,
-      handoutImageOverlay: context.handoutImageOverlay,
+      handoutImageOverlays: context.handoutImageOverlays,
       customBgColor: context.customBgColor,
       playerViewActive: context.playerViewActive,
       handout: context.handout,
@@ -187,7 +182,7 @@ export class NarrativeCanvas {
     this.vnStageController.update({ ...context, fadeDuration });
     await Promise.all([
       this.#updateBackgroundDescription(context.backgroundDescription, fadeDuration),
-      this.#updateHandoutImageOverlay(context.handoutImageOverlay, fadeDuration)
+      this.handoutImageOverlayController.update(context.handoutImageOverlays, fadeDuration)
     ]);
 
     // 2. Update background color variable
@@ -305,74 +300,6 @@ export class NarrativeCanvas {
     }
   }
 
-  async #updateHandoutImageOverlay(background, duration) {
-    const transitionId = ++this._handoutImageTransitionId;
-    let overlay = this.stageElement.querySelector(".narrative-handout-image-overlay");
-    if (!background) {
-      if (!overlay) return;
-      const visibleElements = [...overlay.querySelectorAll(
-        ".narrative-scene-handout-image, .narrative-scene-handout-image-description"
-      )]
-        .filter(element => !element.hidden);
-      const closeButton = overlay.querySelector(".btn-close-handout-image");
-      if (closeButton) visibleElements.push(closeButton);
-      await Promise.all(visibleElements.map(element => this._animateElementOpacity(element, 0, duration)));
-      if (transitionId === this._handoutImageTransitionId) {
-        overlay.remove();
-        closeButton?.remove();
-      }
-      return;
-    }
-
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.className = "narrative-handout-image-overlay";
-      overlay.innerHTML = `
-        <div class="narrative-scene-handout-image-frame">
-          <img class="narrative-scene-handout-image" />
-          <div class="narrative-scene-handout-image-description"></div>
-          ${game.user.isGM ? `<button type="button" class="btn-close-handout-image" title="${game.i18n.localize("NARRATIVE_CANVAS.Director.CloseImageOverlay")}" aria-label="${game.i18n.localize("NARRATIVE_CANVAS.Director.CloseImageOverlay")}"><i class="fas fa-times" aria-hidden="true"></i></button>` : ""}
-        </div>
-      `;
-      this.stageElement.appendChild(overlay);
-      overlay.querySelector(".narrative-scene-handout-image").style.opacity = "0";
-      const description = overlay.querySelector(".narrative-scene-handout-image-description");
-      description.style.opacity = "0";
-      description.hidden = true;
-    }
-
-    const image = overlay.querySelector(".narrative-scene-handout-image");
-    const currentSource = image.getAttribute("src") || "";
-    if (currentSource !== background.src) {
-      if (currentSource) {
-        await this._animateElementOpacity(image, 0, duration);
-        if (transitionId !== this._handoutImageTransitionId) return;
-      }
-      image.src = background.src;
-      image.alt = background.title;
-      if (typeof image.decode === "function") await image.decode().catch(() => {});
-      if (transitionId !== this._handoutImageTransitionId) return;
-      await this._animateElementOpacity(image, 1, duration);
-    } else {
-      image.alt = background.title;
-    }
-
-    const description = overlay.querySelector(".narrative-scene-handout-image-description");
-    const nextDescription = background.description || "";
-    if (description.innerHTML !== nextDescription) {
-      if (description.innerHTML && !description.hidden) {
-        await this._animateElementOpacity(description, 0, duration);
-        if (transitionId !== this._handoutImageTransitionId) return;
-      }
-      description.innerHTML = nextDescription;
-      description.hidden = !nextDescription;
-      if (nextDescription) await this._animateElementOpacity(description, 1, duration);
-    } else if (nextDescription && Number.parseFloat(getComputedStyle(description).opacity) < 1) {
-      description.hidden = false;
-      await this._animateElementOpacity(description, 1, duration);
-    }
-  }
-
   /**
    * Optional hook for subclasses to update child panels during in-place re-renders.
    * @protected
@@ -422,7 +349,7 @@ export class NarrativeCanvas {
   async close() {
     const closingStage = this.stageElement;
     this._backgroundDescriptionTransitionId++;
-    this._handoutImageTransitionId++;
+    this.handoutImageOverlayController.destroy();
     if (closingStage?.isConnected) {
       await this._animateElementOpacity(closingStage, 0, NarrativeSettings.getFadeDuration());
     }

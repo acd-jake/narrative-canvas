@@ -48,7 +48,7 @@ Scenes and their contents are stored in the world's Narrative Canvas settings. T
 - Drag supported journal images from the docked journal's asset shelf into either image list.
 - Use the tile-size slider to resize the editor's image tiles. The value is saved for the current user.
 
-Background images fill the canvas. Handout Images are shown as foreground images over the canvas. A scene can have both kinds selected in the Director at the same time.
+Background images fill the canvas. Handout Images are shown as foreground images over the canvas. Multiple Handout Images can stay open at once; each can be dragged, brought to the front by clicking, and closed independently. A scene can have both kinds selected in the Director at the same time.
 
 ### Image Descriptions
 

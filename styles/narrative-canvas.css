@@ -110,21 +110,20 @@ body.acd-nc-active {
         position: absolute;
         inset: 0;
         z-index: 12;
-        display: flex;
-        align-items: flex-end;
-        justify-content: center;
-        padding: 3vh 3vw;
         pointer-events: none;
     }
 
     .narrative-scene-handout-image-frame {
-        position: relative;
+        position: absolute;
+        top: 50%;
+        left: 50%;
         z-index: 1;
         display: flex;
         max-width: 88vw;
         max-height: 76vh;
         align-items: flex-end;
         justify-content: center;
+        transform: translate(-50%, -50%);
     }
 
     .narrative-scene-handout-image {
@@ -133,12 +132,16 @@ body.acd-nc-active {
         max-height: 76vh;
         object-fit: contain;
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.65);
+        cursor: grab;
+        pointer-events: auto;
+
+        &:active { cursor: grabbing; }
     }
 
     .narrative-scene-handout-image-description {
         position: absolute;
         right: 0;
-        bottom: 0;
+        bottom: 25px;
         left: 0;
         max-height: 32%;
         overflow: auto;

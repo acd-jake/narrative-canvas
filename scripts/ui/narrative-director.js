@@ -154,7 +154,7 @@ export class NarrativeDirector extends NarrativeCanvas {
 
       if (target.closest(".btn-close-handout-image")) {
         event.preventDefault();
-        this.callbacks.onHandoutImageClose?.();
+        this.callbacks.onHandoutImageClose?.(target.closest(".btn-close-handout-image").dataset.overlayId);
         return;
       }
 
