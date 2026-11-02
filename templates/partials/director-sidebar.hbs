@@ -47,17 +47,10 @@
     <section class="sidebar-journal-section">
         <header class="sidebar-section-header">
             <h4><i class="fas fa-book-open"></i> {{localize "NARRATIVE_CANVAS.Director.JournalViewer"}}</h4>
+            <button type="button" class="btn-journal-back type-icon" title="{{localize 'NARRATIVE_CANVAS.Director.BackToPreviousDocument'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.BackToPreviousDocument'}}" {{#unless canGoBack}}hidden{{/unless}}>
+                <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            </button>
         </header>
-
-        <!-- Base Folder Selection -->
-        <div class="journal-control-row">
-            <select class="select-journal-folder">
-                <option value="">{{localize "NARRATIVE_CANVAS.Director.AllFolders"}}</option>
-                {{#each folders}}
-                    <option value="{{this.id}}" {{#if (eq ../selectedFolderId this.id)}}selected{{/if}}>{{this.path}}</option>
-                {{/each}}
-            </select>
-        </div>
 
         <!-- Journal Text Filter -->
         <div class="sidebar-search-row">
@@ -72,6 +65,9 @@
                 {{#each availableJournals}}
                     <option value="{{this.id}}" {{#if (eq ../selectedJournalId this.id)}}selected{{/if}}>{{this.name}}</option>
                 {{/each}}
+                {{#if linkedJournalOption}}
+                    <option value="{{linkedJournalOption.id}}" selected>{{linkedJournalOption.name}}</option>
+                {{/if}}
             </select>
         </div>
 

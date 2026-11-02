@@ -16,6 +16,10 @@ export class NarrativeBootstrapper {
       game.modules.get("narrative-canvas").manager = new NarrativeManager();
     });
 
+    Hooks.once("setup", () => {
+      NarrativeSettings.registerJournalRootFolder();
+    });
+
     Hooks.once("ready", () => {
       const manager = game.modules.get("narrative-canvas").manager;
       if (manager) {

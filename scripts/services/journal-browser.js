@@ -96,8 +96,17 @@ export class JournalBrowser {
   static async getJournalDetails(journalId) {
     if (!journalId) return null;
     const journalCollection = game.journal ?? game.collections.get("JournalEntry");
-    const entry = journalCollection?.get(journalId);
-    if (!entry) return null;
+    let entry = journalCollection?.get(journalId);
+    if (!entry && journalId.includes(".")) {
+      try {
+        entry = await foundry.utils.fromUuid(journalId);
+      } catch {
+        return null;
+      }
+    }
+
+    if (entry?.documentName === "JournalEntryPage") entry = entry.parent;
+    if (entry?.documentName !== "JournalEntry") return null;
 
     const rawPages = entry.pages?.contents ?? Array.from(entry.pages ?? []);
     const pages = await Promise.all(rawPages.map(async (page) => {
@@ -173,6 +182,7 @@ export class JournalBrowser {
     return {
       id: entry.id,
       name: entry.name,
+      uuid: entry.uuid,
       pages
     };
   }

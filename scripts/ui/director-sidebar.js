@@ -20,6 +20,8 @@ export class DirectorSidebar {
   #journalQuery = "";
   #selectedJournalId = "";
   #selectedPageId = "";
+  #linkedJournalOption = null;
+  #journalNavigationHistory = [];
   #journalStateSaveTimeout = null;
   #activeSceneId = "";
   #scenesList = [];
@@ -37,7 +39,7 @@ export class DirectorSidebar {
     this.#callbacks = { onSceneSelect, onVolumeChange, onJournalImageShow };
 
     const journalViewerState = NarrativeSettings.getJournalViewerState();
-    this.#selectedFolderId = journalViewerState.folderId;
+    this.#selectedFolderId = NarrativeSettings.getJournalRootFolder();
     this.#journalQuery = journalViewerState.query;
     this.#selectedJournalId = journalViewerState.journalId;
     this.#selectedPageId = journalViewerState.pageId;
@@ -227,7 +229,6 @@ export class DirectorSidebar {
 
   async #prepareTemplateData() {
     const restoredState = {
-      folderId: this.#selectedFolderId,
       journalId: this.#selectedJournalId,
       pageId: this.#selectedPageId
     };
@@ -243,24 +244,25 @@ export class DirectorSidebar {
       };
     });
 
-    const folders = JournalBrowser.getFolders();
-    if (this.#selectedFolderId && !folders.some(folder => folder.id === this.#selectedFolderId)) {
-      this.#selectedFolderId = "";
-    }
-
     const availableJournals = JournalBrowser.getJournals({
       folderId: this.#selectedFolderId || null,
       query: this.#journalQuery
     });
 
-    if (this.#selectedJournalId && !availableJournals.some(journal => journal.id === this.#selectedJournalId)) {
-      this.#selectedJournalId = "";
-      this.#selectedPageId = "";
-    }
-
-    const activeJournal = this.#selectedJournalId
+    let activeJournal = this.#selectedJournalId
       ? await JournalBrowser.getJournalDetails(this.#selectedJournalId)
       : null;
+    this.#linkedJournalOption = null;
+
+    if (this.#selectedJournalId && !availableJournals.some(journal => journal.id === this.#selectedJournalId)) {
+      if (activeJournal) {
+        this.#linkedJournalOption = { id: this.#selectedJournalId, name: activeJournal.name };
+      } else {
+        this.#selectedJournalId = "";
+        this.#selectedPageId = "";
+        activeJournal = null;
+      }
+    }
 
     let activePage = null;
     if (activeJournal?.pages.length) {
@@ -268,8 +270,7 @@ export class DirectorSidebar {
       if (activePage) this.#selectedPageId = activePage.id;
     }
 
-    if (restoredState.folderId !== this.#selectedFolderId
-      || restoredState.journalId !== this.#selectedJournalId
+    if (restoredState.journalId !== this.#selectedJournalId
       || restoredState.pageId !== this.#selectedPageId) {
       void this.#saveJournalViewerState();
     }
@@ -297,10 +298,10 @@ export class DirectorSidebar {
       isScenesCollapsed: this.#areScenesCollapsed,
       isAudioCollapsed: this.#isAudioCollapsed,
       activeSceneId: this.#activeSceneId,
-      folders,
-      selectedFolderId: this.#selectedFolderId,
       journalQuery: this.#journalQuery,
       availableJournals,
+      linkedJournalOption: this.#linkedJournalOption,
+      canGoBack: this.#journalNavigationHistory.length > 0,
       selectedJournalId: this.#selectedJournalId,
       activeJournal,
       selectedPageId: this.#selectedPageId,
@@ -316,6 +317,8 @@ export class DirectorSidebar {
     this.#bindSectionToggles(root);
     this.#bindSceneFilter(root);
     this.#bindSceneSelection(root);
+    this.#bindContentLinks(root);
+    this.#bindJournalNavigation(root);
     this.#bindJournalControls(root);
     this.#bindTocScrolling(root);
     this.#bindPageSelection(root);
@@ -443,49 +446,12 @@ export class DirectorSidebar {
   }
 
   #bindJournalControls(root) {
-    const folderSelect = root.querySelector(".select-journal-folder");
     const journalFilterInput = root.querySelector(".input-journal-filter");
     const journalSelect = root.querySelector(".select-journal-entry");
 
-    const refreshJournalSelect = () => {
-      const journals = JournalBrowser.getJournals({
-        folderId: this.#selectedFolderId || null,
-        query: this.#journalQuery
-      });
-
-      if (!journalSelect) return;
-      journalSelect.innerHTML = "";
-
-      const defaultOption = document.createElement("option");
-      defaultOption.value = "";
-      defaultOption.textContent = game.i18n.localize("NARRATIVE_CANVAS.Director.SelectJournal");
-      journalSelect.appendChild(defaultOption);
-
-      journals.forEach(journal => {
-        const option = document.createElement("option");
-        option.value = journal.id;
-        option.textContent = journal.name;
-        if (journal.id === this.#selectedJournalId) option.selected = true;
-        journalSelect.appendChild(option);
-      });
-
-      if (this.#selectedJournalId && !journals.some(j => j.id === this.#selectedJournalId)) {
-        this.#selectedJournalId = "";
-        this.#selectedPageId = "";
-        this.#refreshJournalBody();
-        this.#applySceneFilters();
-      }
-    };
-
-    folderSelect?.addEventListener("change", (event) => {
-      this.#selectedFolderId = event.target.value;
-      refreshJournalSelect();
-      void this.#saveJournalViewerState();
-    });
-
     journalFilterInput?.addEventListener("input", (event) => {
       this.#journalQuery = event.target.value;
-      refreshJournalSelect();
+      this.#refreshJournalSelect();
       this.#scheduleJournalViewerStateSave();
     });
 
@@ -496,10 +462,189 @@ export class DirectorSidebar {
     journalSelect?.addEventListener("change", (event) => {
       this.#selectedJournalId = event.target.value;
       this.#selectedPageId = "";
+      this.#linkedJournalOption = null;
       this.#refreshJournalBody();
       this.#applySceneFilters();
       void this.#saveJournalViewerState();
     });
+  }
+
+  #refreshJournalSelect() {
+    const journalSelect = this.#element?.querySelector(".select-journal-entry");
+    if (!journalSelect) return;
+
+    const journals = JournalBrowser.getJournals({
+      folderId: this.#selectedFolderId || null,
+      query: this.#journalQuery
+    });
+
+    journalSelect.innerHTML = "";
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = game.i18n.localize("NARRATIVE_CANVAS.Director.SelectJournal");
+    journalSelect.appendChild(defaultOption);
+
+    journals.forEach(journal => {
+      const option = document.createElement("option");
+      option.value = journal.id;
+      option.textContent = journal.name;
+      journalSelect.appendChild(option);
+    });
+
+    if (this.#linkedJournalOption) {
+      const option = document.createElement("option");
+      option.value = this.#linkedJournalOption.id;
+      option.textContent = this.#linkedJournalOption.name;
+      journalSelect.appendChild(option);
+    }
+
+    if (this.#selectedJournalId && !journals.some(journal => journal.id === this.#selectedJournalId)
+      && this.#linkedJournalOption?.id !== this.#selectedJournalId) {
+      this.#selectedJournalId = "";
+      this.#selectedPageId = "";
+      void this.#refreshJournalBody();
+      this.#applySceneFilters();
+    }
+
+    journalSelect.value = this.#selectedJournalId;
+  }
+
+  #bindContentLinks(root) {
+    const journalSection = root.querySelector(".sidebar-journal-section");
+    if (!journalSection) return;
+
+    journalSection.addEventListener("click", (event) => {
+      const link = event.target.closest?.("a.content-link[data-uuid]");
+      if (!link || !journalSection.contains(link)) return;
+
+      const uuid = link.dataset.uuid;
+      const uuidParts = uuid.split(".");
+      const isJournalLink = ["JournalEntry", "JournalEntryPage"].includes(link.dataset.type)
+        || uuidParts.some(part => part === "JournalEntry" || part === "JournalEntryPage");
+
+      if (isJournalLink) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        void this.#openJournalLink(uuid);
+        return;
+      }
+
+      this.#raiseLinkedDocument(uuid);
+    }, true);
+  }
+
+  #bindJournalNavigation(root) {
+    root.querySelector(".btn-journal-back")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      void this.#goBackJournal();
+    });
+  }
+
+  async #openJournalLink(uuid) {
+    let linkedDocument;
+    try {
+      linkedDocument = await foundry.utils.fromUuid(uuid);
+    } catch (error) {
+      console.warn("Narrative Canvas | Failed to resolve journal link:", uuid, error);
+      return;
+    }
+
+    const isPage = linkedDocument?.documentName === "JournalEntryPage";
+    const journal = isPage ? linkedDocument.parent : linkedDocument;
+    if (journal?.documentName !== "JournalEntry") return;
+
+    this.#journalNavigationHistory.push({
+      query: this.#journalQuery,
+      journalId: this.#selectedJournalId,
+      pageId: this.#selectedPageId,
+      filterByJournal: this.#filterByJournal,
+      linkedJournalOption: this.#linkedJournalOption ? { ...this.#linkedJournalOption } : null
+    });
+    this.#updateJournalBackButton();
+
+    const isWorldJournal = JournalBrowser.getJournals().some(entry => entry.id === journal.id);
+    this.#selectedJournalId = isWorldJournal ? journal.id : journal.uuid;
+    this.#selectedPageId = isPage ? linkedDocument.id : "";
+    const availableJournals = JournalBrowser.getJournals({
+      folderId: this.#selectedFolderId || null,
+      query: this.#journalQuery
+    });
+    this.#linkedJournalOption = availableJournals.some(entry => entry.id === this.#selectedJournalId)
+      ? null
+      : { id: this.#selectedJournalId, name: journal.name };
+
+    if (!isWorldJournal) {
+      this.#filterByJournal = false;
+      const filterToggle = this.#element?.querySelector(".input-filter-by-journal");
+      if (filterToggle) filterToggle.checked = false;
+    }
+
+    if (!isPage) {
+      const details = await JournalBrowser.getJournalDetails(this.#selectedJournalId);
+      this.#selectedPageId = details?.pages[0]?.id ?? "";
+    }
+
+    this.#refreshJournalSelect();
+    await this.#refreshJournalBody();
+    this.#applySceneFilters();
+    void this.#saveJournalViewerState();
+  }
+
+  async #goBackJournal() {
+    const previousState = this.#journalNavigationHistory.pop();
+    if (!previousState) return;
+
+    this.#journalQuery = previousState.query;
+    this.#selectedJournalId = previousState.journalId;
+    this.#selectedPageId = previousState.pageId;
+    this.#filterByJournal = previousState.filterByJournal;
+    this.#linkedJournalOption = previousState.linkedJournalOption;
+
+    const journalFilterInput = this.#element?.querySelector(".input-journal-filter");
+    const filterToggle = this.#element?.querySelector(".input-filter-by-journal");
+    if (journalFilterInput) journalFilterInput.value = this.#journalQuery;
+    if (filterToggle) filterToggle.checked = this.#filterByJournal;
+
+    this.#refreshJournalSelect();
+    await this.#refreshJournalBody();
+    this.#applySceneFilters();
+    this.#updateJournalBackButton();
+    void this.#saveJournalViewerState();
+  }
+
+  #updateJournalBackButton() {
+    const backButton = this.#element?.querySelector(".btn-journal-back");
+    if (backButton) backButton.hidden = this.#journalNavigationHistory.length === 0;
+  }
+
+  #raiseLinkedDocument(uuid) {
+    let attempts = 0;
+    const raiseWindow = () => {
+      const applications = [
+        ...(foundry.applications?.instances?.values?.() ?? []),
+        ...Object.values(ui.windows ?? {})
+      ];
+      const application = applications.find(app => (app.document ?? app.object)?.uuid === uuid);
+      const element = application?.element?.[0] ?? application?.element;
+
+      if (element?.isConnected) {
+        application.bringToTop?.();
+        const canvas = document.getElementById("narrative-canvas-director")
+          ?? document.getElementById("narrative-player-display");
+        const canvasZIndex = Number.parseInt(canvas ? getComputedStyle(canvas).zIndex : "10000", 10) || 10000;
+        const highestWindowZIndex = applications.reduce((highest, app) => {
+          const appElement = app.element?.[0] ?? app.element;
+          const zIndex = Number.parseInt(appElement?.style?.zIndex ?? "0", 10) || 0;
+          return Math.max(highest, zIndex);
+        }, canvasZIndex);
+        element.style.setProperty("z-index", String(highestWindowZIndex + 1), "important");
+        return;
+      }
+
+      if (attempts++ < 20) window.setTimeout(raiseWindow, 50);
+    };
+
+    window.setTimeout(raiseWindow, 0);
   }
 
   #scheduleJournalViewerStateSave() {
@@ -521,7 +666,6 @@ export class DirectorSidebar {
 
     try {
       await NarrativeSettings.saveJournalViewerState({
-        folderId: this.#selectedFolderId,
         query: this.#journalQuery,
         journalId: this.#selectedJournalId,
         pageId: this.#selectedPageId
@@ -579,6 +723,21 @@ export class DirectorSidebar {
 
     this.#addImageOverlayButtons(bodyContainer);
     this.#bindTocScrolling(bodyContainer);
+    this.#scrollSelectedPageBadgeIntoView(bodyContainer);
+  }
+
+  #scrollSelectedPageBadgeIntoView(root) {
+    const track = root.querySelector(".journal-toc-track");
+    const badge = track?.querySelector(".journal-toc-badge.is-active");
+    if (!track || !badge) return;
+
+    const trackBounds = track.getBoundingClientRect();
+    const badgeBounds = badge.getBoundingClientRect();
+    if (badgeBounds.left < trackBounds.left) {
+      track.scrollBy({ left: badgeBounds.left - trackBounds.left, behavior: "smooth" });
+    } else if (badgeBounds.right > trackBounds.right) {
+      track.scrollBy({ left: badgeBounds.right - trackBounds.right, behavior: "smooth" });
+    }
   }
 
   #bindTocScrolling(root) {

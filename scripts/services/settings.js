@@ -1,3 +1,5 @@
+import { JournalBrowser } from "./journal-browser.js";
+
 /**
  * Handles module configurations and permissions.
  */
@@ -11,6 +13,7 @@ export class NarrativeSettings {
   static SETTING_TILE_SIZE = "editorTileSize";
   static SETTING_ACTIVE_STATE = "activeNarrativeState";
   static SETTING_JOURNAL_VIEWER_STATE = "journalViewerState";
+  static SETTING_JOURNAL_ROOT_FOLDER = "journalRootFolder";
 
   /**
    * Registers all settings within Foundry VTT.
@@ -112,6 +115,23 @@ export class NarrativeSettings {
     });
   }
 
+  static registerJournalRootFolder() {
+    const choices = Object.fromEntries([
+      ["", "NARRATIVE_CANVAS.Director.AllFolders"],
+      ...JournalBrowser.getFolders().map(folder => [folder.id, folder.path])
+    ]);
+
+    game.settings.register("narrative-canvas", this.SETTING_JOURNAL_ROOT_FOLDER, {
+      name: "NARRATIVE_CANVAS.Settings.JournalRootFolderLabel",
+      hint: "NARRATIVE_CANVAS.Settings.JournalRootFolderHint",
+      scope: "client",
+      config: true,
+      type: String,
+      choices,
+      default: ""
+    });
+  }
+
   static getAllScenes() {
     return game.settings.get("narrative-canvas", this.SETTING_SCENES_DATA);
   }
@@ -176,12 +196,11 @@ export class NarrativeSettings {
 
   /**
    * Retrieves the current user's saved Journal Viewer state.
-   * @returns {{folderId: string, query: string, journalId: string, pageId: string}}
+    * @returns {{query: string, journalId: string, pageId: string}}
    */
   static getJournalViewerState() {
     const state = game.settings.get("narrative-canvas", this.SETTING_JOURNAL_VIEWER_STATE);
     return {
-      folderId: typeof state?.folderId === "string" ? state.folderId : "",
       query: typeof state?.query === "string" ? state.query : "",
       journalId: typeof state?.journalId === "string" ? state.journalId : "",
       pageId: typeof state?.pageId === "string" ? state.pageId : ""
@@ -190,15 +209,23 @@ export class NarrativeSettings {
 
   /**
    * Persists the current user's Journal Viewer state locally.
-   * @param {{folderId: string, query: string, journalId: string, pageId: string}} state
+   * @param {{query: string, journalId: string, pageId: string}} state
    */
   static async saveJournalViewerState(state) {
     await game.settings.set("narrative-canvas", this.SETTING_JOURNAL_VIEWER_STATE, {
-      folderId: typeof state?.folderId === "string" ? state.folderId : "",
       query: typeof state?.query === "string" ? state.query : "",
       journalId: typeof state?.journalId === "string" ? state.journalId : "",
       pageId: typeof state?.pageId === "string" ? state.pageId : ""
     });
+  }
+
+  /**
+   * Retrieves the configured Journal Viewer root folder if it still exists.
+   * @returns {string}
+   */
+  static getJournalRootFolder() {
+    const folderId = game.settings.get("narrative-canvas", this.SETTING_JOURNAL_ROOT_FOLDER) || "";
+    return JournalBrowser.getFolders().some(folder => folder.id === folderId) ? folderId : "";
   }
 
   static areToastsEnabled() {
