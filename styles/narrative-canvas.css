@@ -109,7 +109,7 @@ body.acd-nc-active {
     .narrative-handout-image-overlay {
         position: absolute;
         inset: 0;
-        z-index: 3;
+        z-index: 12;
         display: flex;
         align-items: flex-end;
         justify-content: center;
@@ -119,6 +119,7 @@ body.acd-nc-active {
 
     .narrative-scene-handout-image-frame {
         position: relative;
+        z-index: 1;
         display: flex;
         max-width: 88vw;
         max-height: 76vh;
@@ -152,6 +153,27 @@ body.acd-nc-active {
         pointer-events: auto;
 
         p { margin: 0; }
+    }
+
+    .btn-close-handout-image {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 5;
+        display: grid;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.7);
+        color: #fff;
+        font-size: 1.1rem;
+        cursor: pointer;
+        pointer-events: auto;
+
+        &:hover { background: rgba(0, 0, 0, 0.9); }
     }
 
     /* Cinematic Ambient Overlay */
@@ -196,45 +218,6 @@ body.acd-nc-active {
         margin: 12px 0 0 0;
         font-size: 1.4rem;
         text-shadow: 0 2px 6px rgba(0,0,0,0.9);
-    }
-
-    .narrative-image-overlay {
-        position: absolute;
-        inset: 0;
-        z-index: 5;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        pointer-events: none;
-    }
-
-    .narrative-image-overlay-frame {
-        position: relative;
-        display: inline-block;
-        max-width: 90vw;
-        max-height: 80vh;
-    }
-
-    .narrative-image-overlay-image {
-        display: block;
-        max-width: 90vw;
-        max-height: 80vh;
-        object-fit: contain;
-    }
-
-    .btn-close-image-overlay {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 40px;
-        height: 40px;
-        border: 1px solid rgba(255, 255, 255, 0.7);
-        border-radius: 4px;
-        color: #fff;
-        background: rgba(0, 0, 0, 0.7);
-        font-size: 1.2rem;
-        cursor: pointer;
-        pointer-events: auto;
     }
 
     /* Dialogue Stage Layer */

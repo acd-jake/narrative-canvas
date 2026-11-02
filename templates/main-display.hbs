@@ -17,6 +17,11 @@
                 {{#if handoutImageOverlay.description}}
                     <div class="narrative-scene-handout-image-description">{{{handoutImageOverlay.description}}}</div>
                 {{/if}}
+                {{#if isGM}}
+                    <button type="button" class="btn-close-handout-image" title="{{localize 'NARRATIVE_CANVAS.Director.CloseImageOverlay'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.CloseImageOverlay'}}">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                    </button>
+                {{/if}}
             </div>
         </div>
     {{/if}}
@@ -47,19 +52,6 @@
         {{#if handout.title}}
             <h3 class="narrative-handout-title">{{handout.title}}</h3>
         {{/if}}
-    </div>
-    {{/if}}
-
-    {{#if imageOverlay}}
-    <div class="narrative-image-overlay animate-fade-in">
-        <div class="narrative-image-overlay-frame">
-            <img src="{{imageOverlay.src}}" alt="{{imageOverlay.title}}" class="narrative-image-overlay-image" />
-            {{#if isGM}}
-                <button type="button" class="btn-close-image-overlay" title="{{localize 'NARRATIVE_CANVAS.Director.CloseImageOverlay'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.CloseImageOverlay'}}">
-                    <i class="fas fa-times" aria-hidden="true"></i>
-                </button>
-            {{/if}}
-        </div>
     </div>
     {{/if}}
 

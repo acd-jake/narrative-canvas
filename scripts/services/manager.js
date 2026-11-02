@@ -12,9 +12,9 @@ export class NarrativeManager {
       playerViewActive: false,
       background: "",
       handoutImage: "",
+      journalImage: null,
       activeDialogue: null,
       handout: null,
-      imageOverlay: null,
 
       activeSceneId: "",
       currentSceneData: null,
@@ -336,13 +336,13 @@ export class NarrativeManager {
           activeSpeakerId: null,
           activeDialogue: null,
           handout: null,
-          imageOverlay: null
+          journalImage: null
         });
       },
-      onImageOverlay: (imageOverlay) => this.handleDisplayUpdate({ imageOverlay }),
-      onImageOverlayClose: () => this.handleDisplayUpdate({ imageOverlay: null }),
+      onJournalImageShow: (journalImage) => this.handleDisplayUpdate({ journalImage, handoutImage: "" }),
       onBackgroundChange: (path) => this.handleDisplayUpdate({ background: path }),
-      onHandoutImageChange: (path) => this.handleDisplayUpdate({ handoutImage: path }),
+      onHandoutImageChange: (path) => this.handleDisplayUpdate({ handoutImage: path, journalImage: null }),
+      onHandoutImageClose: () => this.handleDisplayUpdate({ handoutImage: "", journalImage: null }),
       onImageDescriptionToggle: async (collectionName, index) => {
         const sceneId = this.narrativeState.activeSceneId;
         if (!sceneId) return;

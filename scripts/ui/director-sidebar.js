@@ -26,11 +26,11 @@ export class DirectorSidebar {
    * @param {SceneAudioController} options.audioController
    * @param {(sceneId: string) => void} options.onSceneSelect
    * @param {(volume: number) => void} [options.onVolumeChange]
-   * @param {(image: {src: string, title: string}) => void} [options.onImageOverlay]
+   * @param {(image: {src: string, title: string}) => void} [options.onJournalImageShow]
    */
-  constructor({ audioController, onSceneSelect, onVolumeChange, onImageOverlay }) {
+  constructor({ audioController, onSceneSelect, onVolumeChange, onJournalImageShow }) {
     this.#audioController = audioController;
-    this.#callbacks = { onSceneSelect, onVolumeChange, onImageOverlay };
+    this.#callbacks = { onSceneSelect, onVolumeChange, onJournalImageShow };
   }
 
   /**
@@ -565,7 +565,7 @@ export class DirectorSidebar {
         event.preventDefault();
         const image = overlayButton.parentElement.querySelector("img");
         if (image) {
-          this.#callbacks.onImageOverlay?.({
+          this.#callbacks.onJournalImageShow?.({
             src: image.currentSrc || image.src,
             title: image.alt || this.#element.querySelector(".journal-page-title")?.textContent || ""
           });
