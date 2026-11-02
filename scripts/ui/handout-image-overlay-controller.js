@@ -49,6 +49,7 @@ export class HandoutImageOverlayController {
         .map(overlay => [overlay.dataset.overlayId, overlay])
     );
     const activeOverlays = new Map();
+    const overlayLayer = this.stage.querySelector(".narrative-handout-image-layer") ?? this.stage;
 
     for (const data of overlays) {
       let overlay = remainingOverlays.get(data.id);
@@ -57,7 +58,7 @@ export class HandoutImageOverlayController {
         remainingOverlays.delete(data.id);
       } else {
         overlay = this.#createOverlay(data);
-        this.stage.appendChild(overlay);
+        overlayLayer.appendChild(overlay);
         overlay.style.zIndex = String(++this.zIndex);
         overlay.style.opacity = "0";
         this.animateOpacity(overlay, 1, duration);
@@ -139,8 +140,8 @@ export class HandoutImageOverlayController {
       const y = Number(item.position?.y);
       if (Number.isFinite(x) && Number.isFinite(y)) {
         this.positions.set(item.id, {
-          x: Math.max(0, Math.min(1, x)),
-          y: Math.max(0, Math.min(1, y))
+          x,
+          y
         });
       }
       const size = Number(item.size);
@@ -232,8 +233,9 @@ export class HandoutImageOverlayController {
     if (!overlay) return;
     const frame = overlay.querySelector(".narrative-scene-handout-image-frame");
     const size = this.sizes.get(overlay.dataset.overlayId) ?? 1;
-    frame.style.left = `${Math.max(0, Math.min(1, position.x)) * 100}%`;
-    frame.style.top = `${Math.max(0, Math.min(1, position.y)) * 100}%`;
+    frame.style.left = `${position.x * 100}%`;
+    frame.style.top = `${position.y * 100}%`;
+    frame.style.setProperty("--handout-image-scale-inverse", String(1 / size));
     frame.style.transform = `translate(-50%, -50%) scale(${size})`;
   }
 
@@ -245,6 +247,7 @@ export class HandoutImageOverlayController {
     this.sizes.set(overlayId, clampedSize);
     overlay.dataset.size = String(clampedSize);
     const frame = overlay.querySelector(".narrative-scene-handout-image-frame");
+    frame.style.setProperty("--handout-image-scale-inverse", String(1 / clampedSize));
     frame.style.transform = `translate(-50%, -50%) scale(${clampedSize})`;
   }
 
@@ -359,13 +362,8 @@ export class HandoutImageOverlayController {
       }
 
       const stageBounds = this.stage.getBoundingClientRect();
-      const frameBounds = this.drag.frame.getBoundingClientRect();
-      const halfWidth = frameBounds.width / 2;
-      const halfHeight = frameBounds.height / 2;
-      const x = Math.max(halfWidth, Math.min(stageBounds.width - halfWidth,
-        this.drag.centerX + event.clientX - this.drag.startX));
-      const y = Math.max(halfHeight, Math.min(stageBounds.height - halfHeight,
-        this.drag.centerY + event.clientY - this.drag.startY));
+      const x = this.drag.centerX + event.clientX - this.drag.startX;
+      const y = this.drag.centerY + event.clientY - this.drag.startY;
       const position = { x: x / stageBounds.width, y: y / stageBounds.height };
       this.positions.set(this.drag.overlayId, position);
       this.#applyPosition(this.stage.querySelector(

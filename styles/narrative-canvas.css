@@ -288,6 +288,7 @@ body.acd-nc-active {
         left: 50%;
         z-index: 1;
         display: flex;
+        width: max-content;
         height: 76%;
         align-items: flex-end;
         justify-content: center;
@@ -372,6 +373,8 @@ body.acd-nc-active {
         font-size: 1.1rem;
         cursor: pointer;
         pointer-events: auto;
+        transform: scale(var(--handout-image-scale-inverse, 1));
+        transform-origin: top right;
 
         &:hover { background: rgba(0, 0, 0, 0.9); }
     }
@@ -392,6 +395,8 @@ body.acd-nc-active {
         color: #fff;
         cursor: nwse-resize;
         pointer-events: auto;
+        transform: scale(var(--handout-image-scale-inverse, 1));
+        transform-origin: bottom right;
 
         &:hover { background: rgba(0, 0, 0, 0.9); }
     }

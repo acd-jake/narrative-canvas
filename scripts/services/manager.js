@@ -225,8 +225,8 @@ export class NarrativeManager {
       return [{
         ...overlay,
         position: {
-          x: Number.isFinite(x) ? Math.max(0, Math.min(1, x)) : 0.5,
-          y: Number.isFinite(y) ? Math.max(0, Math.min(1, y)) : 0.5
+          x: Number.isFinite(x) ? x : 0.5,
+          y: Number.isFinite(y) ? y : 0.5
         },
         size: Number.isFinite(size) ? Math.max(0.25, Math.min(1.5, size)) : overlay.size ?? 1,
         zOrder
@@ -385,8 +385,8 @@ export class NarrativeManager {
               : 1,
             ...(hasPosition ? {
               position: {
-                x: Math.max(0, Math.min(1, x)),
-                y: Math.max(0, Math.min(1, y))
+                x,
+                y
               }
             } : {}),
             zOrder: Number.isFinite(overlay.zOrder) ? overlay.zOrder : index
