@@ -28,6 +28,7 @@ export class NarrativeManager {
       activeSpeakerId: null,   // Currently active speaker actor ID
       activeTrackId: null,
       globalVolume: 0.5,
+      audioMuted: false,
       scenesList: []
     };
     this.view = null;
@@ -609,6 +610,7 @@ export class NarrativeManager {
       },
       onTrackPlay: (trackId) => this.handleDisplayUpdate({ activeTrackId: trackId }),
       onVolumeChange: (volume) => this.handleDisplayUpdate({ globalVolume: volume }),
+      onAudioMuteChange: (audioMuted) => this.handleDisplayUpdate({ audioMuted }),
       onVisibilityChange: (visible) => this.handleDisplayUpdate(visible
         ? { ...this.narrativeState, playerViewActive: true }
         : { playerViewActive: false }),

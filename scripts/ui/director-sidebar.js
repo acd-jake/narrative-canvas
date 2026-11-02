@@ -28,6 +28,7 @@ export class DirectorSidebar {
   #activeSceneId = "";
   #scenesList = [];
   #currentSceneData = null;
+  #audioMuted = false;
 
   /**
    * @param {object} options
@@ -96,6 +97,7 @@ export class DirectorSidebar {
    */
   async render(context = {}) {
     this.#activeSceneId = context.activeSceneId ?? this.#activeSceneId;
+    this.#audioMuted = Boolean(context.audioMuted);
     this.#scenesList = context.scenesList ?? NarrativeSceneRepository.getAll();
     this.#currentSceneData = context.currentSceneData ?? (this.#activeSceneId ? this.#scenesList.find(s => s.id === this.#activeSceneId) : null);
 
@@ -125,6 +127,7 @@ export class DirectorSidebar {
   update(context = {}) {
     if (!this.#element) return;
     this.#activeSceneId = context.activeSceneId ?? this.#activeSceneId;
+    this.#audioMuted = Boolean(context.audioMuted);
 
     const previousScenes = this.#scenesList;
     this.#scenesList = context.scenesList ?? this.#scenesList;
@@ -142,6 +145,7 @@ export class DirectorSidebar {
     }
 
     this.#updateCollapseState();
+    this.#element.querySelector(".sidebar-audio-section")?.classList.toggle("is-muted", this.#audioMuted);
 
     // Refresh audio tracks list for the active scene
     this.#refreshAudioTracksList();
@@ -307,6 +311,7 @@ export class DirectorSidebar {
       isCollapsed: this.#isCollapsed,
       isScenesCollapsed: this.#areScenesCollapsed,
       isAudioCollapsed: this.#isAudioCollapsed,
+      audioMuted: this.#audioMuted,
       activeSceneId: this.#activeSceneId,
       currentSceneName: this.#activeSceneId
         ? this.#currentSceneData?.name ?? game.i18n.localize("NARRATIVE_CANVAS.Director.NoActiveScene")

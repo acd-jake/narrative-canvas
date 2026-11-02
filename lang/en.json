@@ -125,6 +125,8 @@
   "NARRATIVE_CANVAS.Director.Pause": "Pause",
   "NARRATIVE_CANVAS.Director.Stop": "Stop",
   "NARRATIVE_CANVAS.Director.StopAllAudio": "Stop all audio",
+  "NARRATIVE_CANVAS.Director.MuteAudio": "Mute audio",
+  "NARRATIVE_CANVAS.Director.UnmuteAudio": "Unmute audio",
   "NARRATIVE_CANVAS.Director.TrackVolume": "Track Volume",
   "NARRATIVE_CANVAS.Director.MasterVolume": "Audio Volume",
   "NARRATIVE_CANVAS.Director.NoAudioTracks": "No audio tracks assigned to this scene",

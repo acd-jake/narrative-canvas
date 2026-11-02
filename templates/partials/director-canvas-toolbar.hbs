@@ -11,8 +11,11 @@
             <i class="fas fa-broadcast-tower" aria-hidden="true"></i>
         </button>
     {{/if}}
+    <button type="button" data-canvas-action="toggle-audio-mute" data-audio-muted="{{audioMuted}}" title="{{#if audioMuted}}{{localize 'NARRATIVE_CANVAS.Director.UnmuteAudio'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.MuteAudio'}}{{/if}}" aria-label="{{#if audioMuted}}{{localize 'NARRATIVE_CANVAS.Director.UnmuteAudio'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.MuteAudio'}}{{/if}}">
+        <i class="fas {{#if audioMuted}}fa-volume-mute{{else}}fa-volume-up{{/if}}" aria-hidden="true"></i>
+    </button>
     <button type="button" data-canvas-action="stop-audio" title="{{localize 'NARRATIVE_CANVAS.Director.StopAllAudio'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.StopAllAudio'}}">
-        <i class="fas fa-volume-mute" aria-hidden="true"></i>
+        <i class="fas fa-stop" aria-hidden="true"></i>
     </button>
     <button type="button" data-canvas-action="close-handouts" title="{{localize 'NARRATIVE_CANVAS.Labels.CloseAllHandouts'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Labels.CloseAllHandouts'}}">
         <span class="toolbar-composite-icon" aria-hidden="true">

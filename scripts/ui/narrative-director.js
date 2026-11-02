@@ -17,6 +17,7 @@ export class NarrativeDirector extends NarrativeCanvas {
     this.callbacks = callbacks;
     this.imageControls = new DirectorImageControls();
     this.automaticPlaylist = null;
+    this.automaticPlaylistMuted = false;
     this.audioController = new SceneAudioController({
       globalVolume: 0.5,
       onStateChange: (trackId) => this.sidebar?.updateAudioTrackItem(trackId)
@@ -24,10 +25,11 @@ export class NarrativeDirector extends NarrativeCanvas {
     this.toolbar = new DirectorCanvasToolbar({
       onVisibilityChange: (visible) => this.callbacks.onVisibilityChange(visible),
       onReopenPlayers: () => this.callbacks.onReopenPlayers?.(),
+      onAudioMuteChange: (muted) => this.callbacks.onAudioMuteChange?.(muted),
       onCloseAllHandouts: () => this.callbacks.onCloseAllHandouts(),
       onBackgroundReset: () => this.callbacks.onBackgroundReset(),
       onShutdown: () => this.callbacks.onShutdown(),
-      onStopAllAudio: () => this.audioController.stopAll()
+      onStopAllAudio: () => this.stopAllAudio()
     });
     this.sidebar = new DirectorSidebar({
       audioController: this.audioController,
@@ -50,18 +52,14 @@ export class NarrativeDirector extends NarrativeCanvas {
   /** @override */
   async close() {
     this.globalClickAbortController?.abort();
-    await this.audioController?.stopAll();
-    await this.automaticPlaylist?.stopAll();
-    this.automaticPlaylist = null;
+    await this.stopAllAudio();
     await super.close();
     this.imageControls?.destroy();
     this.toolbar?.destroy();
   }
 
   async activateSceneAudio(sceneData) {
-    await this.audioController.stopAll();
-    await this.automaticPlaylist?.stopAll();
-    this.automaticPlaylist = null;
+    await this.stopAllAudio();
 
     const automaticTrack = sceneData?.tracks?.find(track => track.playAutomatically === true);
     if (!automaticTrack) return;
@@ -71,16 +69,42 @@ export class NarrativeDirector extends NarrativeCanvas {
         ?? game.collections?.get("Playlist")?.get(automaticTrack.sourcePlaylistId);
       if (!playlist) return;
 
-      await playlist.playAll();
       this.automaticPlaylist = playlist;
+      if (this.audioController.muted) {
+        this.automaticPlaylistMuted = true;
+        return;
+      }
+
+      await playlist.playAll();
       return;
     }
 
     await this.audioController.play(automaticTrack);
   }
 
+  async setAudioMuted(muted) {
+    this.audioController.muted = muted;
+    if (!this.automaticPlaylist) return;
+
+    if (muted && !this.automaticPlaylistMuted) {
+      await this.automaticPlaylist.stopAll();
+      this.automaticPlaylistMuted = true;
+    } else if (!muted && this.automaticPlaylistMuted) {
+      await this.automaticPlaylist.playAll();
+      this.automaticPlaylistMuted = false;
+    }
+  }
+
+  async stopAllAudio() {
+    await this.audioController?.stopAll();
+    await this.automaticPlaylist?.stopAll();
+    this.automaticPlaylist = null;
+    this.automaticPlaylistMuted = false;
+  }
+
   /** @override */
   async _onPrepareElements(stageElement, context) {
+    await this.setAudioMuted(Boolean(context.audioMuted));
     const uiLayer = document.createElement("div");
     uiLayer.className = "narrative-director-ui-layer";
 
@@ -106,6 +130,7 @@ export class NarrativeDirector extends NarrativeCanvas {
 
   /** @override */
   async _onUpdateElements(context) {
+    await this.setAudioMuted(Boolean(context.audioMuted));
     await this.imageControls?.updateInPlace(context);
     await this.toolbar?.updateInPlace(context, this.stageElement);
     this.sidebar?.update(context);

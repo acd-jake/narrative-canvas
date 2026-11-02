@@ -1767,6 +1767,12 @@ body.acd-nc-active {
                 .sidebar-section-content { display: none; }
             }
 
+            &.is-muted .sidebar-section-content {
+                opacity: 0.3;
+                filter: grayscale(0.65);
+                transition: opacity 0.15s ease, filter 0.15s ease;
+            }
+
             .director-audio-tracks-list {
                 flex: 1 1 auto;
                 min-height: 0;

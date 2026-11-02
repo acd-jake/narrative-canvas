@@ -7,6 +7,7 @@ export class SceneAudioController {
   #states = new Map();
   #volumes = new Map();
   #globalVolume = 0.5;
+  #muted = false;
   #onStateChange = null;
 
   /**
@@ -25,6 +26,17 @@ export class SceneAudioController {
 
   set globalVolume(val) {
     this.#globalVolume = Math.max(0, Math.min(1, Number(val) || 0));
+    for (const [trackId] of this.#sounds) {
+      this.#applyEffectiveVolume(trackId);
+    }
+  }
+
+  get muted() {
+    return this.#muted;
+  }
+
+  set muted(value) {
+    this.#muted = Boolean(value);
     for (const [trackId] of this.#sounds) {
       this.#applyEffectiveVolume(trackId);
     }
@@ -188,7 +200,7 @@ export class SceneAudioController {
 
   #calcEffectiveVolume(trackId) {
     const trackVol = this.getTrackVolume(trackId);
-    return Math.max(0, Math.min(1, this.#globalVolume * trackVol));
+    return this.#muted ? 0 : Math.max(0, Math.min(1, this.#globalVolume * trackVol));
   }
 
   #applyEffectiveVolume(trackId) {

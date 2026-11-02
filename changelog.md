@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic background display and audio playback when a scene is activated.
 - An option to disable automatic activation of the first visible scene when a Journal Viewer selection filters out the active scene.
 - Actor and audio drops anywhere in the Scene Configurator workspace, with automatic routing to the matching scene lists.
+- A Director mute toggle to silence scene audio independently from the Stop All action.
 
 ### Changed
 

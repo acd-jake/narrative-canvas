@@ -91,6 +91,7 @@ Select **Hide from Players** to return from Live to Preparation: player views cl
 - **Hide from Players** closes player views while leaving the Narrative Canvas and its Director Controls open. Publish again to show the stage.
 - **Reopen Narrative Canvas for players** reopens the stage on clients where a player used the local close button. Players who still have it open are unaffected.
 - **Stop All Audio** stops scene playback.
+- **Mute Audio** silences active and future scene audio until unmuted. Unlike Stop All Audio, it does not stop scene tracks.
 - **Close All Handouts** closes all open handout images.
 - **Reset Background** clears the current background.
 - **Turn Off Canvas** closes the Narrative Canvas for all clients. Use Token Controls to open it again.
@@ -103,7 +104,7 @@ Select a handout tile to display that image as a foreground overlay. Selecting a
 
 ### Audio
 
-The Audio section in the Director Controls lists the active scene's tracks. Use each track's play/pause and stop buttons to control playback. The track volume slider changes that track; the master volume slider changes the overall audio level. The toolbar's **Stop All Audio** action stops every track.
+The Audio section in the Director Controls lists the active scene's tracks. Use each track's play/pause and stop buttons to control playback. The track volume slider changes that track; the master volume slider changes the overall audio level. The toolbar's **Stop All Audio** action stops scene tracks and automatic playlists. **Mute Audio** silences playback without stopping scene tracks.
 
 ### Visual Novel overlay
 

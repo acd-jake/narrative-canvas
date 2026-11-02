@@ -11,6 +11,7 @@ export class DirectorCanvasToolbar {
   * @param {() => void} callbacks.onCloseAllHandouts
   * @param {() => void} callbacks.onBackgroundReset
     * @param {() => void} callbacks.onReopenPlayers
+    * @param {(muted: boolean) => void} callbacks.onAudioMuteChange
    * @param {() => void} callbacks.onShutdown
    * @param {() => Promise<void>} callbacks.onStopAllAudio
    */
@@ -83,6 +84,9 @@ export class DirectorCanvasToolbar {
         break;
       case "reopen-players":
         this.#callbacks.onReopenPlayers();
+        break;
+      case "toggle-audio-mute":
+        this.#callbacks.onAudioMuteChange(button.dataset.audioMuted !== "true");
         break;
       case "stop-audio":
         await this.#callbacks.onStopAllAudio();

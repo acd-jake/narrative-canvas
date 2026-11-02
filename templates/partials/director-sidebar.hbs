@@ -138,7 +138,7 @@
     </section>
 
     <!-- Compact Section: Scene Audio Elements & Volume Controls -->
-    <section class="sidebar-audio-section {{#if isAudioCollapsed}}is-collapsed{{/if}}">
+    <section class="sidebar-audio-section {{#if isAudioCollapsed}}is-collapsed{{/if}} {{#if audioMuted}}is-muted{{/if}}">
         <header class="sidebar-section-header">
             <h4><i class="fas fa-music"></i> {{localize "NARRATIVE_CANVAS.Director.Audio"}}</h4>
             <button type="button" class="sidebar-section-toggle" data-section-toggle="audio" aria-expanded="{{#unless isAudioCollapsed}}true{{else}}false{{/unless}}" aria-controls="director-audio-content" title="{{#if isAudioCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandAudio'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseAudio'}}{{/if}}" aria-label="{{#if isAudioCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandAudio'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseAudio'}}{{/if}}">
