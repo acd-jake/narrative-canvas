@@ -16,6 +16,7 @@ export class NarrativeDirector extends NarrativeCanvas {
     super("narrative-canvas-director", "director-view");
     this.callbacks = callbacks;
     this.imageControls = new DirectorImageControls();
+    this.automaticPlaylist = null;
     this.audioController = new SceneAudioController({
       globalVolume: 0.5,
       onStateChange: (trackId) => this.sidebar?.updateAudioTrackItem(trackId)
@@ -49,10 +50,33 @@ export class NarrativeDirector extends NarrativeCanvas {
   /** @override */
   async close() {
     this.globalClickAbortController?.abort();
-    this.audioController?.stopAll();
+    await this.audioController?.stopAll();
+    await this.automaticPlaylist?.stopAll();
+    this.automaticPlaylist = null;
     await super.close();
     this.imageControls?.destroy();
     this.toolbar?.destroy();
+  }
+
+  async activateSceneAudio(sceneData) {
+    await this.audioController.stopAll();
+    await this.automaticPlaylist?.stopAll();
+    this.automaticPlaylist = null;
+
+    const automaticTrack = sceneData?.tracks?.find(track => track.playAutomatically === true);
+    if (!automaticTrack) return;
+
+    if (automaticTrack.sourcePlaylistId) {
+      const playlist = game.playlists?.get(automaticTrack.sourcePlaylistId)
+        ?? game.collections?.get("Playlist")?.get(automaticTrack.sourcePlaylistId);
+      if (!playlist) return;
+
+      await playlist.playAll();
+      this.automaticPlaylist = playlist;
+      return;
+    }
+
+    await this.audioController.play(automaticTrack);
   }
 
   /** @override */

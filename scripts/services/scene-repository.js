@@ -29,6 +29,9 @@ export class NarrativeSceneRepository {
       image.showDescription ??= false;
       delete image.displayMode;
     }
+    for (const background of scene.backgrounds) {
+      background.viewAutomatically ??= false;
+    }
     if (Array.isArray(scene.tracks)) {
       scene.tracks.forEach(track => this.#healTrack(track));
     }
@@ -48,6 +51,7 @@ export class NarrativeSceneRepository {
 
   static #healTrack(track) {
     if (!track) return track;
+    track.playAutomatically ??= false;
 
     // 1. Look up track in game.playlists if name or path is missing
     if ((!track.name || !track.path) && track.id) {
@@ -167,6 +171,32 @@ export class NarrativeSceneRepository {
     });
   }
 
+  static async toggleAutomaticBackground(sceneId, index) {
+    await this.#update(sceneId, scene => {
+      const selectedBackground = scene.backgrounds[index];
+      if (!selectedBackground) return;
+
+      const shouldViewAutomatically = selectedBackground.viewAutomatically !== true;
+      scene.backgrounds.forEach((background, backgroundIndex) => {
+        background.viewAutomatically = shouldViewAutomatically && backgroundIndex === index;
+      });
+    });
+  }
+
+  static async toggleTrackAutoplay(sceneId, { trackId, playlistId }) {
+    await this.#update(sceneId, scene => {
+      const matchingTracks = scene.tracks.filter(track => playlistId
+        ? track.sourcePlaylistId === playlistId
+        : track.id === trackId);
+      if (matchingTracks.length === 0) return;
+
+      const isAlreadyAutomatic = matchingTracks.every(track => track.playAutomatically === true);
+      scene.tracks.forEach(track => {
+        track.playAutomatically = !isAlreadyAutomatic && matchingTracks.includes(track);
+      });
+    });
+  }
+
   static async moveImage(sceneId, sourceCollection, index) {
     const targetCollection = sourceCollection === "backgrounds" ? "handoutImages" : "backgrounds";
     if (sourceCollection !== "backgrounds" && sourceCollection !== "handoutImages") return;
@@ -174,6 +204,7 @@ export class NarrativeSceneRepository {
     await this.#update(sceneId, scene => {
       const [image] = scene[sourceCollection].splice(index, 1);
       if (image && !scene[targetCollection].some(existing => existing.path === image.path)) {
+        if (targetCollection === "handoutImages") delete image.viewAutomatically;
         scene[targetCollection].push(image);
       } else if (image) {
         scene[sourceCollection].splice(index, 0, image);

@@ -424,7 +424,7 @@ export class NarrativeManager {
           activeTrackId: null
         });
       },
-      onSceneSelect: (sceneId) => {
+      onSceneSelect: async (sceneId) => {
         const scenes = NarrativeSceneRepository.getAll();
         const selectedData = sceneId ? scenes.find(s => s.id === sceneId) || null : null;
         if (sceneId && !selectedData) return;
@@ -438,15 +438,20 @@ export class NarrativeManager {
           ? this.narrativeState.activeSpeakerId
           : null;
 
-        // Activating a scene does not alter the canvas background directly.
-        // It updates the scene data so background quick-selection reflects the new scene.
-        this.handleDisplayUpdate({
+        const automaticBackground = selectedData?.backgrounds?.find(
+          background => background.viewAutomatically === true
+        );
+        const update = {
           activeSceneId: selectedData?.id || "",
           currentSceneData: selectedData,
           activeActors: survivingActiveActors,
           activeSpeakerId: survivingSpeakerId,
           activeTrackId: null
-        });
+        };
+        if (automaticBackground) update.background = automaticBackground.path;
+
+        await this.handleDisplayUpdate(update);
+        await this.view?.activateSceneAudio?.(selectedData);
       },
       onActorStageToggle: (actorId) => {
         const actorData = this.narrativeState.currentSceneData?.actors.find(a => a.id === actorId);

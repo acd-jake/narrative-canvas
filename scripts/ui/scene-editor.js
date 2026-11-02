@@ -161,6 +161,8 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     this.#bindActorNameToggle(html);
     this.#bindImageDescriptionEditor(html);
     this.#bindImageDescriptionVisibility(html);
+    this.#bindAutomaticBackground(html);
+    this.#bindTrackAutoplay(html);
     this.#bindTileSizeSlider(html);
     this.#bindAudioPreview(html);
   }
@@ -346,6 +348,43 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     });
   }
 
+  #bindAutomaticBackground(html) {
+    html.querySelectorAll(".btn-toggle-automatic-background").forEach(button => {
+      button.addEventListener("click", async event => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const card = button.closest(".background-tile-card");
+        const sceneId = this.selectedSceneId;
+        const index = Number(card?.dataset.index);
+        if (!sceneId || !Number.isInteger(index)) return;
+
+        await this.#persistAndRefresh(() =>
+          NarrativeSceneRepository.toggleAutomaticBackground(sceneId, index)
+        );
+      });
+    });
+  }
+
+  #bindTrackAutoplay(html) {
+    html.querySelectorAll(".btn-toggle-track-autoplay").forEach(button => {
+      button.addEventListener("click", async event => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const audioEntry = button.closest(".audio-entry-badge");
+        const sceneId = this.selectedSceneId;
+        if (!sceneId || !audioEntry) return;
+
+        const isPlaylist = audioEntry.dataset.type === "PlaylistGroup";
+        await this.#persistAndRefresh(() => NarrativeSceneRepository.toggleTrackAutoplay(sceneId, {
+          trackId: isPlaylist ? null : audioEntry.dataset.id,
+          playlistId: isPlaylist ? audioEntry.dataset.id : null
+        }));
+      });
+    });
+  }
+
   #plainText(html) {
     return new DOMParser().parseFromString(html || "", "text/html").body.textContent?.trim() ?? "";
   }
@@ -392,6 +431,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       if (track.sourcePlaylistId) {
         if (seenPlaylists.has(track.sourcePlaylistId)) continue;
         seenPlaylists.add(track.sourcePlaylistId);
+        const playlistTracks = (scene.tracks ?? []).filter(item => item.sourcePlaylistId === track.sourcePlaylistId);
         entries.push({
           id: track.sourcePlaylistId,
           entryId: `playlist:${track.sourcePlaylistId}`,
@@ -399,6 +439,8 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
           playlistId: track.sourcePlaylistId,
           repositoryType: "PlaylistGroup",
           name: track.sourcePlaylistName || track.name,
+          playAutomatically: playlistTracks.length > 0
+            && playlistTracks.every(item => item.playAutomatically === true),
           isPreviewing: this.audioPreview.activeEntryId === `playlist:${track.sourcePlaylistId}`
         });
       } else {
@@ -409,6 +451,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
           repositoryType: "PlaylistSound",
           name: track.name,
           path: track.path,
+          playAutomatically: track.playAutomatically === true,
           isPreviewing: this.audioPreview.activeEntryId === `sound:${track.id}`
         });
       }

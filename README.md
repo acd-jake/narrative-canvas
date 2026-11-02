@@ -43,6 +43,7 @@ When the journal sheet closes, the Configurator undocks and returns to its previ
 ### Backgrounds and handout images
 
 - **Background Images** fill the stage behind actors and dialogue. Selecting one replaces the current background.
+- Mark one background image with **View Automatically** to use it whenever its scene is activated.
 - **Handout Images** appear as foreground overlays. Several can be open at once. Select or drag an image to bring it forward; drag it to reposition it. Images can be moved partly beyond the stage edge and are not resized by dragging.
 - Use the resize handle to change an image's size. The close and resize buttons keep a fixed screen size as the image is resized.
 - Use the X button to close one handout image without closing the others.
@@ -56,6 +57,7 @@ Each image can have a rich-text description. The eye or caption control determin
 - Drag Actor documents into **Stage Actors**. The actor image and name are saved with the scene.
 - Use actor controls to show or hide a nameplate, set the active speaker, or remove an actor from the stage.
 - Drag Playlist Sound documents into **Scene Audio**, or select **Add Audio** to choose a sound file.
+- Mark one audio entry or one playlist for automatic playback when its scene is activated. Only one audio entry or playlist can be selected per scene.
 - Use track controls to play, pause, or stop audio. Track and master volume are adjustable in the Director Controls.
 
 ## Journal integration
@@ -69,6 +71,8 @@ The Journal Viewer in the Director Controls can also show an image directly from
 The Narrative Canvas is the presentation stage. The GM's Director Controls are displayed on it and include a status badge indicating whether the presentation is being prepared or is live. Selecting a scene updates the available assets; it does not automatically replace the current background or close open handouts.
 
 Select one of the previously created scenes to define which actors, background images, handout images, and audio tracks are available in the Director Controls. If no scene is active, Narrative Canvas uses the journal currently selected in the Journal Viewer as an asset source where possible: actors and images referenced by that journal are available, but this fallback does not provide background images or audio tracks.
+
+When a scene is activated, its **View Automatically** background replaces the current background. Its selected automatic audio entry starts playback; if a playlist is selected, Foundry plays that playlist using its configured playback order and mode. A scene can have at most one automatic background and one automatic audio selection.
 
 The **Activation Permission Role** setting defines the minimum user role allowed to activate Narrative Canvas. The GM uses the Director Controls to put scene elements on the stage and change or remove them; players cannot manipulate those presentation elements. While the stage is published, changes to backgrounds, handout images, actors, dialogue, and audio are synchronized to players with the view open. A player's local close action affects only that player's client.
 

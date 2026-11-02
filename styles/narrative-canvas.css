@@ -2398,6 +2398,42 @@ body.acd-nc-active {
         &:hover { color: #fff !important; }
     }
 
+    .tile-overlay-top-actions {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        z-index: 6;
+        display: flex;
+        gap: 3px;
+
+        button {
+            position: static !important;
+            top: auto !important;
+            right: auto !important;
+            bottom: auto !important;
+            left: auto !important;
+            display: grid !important;
+            width: 20px !important;
+            height: 20px !important;
+            flex: 0 0 20px;
+            align-items: center;
+            justify-content: center;
+            padding: 0 !important;
+            border: 1px solid #555 !important;
+            border-radius: 3px !important;
+            background: rgba(22, 22, 26, 0.85) !important;
+            color: #ddd !important;
+            font-size: 0.75rem !important;
+            cursor: pointer;
+        }
+
+        button.is-active {
+            border-color: #9a8458 !important;
+            background: rgba(122, 104, 66, 0.9) !important;
+            color: #fff !important;
+        }
+    }
+
     .tile-image-wrapper {
         position: relative;
         box-sizing: border-box;
@@ -2476,6 +2512,7 @@ body.acd-nc-active {
     }
 
     .btn-audio-preview,
+    .btn-toggle-track-autoplay,
     .btn-delete-audio-entry {
         display: grid !important;
         flex: 0 0 24px;
@@ -2493,6 +2530,13 @@ body.acd-nc-active {
         background: rgba(24, 106, 92, 0.8) !important;
 
         &:hover { background: #227b68 !important; }
+    }
+
+    .btn-toggle-track-autoplay {
+        background: rgba(74, 81, 92, 0.8) !important;
+
+        &.is-active { border-color: #b49a62 !important; color: #f1d58e !important; }
+        &:hover { background: #4a515c !important; }
     }
 
     .btn-delete-audio-entry {
