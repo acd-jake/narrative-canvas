@@ -1507,7 +1507,7 @@ body.acd-nc-active {
 
     .narrative-editor-window {
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         flex: 1 1 auto;
         min-height: 0;
         width: 100%;
@@ -1516,6 +1516,101 @@ body.acd-nc-active {
         box-sizing: border-box;
         overflow: hidden;
         background: #1e1e24;
+    }
+
+    .editor-main-content {
+        display: flex;
+        flex: 1 1 0;
+        min-height: 0;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .journal-asset-shelf {
+        display: flex;
+        flex: 0 0 118px;
+        flex-direction: column;
+        gap: 5px;
+        min-height: 0;
+        padding: 7px 8px;
+        border-top: 1px solid #444;
+        background: #141419;
+
+        > h3 {
+            margin: 0;
+            color: #b49a62;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    }
+
+    .journal-asset-groups {
+        display: flex;
+        flex: 1 1 auto;
+        gap: 8px;
+        min-height: 0;
+    }
+
+    .journal-asset-group {
+        display: flex;
+        flex: 1 1 0;
+        flex-direction: column;
+        gap: 3px;
+        min-width: 0;
+
+        h4 {
+            margin: 0;
+            color: #aaa;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+    }
+
+    .journal-asset-list {
+        display: flex;
+        flex: 1 1 auto;
+        gap: 6px;
+        min-height: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+    .journal-asset-item {
+        display: flex;
+        flex: 0 0 54px;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        min-width: 0;
+        color: #bbb;
+        cursor: grab;
+
+        &:active { cursor: grabbing; }
+        &:hover { color: #fff; }
+
+        img {
+            width: 44px;
+            height: 44px;
+            border: 1px solid #444;
+            border-radius: 3px;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
+        span {
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: center;
+            font-size: 0.65rem;
+        }
+    }
+
+    .journal-asset-empty {
+        align-self: center;
+        color: #777;
+        font-size: 0.7rem;
     }
 
     /* Left Sidebar */

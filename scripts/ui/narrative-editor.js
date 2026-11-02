@@ -1,5 +1,6 @@
 import { NarrativeSettings } from "../services/settings.js";
 import { NarrativeSceneRepository } from "../services/scene-repository.js";
+import { JournalAssetBrowser } from "../services/journal-asset-browser.js";
 import { JournalDockController } from "../services/journal-dock.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -14,6 +15,8 @@ const ANY_ASSET_TYPE = "*";
 export class NarrativeSceneEditor extends HandlebarsApplicationMixin(ApplicationV2) {
   /** Scene that was selected before docking; reselected when the dock is released. */
   #freeSceneId = null;
+  #journalAssets = null;
+  #journalAssetsJournalId = null;
   #dock;
 
   constructor(options = {}) {
@@ -24,10 +27,14 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       onDocked: ({ journalId, previousJournalId }) => {
         if (!previousJournalId) this.#freeSceneId = this.selectedSceneId;
         if (journalId !== previousJournalId) this.selectedSceneId = null;
+        this.#journalAssetsJournalId = journalId;
+        this.#journalAssets = null;
       },
       onReleased: () => {
         this.selectedSceneId = this.#freeSceneId;
         this.#freeSceneId = null;
+        this.#journalAssetsJournalId = null;
+        this.#journalAssets = null;
       }
     });
     
@@ -48,7 +55,14 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
 
   /** @override */
   async _prepareContext(options) {
-    const scenes = NarrativeSceneRepository.getVisible(this.#dock.journalId)
+    const journalId = this.#dock.journalId;
+    if (journalId && (this.#journalAssetsJournalId !== journalId || !this.#journalAssets)) {
+      const journalAssets = await JournalAssetBrowser.getForJournal(journalId);
+      if (this.#dock.journalId === journalId) this.#journalAssets = journalAssets;
+      this.#journalAssetsJournalId = journalId;
+    }
+
+    const scenes = NarrativeSceneRepository.getVisible(journalId)
       .map(scene => scene.journalId
         ? { ...scene, journalName: this.#journalNameOf(scene.journalId) ?? scene.journalName }
         : scene);
@@ -61,7 +75,11 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       allScenes: scenes,
       selectedSceneId: this.selectedSceneId,
       activeScene: scenes.find(scene => scene.id === this.selectedSceneId) ?? null,
-      tileSize: NarrativeSettings.getTileSize()
+      tileSize: NarrativeSettings.getTileSize(),
+      isJournalDocked: Boolean(journalId),
+      journalAssets: this.#journalAssetsJournalId === journalId
+        ? this.#journalAssets ?? { actors: [], images: [] }
+        : { actors: [], images: [] }
     };
   }
 
@@ -103,6 +121,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   #bindListeners() {
     const html = this.element;
     this.#bindSceneList(html);
+    this.#bindJournalAssets(html);
     this.#bindSceneHeader(html);
     this.#bindBackgroundPicker(html);
     this.#bindAudioPicker(html);
@@ -135,6 +154,18 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
         const sceneId = button.closest(".scene-navigation-item").dataset.sceneId;
         if (this.selectedSceneId === sceneId) this.selectedSceneId = null;
         await this.#persistAndRefresh(NarrativeSceneRepository.remove(sceneId));
+      });
+    });
+  }
+
+  #bindJournalAssets(html) {
+    html.querySelectorAll(".journal-asset-item").forEach(item => {
+      item.addEventListener("dragstart", (event) => {
+        const asset = item.dataset.assetType === "Actor"
+          ? { type: "Actor", uuid: item.dataset.assetUuid }
+          : { type: "Image", path: item.dataset.assetPath, name: item.dataset.assetName };
+        event.dataTransfer.setData("text/plain", JSON.stringify(asset));
+        event.dataTransfer.effectAllowed = "copy";
       });
     });
   }
@@ -259,6 +290,16 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
           img: actor.img,
           showName: true
         })
+      };
+    }
+
+    if (dropped.type === "Image" || doc?.documentName === "JournalEntryPage") {
+      const path = dropped.path || doc?.src || doc?.image?.src;
+      if (!path) return null;
+      return {
+        type: "background",
+        name: dropped.name || doc?.name || "Image",
+        addTo: (sceneId) => NarrativeSceneRepository.addBackground(sceneId, path)
       };
     }
 
