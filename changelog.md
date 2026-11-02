@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Scene Configurator preserves editor-area scroll positions after content changes.
 - The docked Scene Configurator follows the activated Journal Entry, matches its z-order, and retains its width across journal page changes.
 
+### Fixed
+
+- The Journal Viewer selection now follows each folder's configured ordering for journals and subfolders.
+
 ## [0.1.0] - 2026-11-02
 
 ### Added

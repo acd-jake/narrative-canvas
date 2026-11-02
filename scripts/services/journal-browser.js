@@ -43,10 +43,39 @@ export class JournalBrowser {
   static getLevelContents(folderId = null, query = "") {
     const parentFolderId = folderId || null;
     const normalizedQuery = (query || "").trim().toLowerCase();
+    const folderCollection = game.folders ?? game.collections.get("Folder");
+    const parentFolder = parentFolderId ? folderCollection?.get(parentFolderId) : null;
+    const folderSorting = parentFolder?.sorting ?? parentFolder?._source?.sorting;
+    const usesManualSorting = Boolean(parentFolder) && folderSorting !== "a";
+    const manualOrder = new Map(
+      (parentFolder?.contents ?? []).map((entry, index) => [entry.id, index])
+    );
+    const compareJournals = usesManualSorting
+      ? (a, b) => {
+        const bySort = (Number(a.sort) || 0) - (Number(b.sort) || 0);
+        if (bySort !== 0) return bySort;
+
+        const aIndex = manualOrder.get(a.id);
+        const bIndex = manualOrder.get(b.id);
+        if (aIndex !== undefined && bIndex !== undefined) return aIndex - bIndex;
+        return 0;
+      }
+      : (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+        || a.id.localeCompare(b.id);
     const folders = this.getFolders().filter(folder => {
       return folder.parentId === parentFolderId
         && (!normalizedQuery || folder.name.toLowerCase().includes(normalizedQuery));
     });
+    const usesManualFolderSorting = !parentFolderId || folderSorting !== "a";
+    if (usesManualFolderSorting) {
+      folders.sort((a, b) => {
+        const aSort = Number(folderCollection?.get(a.id)?.sort) || 0;
+        const bSort = Number(folderCollection?.get(b.id)?.sort) || 0;
+        return aSort - bSort
+          || a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+          || a.id.localeCompare(b.id);
+      });
+    }
     const journalCollection = game.journal ?? game.collections.get("JournalEntry");
     const journals = journalCollection
       ? journalCollection
@@ -55,12 +84,12 @@ export class JournalBrowser {
           return entryFolderId === parentFolderId
             && (!normalizedQuery || entry.name.toLowerCase().includes(normalizedQuery));
         })
+          .sort(compareJournals)
         .map(entry => ({
           id: entry.id,
           name: entry.name,
           folderId: typeof entry.folder === "string" ? entry.folder : entry.folder?.id ?? null
         }))
-        .sort((a, b) => a.name.localeCompare(b.name))
       : [];
 
     return { folders, journals };
