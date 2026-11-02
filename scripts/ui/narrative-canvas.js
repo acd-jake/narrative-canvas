@@ -22,6 +22,7 @@ export class NarrativeCanvas {
     this.stageElement = null;
     this._resizeHandler = null;
     this._lastContext = null;
+    this._renderRequestId = 0;
     this._opacityAnimations = new WeakMap();
     this._backgroundDescriptionTransitionId = 0;
     this.bgController = new StageBackgroundController();
@@ -41,6 +42,7 @@ export class NarrativeCanvas {
    * @param {object} state - The full current narrative context module state
    */
   async render(state) {
+    const renderRequestId = ++this._renderRequestId;
     const activeActors = (state.activeActors || []).map(actor => ({
       ...actor,
       isSpeaker: actor.isSpeaker ?? (state.activeSpeakerId === actor.id),
@@ -77,6 +79,7 @@ export class NarrativeCanvas {
           : ""
       };
     }));
+    if (renderRequestId !== this._renderRequestId) return;
 
     const context = {
       ...state,
@@ -96,7 +99,7 @@ export class NarrativeCanvas {
 
     // If already rendered in DOM, check if we can update the stage in-place to prevent image flickering
     if (this._canUpdateInPlace(context)) {
-      await this._updateInPlace(context);
+      await this._updateInPlace(context, renderRequestId);
       return;
     }
 
@@ -123,6 +126,7 @@ export class NarrativeCanvas {
     this.vnStageController.mount(newStage);
 
     await this._onPrepareElements(newStage, context);
+    if (renderRequestId !== this._renderRequestId) return;
 
     document.body.appendChild(newStage);
     this.stageElement = newStage;
@@ -176,7 +180,7 @@ export class NarrativeCanvas {
    * @protected
    * @param {object} context
    */
-  async _updateInPlace(context) {
+  async _updateInPlace(context, renderRequestId = this._renderRequestId) {
     if (!this.stageElement) return;
 
     const fadeDuration = context.fadeDuration;
@@ -192,6 +196,7 @@ export class NarrativeCanvas {
       this.#updateBackgroundDescription(context.backgroundDescription, fadeDuration),
       this.handoutImageOverlayController.update(context.handoutImageOverlays, fadeDuration)
     ]);
+    if (renderRequestId !== this._renderRequestId) return;
 
     // 2. Update background color variable
     this.stageElement.style.setProperty("--nc-custom-bg", context.customBgColor || "#000000");
@@ -211,6 +216,7 @@ export class NarrativeCanvas {
     this._updateHandoutInPlace(context);
     // 5. Allow subclass to update its auxiliary panels (e.g. director controls, sidebar, carousel)
     await this._onUpdateElements(context);
+    if (renderRequestId !== this._renderRequestId) return;
     this._recordContext(context);
   }
 
@@ -327,6 +333,10 @@ export class NarrativeCanvas {
 
   _onHandoutImageLayoutChange(layout) {}
 
+  applyHandoutImageLayout(layout) {
+    this.handoutImageOverlayController.applyLayout(layout);
+  }
+
   _fadeOutAndRemove(element, duration) {
     this._animateElementOpacity(element, 0, duration).then(completed => {
       if (completed && element.isConnected) element.remove();
@@ -367,6 +377,7 @@ export class NarrativeCanvas {
    * Completely tears down the element tree from the document body root.
    */
   async close() {
+    this._renderRequestId++;
     const closingStage = this.stageElement;
     this._backgroundDescriptionTransitionId++;
     this.handoutImageOverlayController.destroy();

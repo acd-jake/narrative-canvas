@@ -21,7 +21,7 @@
 
     <div class="narrative-handout-image-layer">
         {{#each handoutImageOverlays}}
-            <div class="narrative-handout-image-overlay" data-overlay-id="{{this.id}}" data-position-x="{{this.position.x}}" data-position-y="{{this.position.y}}">
+            <div class="narrative-handout-image-overlay" data-overlay-id="{{this.id}}" data-position-x="{{this.position.x}}" data-position-y="{{this.position.y}}" data-size="{{this.size}}">
                 <div class="narrative-scene-handout-image-frame">
                     <img src="{{this.src}}" alt="{{this.title}}" class="narrative-scene-handout-image" draggable="false" />
                     {{#if this.description}}
@@ -30,6 +30,9 @@
                     {{#if ../isGM}}
                         <button type="button" class="btn-close-handout-image" data-overlay-id="{{this.id}}" title="{{localize 'NARRATIVE_CANVAS.Director.CloseImageOverlay'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.CloseImageOverlay'}}">
                             <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="btn-resize-handout-image" data-overlay-id="{{this.id}}" title="{{localize 'NARRATIVE_CANVAS.Director.ResizeImageOverlay'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.ResizeImageOverlay'}}">
+                            <i class="fas fa-expand-alt" aria-hidden="true"></i>
                         </button>
                     {{/if}}
                 </div>

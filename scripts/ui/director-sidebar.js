@@ -31,13 +31,14 @@ export class DirectorSidebar {
   /**
    * @param {object} options
    * @param {SceneAudioController} options.audioController
-   * @param {(sceneId: string) => void} options.onSceneSelect
+  * @param {(sceneId: string|null) => void} options.onSceneSelect
+  * @param {(journalId: string) => void} options.onJournalSelect
    * @param {(volume: number) => void} [options.onVolumeChange]
    * @param {(image: {src: string, title: string}) => void} [options.onJournalImageShow]
    */
-  constructor({ audioController, onSceneSelect, onVolumeChange, onJournalImageShow }) {
+  constructor({ audioController, onSceneSelect, onJournalSelect, onVolumeChange, onJournalImageShow }) {
     this.#audioController = audioController;
-    this.#callbacks = { onSceneSelect, onVolumeChange, onJournalImageShow };
+    this.#callbacks = { onSceneSelect, onJournalSelect, onVolumeChange, onJournalImageShow };
 
     const journalViewerState = NarrativeSettings.getJournalViewerState();
     this.#rootJournalFolderId = NarrativeSettings.getJournalRootFolder();
@@ -305,7 +306,9 @@ export class DirectorSidebar {
       isScenesCollapsed: this.#areScenesCollapsed,
       isAudioCollapsed: this.#isAudioCollapsed,
       activeSceneId: this.#activeSceneId,
-      currentSceneName: this.#currentSceneData?.name ?? "",
+      currentSceneName: this.#activeSceneId
+        ? this.#currentSceneData?.name ?? game.i18n.localize("NARRATIVE_CANVAS.Director.NoActiveScene")
+        : game.i18n.localize("NARRATIVE_CANVAS.Director.NoActiveScene"),
       journalQuery: this.#journalQuery,
       childFolders,
       availableJournals,
@@ -327,10 +330,16 @@ export class DirectorSidebar {
     const sceneNameElement = this.#element?.querySelector(".sidebar-active-scene-name");
     if (!sceneNameElement) return;
 
-    const sceneName = this.#currentSceneData?.name ?? "";
+    const hasActiveScene = Boolean(this.#activeSceneId);
+    const sceneName = hasActiveScene
+      ? this.#currentSceneData?.name ?? game.i18n.localize("NARRATIVE_CANVAS.Director.NoActiveScene")
+      : game.i18n.localize("NARRATIVE_CANVAS.Director.NoActiveScene");
     sceneNameElement.textContent = sceneName;
     sceneNameElement.title = sceneName;
-    sceneNameElement.hidden = !sceneName;
+    sceneNameElement.classList.toggle("is-empty", !hasActiveScene);
+
+    const clearButton = this.#element.querySelector(".btn-clear-active-scene");
+    if (clearButton) clearButton.hidden = !hasActiveScene;
   }
 
   #bindListeners(root) {
@@ -461,8 +470,17 @@ export class DirectorSidebar {
       root.querySelectorAll(".director-scene-item").forEach(candidate => {
         candidate.classList.toggle("is-active", candidate.dataset.sceneId === sceneId);
       });
+      this.#updateActiveSceneName();
 
       this.#callbacks.onSceneSelect?.(sceneId);
+    });
+
+    root.querySelector(".btn-clear-active-scene")?.addEventListener("click", event => {
+      event.preventDefault();
+      this.#activeSceneId = "";
+      root.querySelectorAll(".director-scene-item").forEach(candidate => candidate.classList.remove("is-active"));
+      this.#updateActiveSceneName();
+      this.#callbacks.onSceneSelect?.(null);
     });
   }
 
@@ -769,6 +787,7 @@ export class DirectorSidebar {
     const bodyContainer = this.#element.querySelector(".journal-viewer-body");
     if (!bodyContainer) return;
 
+    this.#callbacks.onJournalSelect?.(this.#selectedJournalId);
     const activeJournal = this.#selectedJournalId
       ? await JournalBrowser.getJournalDetails(this.#selectedJournalId)
       : null;

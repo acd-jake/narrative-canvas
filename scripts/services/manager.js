@@ -1,11 +1,14 @@
 import { NarrativeSocket } from "./socket.js";
 import { NarrativeSettings } from "./settings.js";
 import { NarrativeSceneRepository } from "./scene-repository.js";
+import { JournalAssetBrowser } from "./journal-asset-browser.js";
 import { NarrativePlayer } from "../ui/narrative-player.js";
 import { NarrativeDirector } from "../ui/narrative-director.js";
 import { NarrativeSceneEditor } from "../ui/scene-editor.js";
 
 export class NarrativeManager {
+  #journalAssetRequestId = 0;
+
   constructor() {
     this.narrativeState = {
       active: false,
@@ -19,6 +22,7 @@ export class NarrativeManager {
 
       activeSceneId: "",
       currentSceneData: null,
+      journalViewerId: NarrativeSettings.getJournalViewerState().journalId,
       activeActors: [],        // Characters currently shown on stage
       activeSpeakerId: null,   // Currently active speaker actor ID
       activeTrackId: null,
@@ -33,7 +37,10 @@ export class NarrativeManager {
     // Populate scene dropdown array compilation dynamically on refresh step
     this.narrativeState.scenesList = NarrativeSceneRepository.getAll();
     if (this.narrativeState.activeSceneId) {
+      this.#journalAssetRequestId++;
       this.narrativeState.currentSceneData = this.narrativeState.scenesList.find(s => s.id === this.narrativeState.activeSceneId) || null;
+    } else {
+      await this.#refreshJournalSceneData();
     }
 
     // Synchronize active actors and current scene actor statuses
@@ -72,6 +79,40 @@ export class NarrativeManager {
         await closingView.close();
       }
     }
+  }
+
+  async #refreshJournalSceneData() {
+    const journalId = this.narrativeState.journalViewerId;
+    if (!journalId) {
+      this.#journalAssetRequestId++;
+      this.narrativeState.currentSceneData = null;
+      return;
+    }
+
+    const currentSceneData = this.narrativeState.currentSceneData;
+    if (currentSceneData?.isJournalAssetSource && currentSceneData.journalId === journalId) return;
+
+    const requestId = ++this.#journalAssetRequestId;
+    this.narrativeState.currentSceneData = null;
+    const { actors, images } = await JournalAssetBrowser.getForJournal(journalId);
+    if (requestId !== this.#journalAssetRequestId
+      || this.narrativeState.activeSceneId
+      || this.narrativeState.journalViewerId !== journalId) return;
+
+    this.narrativeState.currentSceneData = {
+      id: `journal:${journalId}`,
+      journalId,
+      isJournalAssetSource: true,
+      actors: actors.map(actor => ({ ...actor, showName: true })),
+      backgrounds: [],
+      handoutImages: images.map((image, index) => ({
+        ...image,
+        id: `journal-handout-${index}`,
+        description: "",
+        showDescription: false
+      })),
+      tracks: []
+    };
   }
 
   /**
@@ -129,6 +170,49 @@ export class NarrativeManager {
     await this.refreshView();
   }
 
+  async handleHandoutImageLayout(layout, isFinal = false, isRemote = false) {
+    if (!Array.isArray(layout)) return;
+
+    const overlaysById = new Map(
+      (this.narrativeState.handoutImageOverlays || []).map(overlay => [overlay.id, overlay])
+    );
+    const includedIds = new Set();
+    const orderedOverlays = layout.flatMap((item, zOrder) => {
+      const overlay = overlaysById.get(item.id);
+      if (!overlay) return [];
+
+      const x = Number(item.position?.x);
+      const y = Number(item.position?.y);
+      const size = Number(item.size);
+      includedIds.add(item.id);
+      return [{
+        ...overlay,
+        position: {
+          x: Number.isFinite(x) ? Math.max(0, Math.min(1, x)) : 0.5,
+          y: Number.isFinite(y) ? Math.max(0, Math.min(1, y)) : 0.5
+        },
+        size: Number.isFinite(size) ? Math.max(0.25, Math.min(1.5, size)) : overlay.size ?? 1,
+        zOrder
+      }];
+    });
+
+    for (const overlay of overlaysById.values()) {
+      if (!includedIds.has(overlay.id)) {
+        orderedOverlays.push({ ...overlay, zOrder: orderedOverlays.length });
+      }
+    }
+
+    this.narrativeState = { ...this.narrativeState, handoutImageOverlays: orderedOverlays };
+    if (isRemote) {
+      this.view?.applyHandoutImageLayout(layout);
+      return;
+    }
+
+    if (!game.user.isGM) return;
+    NarrativeSocket.emit("HANDOUT_IMAGE_LAYOUT", { layout, isFinal });
+    if (isFinal) await this.persistActiveState();
+  }
+
   /**
    * Persists the current active state (scene, background, active actors, active speaker)
    * so it can be restored on world reload or upon opening the canvas.
@@ -146,6 +230,7 @@ export class NarrativeManager {
         title: overlay.title || "",
         description: overlay.description || "",
         showDescription: overlay.showDescription === true,
+        size: Number.isFinite(overlay.size) ? Math.max(0.25, Math.min(1.5, overlay.size)) : 1,
         ...(Number.isFinite(overlay.position?.x) && Number.isFinite(overlay.position?.y)
           ? { position: { x: overlay.position.x, y: overlay.position.y } }
           : {}),
@@ -249,6 +334,9 @@ export class NarrativeManager {
             showDescription: sceneImage
               ? sceneImage.showDescription === true
               : overlay.showDescription === true,
+            size: Number.isFinite(Number(overlay.size))
+              ? Math.max(0.25, Math.min(1.5, Number(overlay.size)))
+              : 1,
             ...(hasPosition ? {
               position: {
                 x: Math.max(0, Math.min(1, x)),
@@ -277,21 +365,37 @@ export class NarrativeManager {
 
   _getGMCallbacks() {
     return {
+      onJournalSelect: (journalId) => {
+        if (this.narrativeState.journalViewerId === journalId) return;
+        this.narrativeState.journalViewerId = journalId;
+        if (this.narrativeState.activeSceneId) return;
+
+        this.handleDisplayUpdate({
+          journalViewerId: journalId,
+          currentSceneData: null,
+          activeActors: [],
+          activeSpeakerId: null,
+          activeTrackId: null
+        });
+      },
       onSceneSelect: (sceneId) => {
         const scenes = NarrativeSceneRepository.getAll();
-        const selectedData = scenes.find(s => s.id === sceneId) || null;
+        const selectedData = sceneId ? scenes.find(s => s.id === sceneId) || null : null;
+        if (sceneId && !selectedData) return;
 
-        // Retain only active actors present in the newly activated scene
+        // Retain only actors available from the newly selected source.
         const newSceneActorIds = new Set((selectedData?.actors || []).map(a => a.id));
-        const survivingActiveActors = (this.narrativeState.activeActors || []).filter(a => newSceneActorIds.has(a.id));
-        const survivingSpeakerId = newSceneActorIds.has(this.narrativeState.activeSpeakerId)
+        const survivingActiveActors = selectedData
+          ? (this.narrativeState.activeActors || []).filter(a => newSceneActorIds.has(a.id))
+          : [];
+        const survivingSpeakerId = selectedData && newSceneActorIds.has(this.narrativeState.activeSpeakerId)
           ? this.narrativeState.activeSpeakerId
           : null;
 
         // Activating a scene does not alter the canvas background directly.
         // It updates the scene data so background quick-selection reflects the new scene.
         this.handleDisplayUpdate({
-          activeSceneId: sceneId,
+          activeSceneId: selectedData?.id || "",
           currentSceneData: selectedData,
           activeActors: survivingActiveActors,
           activeSpeakerId: survivingSpeakerId,
@@ -362,7 +466,23 @@ export class NarrativeManager {
       },
       onActorToggleName: async (actorId) => {
         const sceneId = this.narrativeState.activeSceneId;
-        if (!sceneId) return;
+        if (!sceneId) {
+          const currentSceneData = this.narrativeState.currentSceneData;
+          const actor = currentSceneData?.isJournalAssetSource
+            ? currentSceneData.actors.find(item => item.id === actorId)
+            : null;
+          if (!actor) return;
+
+          const showName = actor.showName === false;
+          this.handleDisplayUpdate({
+            currentSceneData: {
+              ...currentSceneData,
+              actors: currentSceneData.actors.map(item => item.id === actorId ? { ...item, showName } : item)
+            },
+            activeActors: this.narrativeState.activeActors.map(item => item.id === actorId ? { ...item, showName } : item)
+          });
+          return;
+        }
 
         await NarrativeSceneRepository.toggleActorName(sceneId, actorId);
         const scenes = NarrativeSceneRepository.getAll();
@@ -422,34 +542,8 @@ export class NarrativeManager {
           handoutImageOverlays: remainingOverlays
         });
       },
-      onHandoutImageLayoutChange: (layout) => {
-        const currentOverlays = this.narrativeState.handoutImageOverlays || [];
-        const overlaysById = new Map(currentOverlays.map(overlay => [overlay.id, overlay]));
-        const orderedOverlays = [];
-        const includedIds = new Set();
-
-        for (const [zOrder, item] of layout.entries()) {
-          const overlay = overlaysById.get(item.id);
-          if (!overlay) continue;
-          const x = Number(item.position?.x);
-          const y = Number(item.position?.y);
-          orderedOverlays.push({
-            ...overlay,
-            position: {
-              x: Number.isFinite(x) ? Math.max(0, Math.min(1, x)) : 0.5,
-              y: Number.isFinite(y) ? Math.max(0, Math.min(1, y)) : 0.5
-            },
-            zOrder
-          });
-          includedIds.add(item.id);
-        }
-
-        for (const overlay of currentOverlays) {
-          if (includedIds.has(overlay.id)) continue;
-          orderedOverlays.push({ ...overlay, zOrder: orderedOverlays.length });
-        }
-        this.handleDisplayUpdate({ handoutImageOverlays: orderedOverlays });
-      },
+      onHandoutImageLayoutChange: (layout, isFinal) =>
+        this.handleHandoutImageLayout(layout, isFinal),
       onImageDescriptionToggle: async (collectionName, index) => {
         const sceneId = this.narrativeState.activeSceneId;
         if (!sceneId) return;
@@ -464,7 +558,9 @@ export class NarrativeManager {
       },
       onTrackPlay: (trackId) => this.handleDisplayUpdate({ activeTrackId: trackId }),
       onVolumeChange: (volume) => this.handleDisplayUpdate({ globalVolume: volume }),
-      onVisibilityChange: (visible) => this.handleDisplayUpdate({ playerViewActive: visible }),
+      onVisibilityChange: (visible) => this.handleDisplayUpdate(visible
+        ? { ...this.narrativeState, playerViewActive: true }
+        : { playerViewActive: false }),
       onShutdown: () => this.toggleCanvasState(false)
     };
   }
@@ -489,7 +585,8 @@ export class NarrativeManager {
       src: image.src,
       title: image.title || "",
       description: image.description || "",
-      showDescription: image.showDescription === true
+      showDescription: image.showDescription === true,
+      size: Number.isFinite(image.size) ? Math.max(0.25, Math.min(1.5, image.size)) : 1
     }];
   }
 

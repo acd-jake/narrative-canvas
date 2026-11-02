@@ -12,6 +12,9 @@ export class HandoutImageOverlayController {
     this.overlayOrder = [];
     this.domOrder = [];
     this.positions = new Map();
+    this.sizes = new Map();
+    this.pendingLayoutChange = false;
+    this.layoutChangeFrame = null;
     this.transitioningOverlayIds = new Set();
     this.orderTransitionId = 0;
     this.duration = 400;
@@ -25,6 +28,7 @@ export class HandoutImageOverlayController {
       overlay.style.zIndex = String(++this.zIndex);
       const position = this.#readPosition(overlay) ?? this.#defaultPosition(index);
       this.positions.set(overlay.dataset.overlayId, position);
+      this.sizes.set(overlay.dataset.overlayId, this.#readSize(overlay));
       this.#applyPosition(overlay, position);
     });
     this.overlayOrder = overlays.map(overlay => overlay.dataset.overlayId);
@@ -63,6 +67,8 @@ export class HandoutImageOverlayController {
       const position = data.position ?? this.positions.get(data.id)
         ?? this.#defaultPosition(this.stage.querySelectorAll(".narrative-handout-image-overlay").length - 1);
       this.positions.set(data.id, position);
+      const size = this.#clampSize(data.size ?? this.sizes.get(data.id) ?? 1);
+      this.sizes.set(data.id, size);
       if (this.drag?.overlayId !== data.id) this.#applyPosition(overlay, position);
 
       const image = overlay.querySelector(".narrative-scene-handout-image");
@@ -79,6 +85,7 @@ export class HandoutImageOverlayController {
 
     for (const overlay of remainingOverlays.values()) {
       this.positions.delete(overlay.dataset.overlayId);
+      this.sizes.delete(overlay.dataset.overlayId);
       this.fadeOutAndRemove(overlay, duration);
     }
 
@@ -96,6 +103,10 @@ export class HandoutImageOverlayController {
 
   destroy() {
     this.drag = null;
+    if (this.layoutChangeFrame !== null) {
+      cancelAnimationFrame(this.layoutChangeFrame);
+      this.layoutChangeFrame = null;
+    }
     if (this.stage && this.pointerHandlers) {
       this.stage.removeEventListener("pointerdown", this.pointerHandlers.pointerdown);
       this.stage.removeEventListener("pointermove", this.pointerHandlers.pointermove);
@@ -107,14 +118,48 @@ export class HandoutImageOverlayController {
     this.overlayOrder = [];
     this.domOrder = [];
     this.positions.clear();
+    this.sizes.clear();
+    this.pendingLayoutChange = false;
     this.transitioningOverlayIds.clear();
     this.orderTransitionId++;
+  }
+
+  applyLayout(layout) {
+    if (!this.stage || !Array.isArray(layout)) return;
+
+    const nextOrder = [];
+    for (const item of layout) {
+      const overlay = this.stage.querySelector(
+        `.narrative-handout-image-overlay[data-overlay-id="${item.id}"]`
+      );
+      if (!overlay) continue;
+
+      const x = Number(item.position?.x);
+      const y = Number(item.position?.y);
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        this.positions.set(item.id, {
+          x: Math.max(0, Math.min(1, x)),
+          y: Math.max(0, Math.min(1, y))
+        });
+      }
+      const size = Number(item.size);
+      if (Number.isFinite(size)) this.sizes.set(item.id, this.#clampSize(size));
+      this.#applyPosition(overlay, this.positions.get(item.id) ?? { x: 0.5, y: 0.5 });
+      nextOrder.push(item.id);
+    }
+
+    if (nextOrder.length === this.overlayOrder.length) {
+      this.overlayOrder = [...nextOrder];
+      this.domOrder = [...nextOrder];
+      this.#applyOverlayOrder(nextOrder);
+    }
   }
 
   #createOverlay(data) {
     const overlay = document.createElement("div");
     overlay.className = "narrative-handout-image-overlay";
     overlay.dataset.overlayId = data.id;
+    overlay.dataset.size = String(this.#clampSize(data.size ?? 1));
 
     const frame = document.createElement("div");
     frame.className = "narrative-scene-handout-image-frame";
@@ -139,6 +184,15 @@ export class HandoutImageOverlayController {
       closeButton.setAttribute("aria-label", closeButton.title);
       closeButton.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
       frame.appendChild(closeButton);
+
+      const resizeHandle = document.createElement("button");
+      resizeHandle.type = "button";
+      resizeHandle.className = "btn-resize-handout-image";
+      resizeHandle.dataset.overlayId = data.id;
+      resizeHandle.title = game.i18n.localize("NARRATIVE_CANVAS.Director.ResizeImageOverlay");
+      resizeHandle.setAttribute("aria-label", resizeHandle.title);
+      resizeHandle.innerHTML = '<i class="fas fa-expand-alt" aria-hidden="true"></i>';
+      frame.appendChild(resizeHandle);
     }
 
     overlay.appendChild(frame);
@@ -155,6 +209,14 @@ export class HandoutImageOverlayController {
     return { x, y };
   }
 
+  #readSize(overlay) {
+    return this.#clampSize(Number(overlay.dataset.size) || 1);
+  }
+
+  #clampSize(size) {
+    return Math.max(0.25, Math.min(1.5, size));
+  }
+
   #defaultPosition(index) {
     const bounds = this.stage.getBoundingClientRect();
     const offset = Math.min(index, 5) * 32;
@@ -167,18 +229,33 @@ export class HandoutImageOverlayController {
   #applyPosition(overlay, position) {
     if (!overlay) return;
     const frame = overlay.querySelector(".narrative-scene-handout-image-frame");
+    const size = this.sizes.get(overlay.dataset.overlayId) ?? 1;
     frame.style.left = `${Math.max(0, Math.min(1, position.x)) * 100}%`;
     frame.style.top = `${Math.max(0, Math.min(1, position.y)) * 100}%`;
-    frame.style.transform = "translate(-50%, -50%)";
+    frame.style.transform = `translate(-50%, -50%) scale(${size})`;
+  }
+
+  #applySize(overlayId, size) {
+    const overlay = this.stage.querySelector(`.narrative-handout-image-overlay[data-overlay-id="${overlayId}"]`);
+    if (!overlay) return;
+
+    const clampedSize = this.#clampSize(size);
+    this.sizes.set(overlayId, clampedSize);
+    overlay.dataset.size = String(clampedSize);
+    const frame = overlay.querySelector(".narrative-scene-handout-image-frame");
+    frame.style.transform = `translate(-50%, -50%) scale(${clampedSize})`;
   }
 
   #raiseOverlay(overlay) {
     const overlayId = overlay.dataset.overlayId;
     const nextOrder = this.overlayOrder.filter(id => id !== overlayId);
     nextOrder.push(overlayId);
-    if (nextOrder.every((id, index) => id === this.overlayOrder[index])) return;
+    if (nextOrder.every((id, index) => id === this.overlayOrder[index])) return false;
 
-    this.#transitionToOrder(nextOrder, this.duration, true);
+    this.#transitionToOrder(nextOrder, this.duration, false);
+    this.pendingLayoutChange = true;
+    this.#scheduleLayoutChange();
+    return true;
   }
 
   #transitionToOrder(nextOrder, duration, notify) {
@@ -230,12 +307,21 @@ export class HandoutImageOverlayController {
     this.zIndex = 12 + order.length;
   }
 
-  #emitLayoutChange() {
+  #scheduleLayoutChange() {
+    if (!this.canControl?.() || this.layoutChangeFrame !== null) return;
+    this.layoutChangeFrame = requestAnimationFrame(() => {
+      this.layoutChangeFrame = null;
+      this.#emitLayoutChange();
+    });
+  }
+
+  #emitLayoutChange(isFinal = false) {
     if (!this.canControl?.()) return;
     this.onLayoutChange?.(this.overlayOrder.map(id => ({
       id,
-      position: this.positions.get(id) ?? { x: 0.5, y: 0.5 }
-    })));
+      position: this.positions.get(id) ?? { x: 0.5, y: 0.5 },
+      size: this.sizes.get(id) ?? 1
+    })), isFinal);
   }
 
   #bindPointerHandlers() {
@@ -244,6 +330,32 @@ export class HandoutImageOverlayController {
       const overlay = event.target.closest(".narrative-handout-image-overlay");
       if (!overlay || !this.stage.contains(overlay)) return;
       this.#raiseOverlay(overlay);
+
+      const resizeHandle = event.target.closest(".btn-resize-handout-image");
+      if (resizeHandle) {
+        const frame = resizeHandle.closest(".narrative-scene-handout-image-frame");
+        const frameBounds = frame.getBoundingClientRect();
+        const stageBounds = this.stage.getBoundingClientRect();
+        const overlayId = overlay.dataset.overlayId;
+        const startSize = this.sizes.get(overlayId) ?? 1;
+        const baseWidth = frameBounds.width / startSize;
+        const baseHeight = frameBounds.height / startSize;
+        const maxSize = Math.min(1.5, stageBounds.width * 0.88 / baseWidth, stageBounds.height * 0.76 / baseHeight);
+        this.drag = {
+          mode: "resize",
+          pointerId: event.pointerId,
+          overlayId,
+          startX: event.clientX,
+          startY: event.clientY,
+          startWidth: frameBounds.width,
+          startHeight: frameBounds.height,
+          startSize,
+          maxSize: Math.max(startSize, maxSize)
+        };
+        resizeHandle.setPointerCapture(event.pointerId);
+        event.preventDefault();
+        return;
+      }
 
       const image = event.target.closest(".narrative-scene-handout-image");
       if (!image) return;
@@ -254,6 +366,7 @@ export class HandoutImageOverlayController {
       const centerY = frameBounds.top - stageBounds.top + frameBounds.height / 2;
       this.drag = {
         pointerId: event.pointerId,
+        mode: "move",
         overlayId: overlay.dataset.overlayId,
         frame,
         image,
@@ -267,6 +380,17 @@ export class HandoutImageOverlayController {
     };
     const pointermove = (event) => {
       if (!this.canControl?.() || !this.drag || this.drag.pointerId !== event.pointerId) return;
+      if (this.drag.mode === "resize") {
+        const widthChange = (event.clientX - this.drag.startX) / this.drag.startWidth;
+        const heightChange = (event.clientY - this.drag.startY) / this.drag.startHeight;
+        const multiplier = Math.max(0.25 / this.drag.startSize, 1 + Math.max(widthChange, heightChange));
+        const size = Math.min(this.drag.maxSize, this.drag.startSize * multiplier);
+        this.#applySize(this.drag.overlayId, size);
+        this.#scheduleLayoutChange();
+        event.preventDefault();
+        return;
+      }
+
       const stageBounds = this.stage.getBoundingClientRect();
       const frameBounds = this.drag.frame.getBoundingClientRect();
       const halfWidth = frameBounds.width / 2;
@@ -280,11 +404,18 @@ export class HandoutImageOverlayController {
       this.#applyPosition(this.stage.querySelector(
         `.narrative-handout-image-overlay[data-overlay-id="${this.drag.overlayId}"]`
       ), position);
+      this.#scheduleLayoutChange();
     };
     const finishDrag = (event) => {
-      if (this.drag?.pointerId !== event.pointerId) return;
+      const hasPointerDrag = this.drag?.pointerId === event.pointerId;
+      if (!hasPointerDrag && !this.pendingLayoutChange) return;
       this.drag = null;
-      this.#emitLayoutChange();
+      this.pendingLayoutChange = false;
+      if (this.layoutChangeFrame !== null) {
+        cancelAnimationFrame(this.layoutChangeFrame);
+        this.layoutChangeFrame = null;
+      }
+      this.#emitLayoutChange(true);
     };
 
     this.pointerHandlers = { pointerdown, pointermove, finishDrag };

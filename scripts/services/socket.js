@@ -16,6 +16,10 @@ export class NarrativeSocket {
         case "UPDATE_DISPLAY":
           manager.handleDisplayUpdate(data, true);
           break;
+
+        case "HANDOUT_IMAGE_LAYOUT":
+          manager.handleHandoutImageLayout(data.layout, data.isFinal, true);
+          break;
           
         case "REQUEST_STATE":
           // Only the GM should respond to a state request from a newly logged-in user

@@ -32,6 +32,7 @@ export class NarrativeDirector extends NarrativeCanvas {
       onSceneSelect: (sceneId) => {
         this.callbacks.onSceneSelect?.(sceneId);
       },
+      onJournalSelect: (journalId) => this.callbacks.onJournalSelect?.(journalId),
       onJournalImageShow: (image) => this.callbacks.onJournalImageShow?.(image),
       onVolumeChange: (volume) => this.callbacks.onVolumeChange?.(volume)
     });

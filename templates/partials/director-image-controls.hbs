@@ -1,13 +1,13 @@
-<div class="narrative-director-image-controls font-foundry {{#if isCollapsed}}is-collapsed{{/if}}" style="--nc-director-image-tile-size: {{tileSize}}px;">
+<div class="narrative-director-image-controls font-foundry {{#if isPanelCollapsed}}is-collapsed{{/if}}" style="--nc-director-image-tile-size: {{tileSize}}px;">
+    <button type="button" class="btn-toggle-image-controls-panel" aria-expanded="{{#unless isPanelCollapsed}}true{{else}}false{{/unless}}" title="{{#if isPanelCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageControls'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageControls'}}{{/if}}" aria-label="{{#if isPanelCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageControls'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageControls'}}{{/if}}">
+        <i class="fas {{#if isPanelCollapsed}}fa-chevron-left{{else}}fa-chevron-right{{/if}}" aria-hidden="true"></i>
+    </button>
     <header class="director-image-controls-header">
         <i class="fas fa-images" aria-hidden="true"></i>
         <h3 title="{{localize 'NARRATIVE_CANVAS.Director.ImageControls'}}">{{localize "NARRATIVE_CANVAS.Director.ImageControls"}}</h3>
-        <button type="button" class="btn-toggle-image-controls" aria-expanded="{{#unless isCollapsed}}true{{else}}false{{/unless}}" aria-controls="director-image-controls-content" title="{{#if isCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageControls'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageControls'}}{{/if}}" aria-label="{{#if isCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageControls'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageControls'}}{{/if}}">
-            <i class="fas {{#if isCollapsed}}fa-chevron-down{{else}}fa-chevron-up{{/if}}" aria-hidden="true"></i>
-        </button>
     </header>
 
-    <div class="director-image-controls-content" id="director-image-controls-content" {{#if isCollapsed}}hidden{{/if}}>
+    <div class="director-image-controls-content">
     <div class="director-image-scale-controller">
         <label for="director-image-tile-scale" title="{{localize 'NARRATIVE_CANVAS.Editor.TileSizeLabel'}}">{{localize "NARRATIVE_CANVAS.Editor.TileSizeLabel"}}</label>
         <input id="director-image-tile-scale" type="range" class="slider-tile-scale" min="50" max="300" step="5" value="{{tileSize}}" />
@@ -15,8 +15,13 @@
 
     {{#if currentSceneData}}
     <section class="director-image-control-group">
-        <legend title="{{localize 'NARRATIVE_CANVAS.Labels.SceneBackgrounds'}}"><i class="fas fa-images"></i> {{localize "NARRATIVE_CANVAS.Labels.SceneBackgrounds"}}</legend>
-        <div class="director-image-list">
+        <header class="director-image-list-header">
+            <h4 title="{{localize 'NARRATIVE_CANVAS.Labels.SceneBackgrounds'}}"><i class="fas fa-images"></i> {{localize "NARRATIVE_CANVAS.Labels.SceneBackgrounds"}}</h4>
+            <button type="button" class="btn-toggle-image-list" data-image-list="backgrounds" aria-expanded="{{#unless isBackgroundsCollapsed}}true{{else}}false{{/unless}}" aria-controls="director-background-image-list" title="{{#if isBackgroundsCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageList'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageList'}}{{/if}}" aria-label="{{#if isBackgroundsCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageList'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageList'}}{{/if}}">
+                <i class="fas {{#if isBackgroundsCollapsed}}fa-chevron-right{{else}}fa-chevron-down{{/if}}" aria-hidden="true"></i>
+            </button>
+        </header>
+        <div class="director-image-list" id="director-background-image-list" {{#if isBackgroundsCollapsed}}hidden{{/if}}>
             {{#each currentSceneData.backgrounds}}
                 <div class="bg-thumbnail-card {{#if (eq ../selectedBackground this.path)}}is-active-bg{{/if}}" data-bg-path="{{this.path}}" data-background-index="{{@index}}">
                     <img src="{{this.path}}" alt="{{this.name}}" />
@@ -27,22 +32,33 @@
                     </div>
                     <span class="bg-thumb-label" title="{{this.name}}">{{this.name}}</span>
                 </div>
+            {{else}}
+                <div class="director-image-list-empty">{{localize "NARRATIVE_CANVAS.Director.NoImageItems"}}</div>
             {{/each}}
         </div>
     </section>
     <section class="director-image-control-group">
-        <legend title="{{localize 'NARRATIVE_CANVAS.Labels.HandoutImages'}}"><i class="fas fa-book-open"></i> {{localize "NARRATIVE_CANVAS.Labels.HandoutImages"}}</legend>
-        <div class="director-image-list">
+        <header class="director-image-list-header">
+            <h4 title="{{localize 'NARRATIVE_CANVAS.Labels.HandoutImages'}}"><i class="fas fa-book-open"></i> {{localize "NARRATIVE_CANVAS.Labels.HandoutImages"}}</h4>
+            <button type="button" class="btn-toggle-image-list" data-image-list="handouts" aria-expanded="{{#unless isHandoutsCollapsed}}true{{else}}false{{/unless}}" aria-controls="director-handout-image-list" title="{{#if isHandoutsCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageList'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageList'}}{{/if}}" aria-label="{{#if isHandoutsCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageList'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageList'}}{{/if}}">
+                <i class="fas {{#if isHandoutsCollapsed}}fa-chevron-right{{else}}fa-chevron-down{{/if}}" aria-hidden="true"></i>
+            </button>
+        </header>
+        <div class="director-image-list" id="director-handout-image-list" {{#if isHandoutsCollapsed}}hidden{{/if}}>
             {{#each currentSceneData.handoutImages}}
                 <div class="handout-thumbnail-card {{#if (eq ../handoutImage this.path)}}is-active-bg{{/if}}" data-handout-image-path="{{this.path}}">
                     <img src="{{this.path}}" alt="{{this.name}}" />
+                    {{#unless ../currentSceneData.isJournalAssetSource}}
                     <div class="bg-thumbnail-actions">
                         <button type="button" class="btn-toggle-image-description {{#if this.showDescription}}is-active{{/if}}" data-image-collection="handoutImages" data-image-index="{{@index}}" title="{{#if this.showDescription}}{{localize 'NARRATIVE_CANVAS.Director.HideBackgroundDescription'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowBackgroundDescription'}}{{/if}}" aria-label="{{#if this.showDescription}}{{localize 'NARRATIVE_CANVAS.Director.HideBackgroundDescription'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowBackgroundDescription'}}{{/if}}">
                             <i class="fas {{#if this.showDescription}}fa-closed-captioning{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
                         </button>
                     </div>
+                    {{/unless}}
                     <span class="bg-thumb-label" title="{{this.name}}">{{this.name}}</span>
                 </div>
+            {{else}}
+                <div class="director-image-list-empty">{{localize "NARRATIVE_CANVAS.Director.NoImageItems"}}</div>
             {{/each}}
         </div>
     </section>
