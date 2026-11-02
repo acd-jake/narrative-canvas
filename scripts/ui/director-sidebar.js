@@ -606,8 +606,20 @@ export class DirectorSidebar {
         return;
       }
 
-      this.#raiseLinkedDocument(uuid);
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      void this.#openLinkedDocument(event, uuid);
     }, true);
+  }
+
+  async #openLinkedDocument(event, uuid) {
+    try {
+      const linkedDocument = await foundry.utils.fromUuid(uuid);
+      const application = await linkedDocument?._onClickDocumentLink(event);
+      if (application) this.#raiseLinkedDocument(application);
+    } catch (error) {
+      console.warn("Narrative Canvas | Failed to open linked document:", uuid, error);
+    }
   }
 
   #bindJournalNavigation(root) {
@@ -700,34 +712,16 @@ export class DirectorSidebar {
     if (backButton) backButton.hidden = this.#journalNavigationHistory.length === 0;
   }
 
-  #raiseLinkedDocument(uuid) {
-    let attempts = 0;
-    const raiseWindow = () => {
-      const applications = [
-        ...(foundry.applications?.instances?.values?.() ?? []),
-        ...Object.values(ui.windows ?? {})
-      ];
-      const application = applications.find(app => (app.document ?? app.object)?.uuid === uuid);
-      const element = application?.element?.[0] ?? application?.element;
+  #raiseLinkedDocument(application) {
+    const contentElement = application.element?.[0] ?? application.element;
+    const windowElement = contentElement?.closest?.(".application, .window-app") ?? contentElement;
+    if (!windowElement?.isConnected) return;
 
-      if (element?.isConnected) {
-        application.bringToTop?.();
-        const canvas = document.getElementById("narrative-canvas-director")
-          ?? document.getElementById("narrative-player-display");
-        const canvasZIndex = Number.parseInt(canvas ? getComputedStyle(canvas).zIndex : "10000", 10) || 10000;
-        const highestWindowZIndex = applications.reduce((highest, app) => {
-          const appElement = app.element?.[0] ?? app.element;
-          const zIndex = Number.parseInt(appElement?.style?.zIndex ?? "0", 10) || 0;
-          return Math.max(highest, zIndex);
-        }, canvasZIndex);
-        element.style.setProperty("z-index", String(highestWindowZIndex + 1), "important");
-        return;
-      }
-
-      if (attempts++ < 20) window.setTimeout(raiseWindow, 50);
-    };
-
-    window.setTimeout(raiseWindow, 0);
+    application.bringToTop?.();
+    const canvas = document.getElementById("narrative-canvas-director")
+      ?? document.getElementById("narrative-player-display");
+    const canvasZIndex = Number.parseInt(canvas ? getComputedStyle(canvas).zIndex : "10000", 10) || 10000;
+    windowElement.style.setProperty("z-index", String(canvasZIndex + 1), "important");
   }
 
   #scheduleJournalViewerStateSave() {
