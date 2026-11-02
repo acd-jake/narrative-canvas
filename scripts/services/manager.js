@@ -11,6 +11,7 @@ export class NarrativeManager {
       active: false,
       playerViewActive: false,
       background: "",
+      backgroundDisplayMode: "background",
       activeDialogue: null,
       handout: null,
       imageOverlay: null,
@@ -134,6 +135,7 @@ export class NarrativeManager {
     const payload = {
       activeSceneId: this.narrativeState.activeSceneId || "",
       background: this.narrativeState.background || "",
+      backgroundDisplayMode: this.narrativeState.backgroundDisplayMode || "background",
       activeActors: (this.narrativeState.activeActors || []).map(actor => ({
         id: actor.id,
         name: actor.name,
@@ -207,6 +209,10 @@ export class NarrativeManager {
     this.narrativeState.activeSceneId = validatedSceneId;
     this.narrativeState.currentSceneData = validatedSceneData;
     this.narrativeState.background = validatedBackground;
+    this.narrativeState.backgroundDisplayMode = validatedSceneData?.backgrounds
+      ?.find(background => background.path === validatedBackground)?.displayMode
+      ?? saved.backgroundDisplayMode
+      ?? "background";
     this.narrativeState.activeActors = validatedActors;
     this.narrativeState.activeSpeakerId = validatedSpeakerId;
   }
@@ -322,6 +328,7 @@ export class NarrativeManager {
       onClearDisplay: () => {
         this.handleDisplayUpdate({
           background: "",
+          backgroundDisplayMode: "background",
           activeActors: [],
           activeSpeakerId: null,
           activeDialogue: null,
@@ -331,7 +338,35 @@ export class NarrativeManager {
       },
       onImageOverlay: (imageOverlay) => this.handleDisplayUpdate({ imageOverlay }),
       onImageOverlayClose: () => this.handleDisplayUpdate({ imageOverlay: null }),
-      onBackgroundChange: (path) => this.handleDisplayUpdate({ background: path }),
+      onBackgroundChange: (path) => {
+        const background = this.narrativeState.currentSceneData?.backgrounds
+          ?.find(entry => entry.path === path);
+        this.handleDisplayUpdate({
+          background: path,
+          backgroundDisplayMode: background?.displayMode ?? "background"
+        });
+      },
+      onBackgroundDisplayModeChange: async (path, displayMode, index) => {
+        const sceneId = this.narrativeState.activeSceneId;
+        if (!sceneId || (displayMode !== "background" && displayMode !== "journal")) return;
+        await NarrativeSceneRepository.setBackgroundDisplayMode(sceneId, index, displayMode);
+        const scenes = NarrativeSceneRepository.getAll();
+        const currentSceneData = scenes.find(scene => scene.id === sceneId) || null;
+        this.handleDisplayUpdate({
+          scenesList: scenes,
+          currentSceneData,
+          background: path,
+          backgroundDisplayMode: displayMode
+        });
+      },
+      onBackgroundDescriptionToggle: async (path, index) => {
+        const sceneId = this.narrativeState.activeSceneId;
+        if (!sceneId) return;
+        await NarrativeSceneRepository.toggleBackgroundDescription(sceneId, index);
+        const scenes = NarrativeSceneRepository.getAll();
+        const currentSceneData = scenes.find(scene => scene.id === sceneId) || null;
+        this.handleDisplayUpdate({ scenesList: scenes, currentSceneData });
+      },
       onTrackPlay: (trackId) => this.handleDisplayUpdate({ activeTrackId: trackId }),
       onVolumeChange: (volume) => this.handleDisplayUpdate({ globalVolume: volume }),
       onVisibilityChange: (visible) => this.handleDisplayUpdate({ playerViewActive: visible }),

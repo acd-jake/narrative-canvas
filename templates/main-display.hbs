@@ -5,6 +5,21 @@
             <div class="narrative-bg-layer is-active" style="background-image: url('{{background}}');"></div>
         {{/if}}
     </div>
+
+    {{#if backgroundDescription}}
+        <div class="narrative-background-description">{{{backgroundDescription}}}</div>
+    {{/if}}
+
+    {{#if journalBackground}}
+        <div class="narrative-journal-image-overlay">
+            <div class="narrative-journal-image-frame">
+                <img src="{{journalBackground.src}}" alt="{{journalBackground.title}}" class="narrative-journal-image" />
+                {{#if journalBackground.description}}
+                    <div class="narrative-journal-image-description">{{{journalBackground.description}}}</div>
+                {{/if}}
+            </div>
+        </div>
+    {{/if}}
     
     <!-- Ambient Overlay Vignette -->
     <div class="narrative-overlay-vignette"></div>

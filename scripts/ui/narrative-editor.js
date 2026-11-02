@@ -1,5 +1,6 @@
 import { NarrativeSettings } from "../services/settings.js";
 import { NarrativeSceneRepository } from "../services/scene-repository.js";
+import { BackgroundDescriptionEditors } from "../services/background-description-editors.js";
 import { JournalAssetBrowser } from "../services/journal-asset-browser.js";
 import { JournalDockController } from "../services/journal-dock.js";
 
@@ -17,12 +18,16 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   #freeSceneId = null;
   #journalAssets = null;
   #journalAssetsJournalId = null;
+  #backgroundDescriptionEditors;
   #dock;
 
   constructor(options = {}) {
     super(options);
     
     this.selectedSceneId = null;
+    this.#backgroundDescriptionEditors = new BackgroundDescriptionEditors(
+      (sceneId, index, description) => this.#saveBackgroundDescription(sceneId, index, description)
+    );
     this.#dock = new JournalDockController(this, {
       onDocked: ({ journalId, previousJournalId }) => {
         if (!previousJournalId) this.#freeSceneId = this.selectedSceneId;
@@ -46,7 +51,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     tag: "div",
     classes: ["acd-nc-editor-window"],
     window: { frame: true, title: "NARRATIVE_CANVAS.Editor.WindowTitle", minimizable: true, resizable: true },
-    position: { width: 750, height: 460 }
+    position: { width: 1050, height: 760 }
   };
 
   static PARTS = {
@@ -62,10 +67,20 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       this.#journalAssetsJournalId = journalId;
     }
 
-    const scenes = NarrativeSceneRepository.getVisible(journalId)
-      .map(scene => scene.journalId
-        ? { ...scene, journalName: this.#journalNameOf(scene.journalId) ?? scene.journalName }
-        : scene);
+    const scenes = NarrativeSceneRepository.getVisible(journalId).map(scene => ({
+      ...scene,
+      journalName: scene.journalId
+        ? this.#journalNameOf(scene.journalId) ?? scene.journalName
+        : scene.journalName,
+      backgrounds: (scene.backgrounds ?? []).map(background => {
+        const descriptionTooltip = this.#plainText(background.description);
+        return {
+          ...background,
+          descriptionTooltip,
+          hasDescription: Boolean(descriptionTooltip)
+        };
+      })
+    }));
 
     if (!scenes.some(scene => scene.id === this.selectedSceneId)) {
       this.selectedSceneId = scenes[0]?.id ?? null;
@@ -86,23 +101,38 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   /** @override */
   _onFirstRender(context, options) {
     super._onFirstRender(context, options);
+    this.#centerFloatingWindow();
     this.#dock.dockToActiveJournal();
     if (this.#dock.journalId) this.render();
   }
 
+  #centerFloatingWindow() {
+    const margin = 24;
+    const width = Math.max(1, Math.min(1050, window.innerWidth - margin * 2));
+    const height = Math.max(1, Math.min(760, window.innerHeight - margin * 2));
+    this.setPosition({
+      left: Math.max(margin, (window.innerWidth - width) / 2),
+      top: Math.max(margin, (window.innerHeight - height) / 2),
+      width,
+      height
+    });
+  }
+
   /** @override */
-  _onClose(options) {
+  async _onClose(options) {
+    await this.#backgroundDescriptionEditors.destroy();
     super._onClose(options);
     this.#dock.release();
   }
   /** @override */
-  _onRender(context, options) {
+  async _onRender(context, options) {
     super._onRender(context, options);
     
     if (this.element) {
       this._dragDrop = this._dragDrop || this.#createDragDrop();
       this._dragDrop.bind(this.element);
       this.#bindListeners();
+      await this.#backgroundDescriptionEditors.mount(this.element);
     }
   }
 
@@ -127,19 +157,23 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     this.#bindAudioPicker(html);
     this.#bindTileDeletion(html);
     this.#bindActorNameToggle(html);
+    this.#bindBackgroundDescriptionEditor(html);
+    this.#bindBackgroundDescriptionVisibility(html);
     this.#bindTileSizeSlider(html);
   }
 
   #bindSceneList(html) {
     html.querySelectorAll(".scene-navigation-item").forEach(item => {
-      item.addEventListener("click", (event) => {
+      item.addEventListener("click", async (event) => {
         if (event.target.closest(".btn-delete-scene")) return;
+        await this.#backgroundDescriptionEditors.saveAll();
         this.selectedSceneId = item.dataset.sceneId;
-        this.render();
+        await this.render();
       });
     });
 
     html.querySelector(".btn-create-scene")?.addEventListener("click", async () => {
+      await this.#backgroundDescriptionEditors.saveAll();
       const scene = await NarrativeSceneRepository.create({
         name: game.i18n.localize("NARRATIVE_CANVAS.Editor.NewSceneDefault"),
         journalId: this.#dock.journalId
@@ -153,7 +187,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
         event.preventDefault();
         const sceneId = button.closest(".scene-navigation-item").dataset.sceneId;
         if (this.selectedSceneId === sceneId) this.selectedSceneId = null;
-        await this.#persistAndRefresh(NarrativeSceneRepository.remove(sceneId));
+        await this.#persistAndRefresh(() => NarrativeSceneRepository.remove(sceneId));
       });
     });
   }
@@ -173,7 +207,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   #bindSceneHeader(html) {
     html.querySelector(".input-scene-rename-field")?.addEventListener("change", (event) => {
       const name = event.target.value || game.i18n.localize("NARRATIVE_CANVAS.Editor.NewSceneDefault");
-      this.#persistAndRefresh(NarrativeSceneRepository.rename(event.target.dataset.sceneId, name));
+      this.#persistAndRefresh(() => NarrativeSceneRepository.rename(event.target.dataset.sceneId, name));
     });
   }
 
@@ -183,7 +217,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       new FilePicker({
         type: "image",
         classes: ["filepicker", "acd-nc-elevation"],
-        callback: (path) => this.#persistAndRefresh(NarrativeSceneRepository.addBackground(sceneId, path))
+        callback: (path) => this.#persistAndRefresh(() => NarrativeSceneRepository.addBackground(sceneId, path))
       }).browse();
     });
   }
@@ -197,7 +231,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
         callback: (path) => {
           const filename = path.split("/").pop() || "";
           const name = decodeURIComponent(filename.replace(/\.[^/.]+$/, "")) || "Track";
-          this.#persistAndRefresh(NarrativeSceneRepository.addTrack(sceneId, {
+          this.#persistAndRefresh(() => NarrativeSceneRepository.addTrack(sceneId, {
             id: foundry.utils.randomID(),
             name,
             path
@@ -209,7 +243,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
 
   #bindTileDeletion(html) {
     html.querySelectorAll(".btn-delete-item").forEach(button => {
-      button.addEventListener("click", (event) => {
+      button.addEventListener("click", async (event) => {
         event.preventDefault();
         const { type, index, id } = button.closest(".tile-thumbnail-card").dataset;
         const sceneId = this.selectedSceneId;
@@ -219,7 +253,10 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
           Actor: () => NarrativeSceneRepository.removeActor(sceneId, id),
           PlaylistSound: () => NarrativeSceneRepository.removeTrack(sceneId, id)
         };
-        if (sceneId && removals[type]) this.#persistAndRefresh(removals[type]());
+        if (sceneId && removals[type]) {
+          await this.#backgroundDescriptionEditors.saveAll();
+          await this.#persistAndRefresh(removals[type]);
+        }
       });
     });
   }
@@ -233,10 +270,62 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
         const actorId = card?.dataset.id;
         const sceneId = this.selectedSceneId;
         if (sceneId && actorId) {
-          await this.#persistAndRefresh(NarrativeSceneRepository.toggleActorName(sceneId, actorId));
+          await this.#persistAndRefresh(() => NarrativeSceneRepository.toggleActorName(sceneId, actorId));
         }
       });
     });
+  }
+
+  #bindBackgroundDescriptionEditor(html) {
+    html.querySelectorAll(".btn-edit-background-description").forEach(button => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const card = button.closest(".tile-thumbnail-card");
+        const sceneId = this.selectedSceneId;
+        const index = Number(card?.dataset.index);
+        if (sceneId && Number.isInteger(index)) {
+          const popup = card.querySelector(".background-description-popup");
+          const isOpen = popup.classList.toggle("is-open");
+          card.classList.toggle("is-description-editing", isOpen);
+          popup.setAttribute("aria-hidden", String(!isOpen));
+          button.setAttribute("aria-expanded", String(isOpen));
+          if (isOpen) this.#backgroundDescriptionEditors.focus(sceneId, index);
+        }
+      });
+    });
+
+    html.querySelectorAll(".btn-close-background-description").forEach(button => {
+      button.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const card = button.closest(".tile-thumbnail-card");
+        await this.#backgroundDescriptionEditors.saveAll();
+        card?.classList.remove("is-description-editing");
+        card?.querySelector(".background-description-popup")?.classList.remove("is-open");
+        card?.querySelector(".btn-edit-background-description")?.setAttribute("aria-expanded", "false");
+        card?.querySelector(".background-description-popup")?.setAttribute("aria-hidden", "true");
+      });
+    });
+  }
+
+  #bindBackgroundDescriptionVisibility(html) {
+    html.querySelectorAll(".btn-toggle-background-description-visibility").forEach(button => {
+      button.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const card = button.closest(".background-tile-card");
+        const sceneId = this.selectedSceneId;
+        const index = Number(card?.dataset.index);
+        if (!sceneId || !Number.isInteger(index)) return;
+
+        await this.#persistAndRefresh(() => NarrativeSceneRepository.toggleBackgroundDescription(sceneId, index));
+      });
+    });
+  }
+
+  #plainText(html) {
+    return new DOMParser().parseFromString(html || "", "text/html").body.textContent?.trim() ?? "";
   }
 
   #bindTileSizeSlider(html) {
@@ -260,7 +349,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       if (!asset || (dropzoneType !== ANY_ASSET_TYPE && asset.type !== dropzoneType)) return;
 
       const targetSceneId = sceneId || await this.#createSceneFor(asset);
-      await this.#persistAndRefresh(asset.addTo(targetSceneId));
+      await this.#persistAndRefresh(() => asset.addTo(targetSceneId));
     } catch (error) {
       console.error("Narrative Canvas | Drop error:", error);
     }
@@ -363,12 +452,48 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
 
   /** Waits for a repository change, then refreshes every view that shows scene data. */
   async #persistAndRefresh(change) {
-    await change;
+    await this.#backgroundDescriptionEditors.saveAll();
+    await change();
     await this.#refreshViews();
   }
 
   async #refreshViews() {
     await this.render();
-    await game.modules.get("narrative-canvas").manager?.refreshView();
+    await this.#refreshDirector();
+  }
+
+  async #saveBackgroundDescription(sceneId, index, description) {
+    await NarrativeSceneRepository.updateBackgroundDescription(sceneId, index, description);
+    this.#updateBackgroundDescriptionIndicator(sceneId, index, description);
+    await this.#refreshDirector();
+  }
+
+  #updateBackgroundDescriptionIndicator(sceneId, index, description) {
+    if (this.selectedSceneId !== sceneId) return;
+    const root = this.element;
+    if (!root) return;
+    const card = [...root.querySelectorAll(".background-tile-card")]
+      .find(candidate => Number(candidate.dataset.index) === index);
+    const button = card?.querySelector(".btn-edit-background-description");
+    if (!button) return;
+
+    const descriptionText = this.#plainText(description);
+    const hasDescription = Boolean(descriptionText);
+    const action = game.i18n.localize(hasDescription
+      ? "NARRATIVE_CANVAS.Editor.EditBackgroundDescription"
+      : "NARRATIVE_CANVAS.Editor.AddBackgroundDescription");
+    button.classList.toggle("is-active", hasDescription);
+    button.title = descriptionText ? `${action}: ${descriptionText}` : action;
+    button.setAttribute("aria-label", button.title);
+    button.querySelector("i").className = `fas ${hasDescription ? "fa-comment-dots" : "fa-comment"}`;
+  }
+
+  async #refreshDirector() {
+    const manager = game.modules.get("narrative-canvas").manager;
+    if (!manager) return;
+
+    const scenes = NarrativeSceneRepository.getAll();
+    const currentSceneData = scenes.find(scene => scene.id === manager.narrativeState.activeSceneId) || null;
+    await manager.handleDisplayUpdate({ scenesList: scenes, currentSceneData });
   }
 }

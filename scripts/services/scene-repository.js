@@ -5,6 +5,8 @@ import { NarrativeSettings } from "./settings.js";
  * Every mutation reads the stored scenes, applies one change and saves the result.
  */
 export class NarrativeSceneRepository {
+  static #mutationQueue = Promise.resolve();
+
   /** @returns {object[]} All stored scenes with healed tracks and assets. */
   static getAll() {
     const raw = NarrativeSettings.getAllScenes() ?? [];
@@ -13,6 +15,13 @@ export class NarrativeSceneRepository {
 
   static #healScene(scene) {
     if (!scene) return scene;
+    if (Array.isArray(scene.backgrounds)) {
+      scene.backgrounds.forEach(background => {
+        background.description ??= "";
+        background.showDescription ??= false;
+        background.displayMode ??= "background";
+      });
+    }
     if (Array.isArray(scene.tracks)) {
       scene.tracks.forEach(track => this.#healTrack(track));
     }
@@ -88,25 +97,27 @@ export class NarrativeSceneRepository {
    * @returns {Promise<object>} The created scene.
    */
   static async create({ name, journalId = null }) {
-    const scenes = this.getAll();
-    const scene = {
-      id: `scene-${foundry.utils.randomID()}`,
-      name: this.#toUniqueName(name, scenes),
-      backgrounds: [],
-      actors: [],
-      tracks: []
-    };
-    if (journalId) {
-      scene.journalId = journalId;
-      scene.journalName = game.collections.get("JournalEntry").get(journalId)?.name;
-    }
+    return this.#queueMutation(async () => {
+      const scenes = this.getAll();
+      const scene = {
+        id: `scene-${foundry.utils.randomID()}`,
+        name: this.#toUniqueName(name, scenes),
+        backgrounds: [],
+        actors: [],
+        tracks: []
+      };
+      if (journalId) {
+        scene.journalId = journalId;
+        scene.journalName = game.collections.get("JournalEntry").get(journalId)?.name;
+      }
 
-    await NarrativeSettings.saveAllScenes([...scenes, scene]);
-    return scene;
+      await NarrativeSettings.saveAllScenes([...scenes, scene]);
+      return scene;
+    });
   }
 
   static async remove(sceneId) {
-    await NarrativeSettings.saveAllScenes(this.getAll().filter(scene => scene.id !== sceneId));
+    return this.#queueMutation(() => NarrativeSettings.saveAllScenes(this.getAll().filter(scene => scene.id !== sceneId)));
   }
 
   static async rename(sceneId, name) {
@@ -117,7 +128,35 @@ export class NarrativeSceneRepository {
 
   static async addBackground(sceneId, path) {
     await this.#update(sceneId, scene => {
-      scene.backgrounds.push({ name: path.split("/").pop(), path });
+      scene.backgrounds.push({
+        name: path.split("/").pop(),
+        path,
+        description: "",
+        showDescription: false,
+        displayMode: "background"
+      });
+    });
+  }
+
+  static async updateBackgroundDescription(sceneId, index, description) {
+    await this.#update(sceneId, scene => {
+      const background = scene.backgrounds[index];
+      if (background) background.description = description;
+    });
+  }
+
+  static async toggleBackgroundDescription(sceneId, index) {
+    await this.#update(sceneId, scene => {
+      const background = scene.backgrounds[index];
+      if (background) background.showDescription = background.showDescription !== true;
+    });
+  }
+
+  static async setBackgroundDisplayMode(sceneId, index, displayMode) {
+    if (displayMode !== "background" && displayMode !== "journal") return;
+    await this.#update(sceneId, scene => {
+      const background = scene.backgrounds[index];
+      if (background) background.displayMode = displayMode;
     });
   }
 
@@ -181,11 +220,19 @@ export class NarrativeSceneRepository {
   }
 
   static async #update(sceneId, mutate) {
-    const scenes = foundry.utils.deepClone(this.getAll());
-    const scene = scenes.find(candidate => candidate.id === sceneId);
-    if (!scene) return;
+    return this.#queueMutation(async () => {
+      const scenes = foundry.utils.deepClone(this.getAll());
+      const scene = scenes.find(candidate => candidate.id === sceneId);
+      if (!scene) return;
 
-    mutate(scene, scenes);
-    await NarrativeSettings.saveAllScenes(scenes);
+      mutate(scene, scenes);
+      await NarrativeSettings.saveAllScenes(scenes);
+    });
+  }
+
+  static #queueMutation(mutation) {
+    const queuedMutation = this.#mutationQueue.then(mutation);
+    this.#mutationQueue = queuedMutation.catch(() => {});
+    return queuedMutation;
   }
 }

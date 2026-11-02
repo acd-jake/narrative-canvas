@@ -78,6 +78,31 @@ export class NarrativeDirector extends NarrativeCanvas {
 
       const target = event.target;
 
+      const displayModeButton = target.closest(".btn-background-display-mode");
+      if (displayModeButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        const card = displayModeButton.closest(".bg-thumbnail-card");
+        this.callbacks.onBackgroundDisplayModeChange?.(
+          card?.dataset.bgPath,
+          displayModeButton.dataset.displayMode,
+          Number(card?.dataset.backgroundIndex)
+        );
+        return;
+      }
+
+      const descriptionButton = target.closest(".btn-toggle-background-description");
+      if (descriptionButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        const card = descriptionButton.closest(".bg-thumbnail-card");
+        this.callbacks.onBackgroundDescriptionToggle?.(
+          card?.dataset.bgPath,
+          Number(card?.dataset.backgroundIndex)
+        );
+        return;
+      }
+
       if (target.closest(".btn-toggle-sidebar")) {
         event.preventDefault();
         this.sidebar?.toggleCollapse();

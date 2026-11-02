@@ -43,12 +43,41 @@ export class NarrativeCanvas {
     }));
 
     const defaultBg = NarrativeSettings.getDefaultBackgroundImage();
-    const effectiveBackground = (state.background || defaultBg || "").trim();
+    const activeBackground = state.currentSceneData?.backgrounds
+      ?.find(background => background.path === state.background);
+    const backgroundDisplayMode = activeBackground?.displayMode
+      ?? state.backgroundDisplayMode
+      ?? "background";
+    const effectiveBackground = (
+      backgroundDisplayMode === "journal" ? defaultBg : state.background || defaultBg || ""
+    ).trim();
+    const enrichedBackgroundDescription = activeBackground?.showDescription === true
+      ? await TextEditor.enrichHTML(activeBackground.description || "", {
+          secrets: game.user.isGM,
+          documents: true,
+          links: true,
+          rolls: true,
+          embeds: true,
+          async: true
+        })
+      : "";
+    const backgroundDescription = backgroundDisplayMode === "background"
+      ? enrichedBackgroundDescription
+      : "";
 
     const context = {
       ...state,
       background: effectiveBackground,
       selectedBackground: state.background || "",
+      backgroundDisplayMode,
+      backgroundDescription,
+      journalBackground: backgroundDisplayMode === "journal" && state.background
+        ? {
+            src: state.background,
+            title: activeBackground?.name || "",
+            description: enrichedBackgroundDescription
+          }
+        : null,
       activeActors,
       hasActiveSpeaker: Boolean(state.activeSpeakerId),
       isGM: game.user.isGM,
@@ -120,6 +149,9 @@ export class NarrativeCanvas {
       activeSceneId: context.activeSceneId,
       background: context.background,
       selectedBackground: context.selectedBackground,
+      backgroundDisplayMode: context.backgroundDisplayMode,
+      backgroundDescription: context.backgroundDescription,
+      journalBackground: context.journalBackground,
       customBgColor: context.customBgColor,
       playerViewActive: context.playerViewActive,
       handout: context.handout,
@@ -143,6 +175,8 @@ export class NarrativeCanvas {
     // 1. Update background and actor layers
     this.bgController.update(context.background, fadeDuration);
     this.vnStageController.update({ ...context, fadeDuration });
+    this.#updateBackgroundDescription(context.backgroundDescription);
+    this.#updateJournalBackground(context.journalBackground);
 
     // 2. Update background color variable
     this.stageElement.style.setProperty("--nc-custom-bg", context.customBgColor || "#000000");
@@ -289,6 +323,48 @@ export class NarrativeCanvas {
     if (isNewOverlay || currentSource !== nextSource || isAnimating || opacity < 1) {
       await this._animateImageOverlayOpacity(overlay, 1, context.fadeDuration);
     }
+  }
+
+  #updateBackgroundDescription(description) {
+    let caption = this.stageElement.querySelector(".narrative-background-description");
+    if (!description) {
+      caption?.remove();
+      return;
+    }
+
+    if (!caption) {
+      caption = document.createElement("div");
+      caption.className = "narrative-background-description animate-fade-in";
+      this.stageElement.appendChild(caption);
+    }
+    caption.innerHTML = description;
+  }
+
+  #updateJournalBackground(background) {
+    let overlay = this.stageElement.querySelector(".narrative-journal-image-overlay");
+    if (!background) {
+      overlay?.remove();
+      return;
+    }
+
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.className = "narrative-journal-image-overlay animate-fade-in";
+      overlay.innerHTML = `
+        <div class="narrative-journal-image-frame">
+          <img class="narrative-journal-image" />
+          <div class="narrative-journal-image-description"></div>
+        </div>
+      `;
+      this.stageElement.appendChild(overlay);
+    }
+
+    const image = overlay.querySelector(".narrative-journal-image");
+    image.src = background.src;
+    image.alt = background.title;
+    const description = overlay.querySelector(".narrative-journal-image-description");
+    description.innerHTML = background.description || "";
+    description.hidden = !background.description;
   }
 
   async _animateImageOverlayOpacity(overlay, targetOpacity, duration) {

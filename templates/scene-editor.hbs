@@ -57,12 +57,25 @@
                     </header>
                     <div class="tiles-wrapping-grid">
                         {{#each activeScene.backgrounds}}
-                            <div class="tile-thumbnail-card" data-index="{{@index}}" data-type="background">
+                            <div class="tile-thumbnail-card background-tile-card" data-index="{{@index}}" data-type="background">
                                 <div class="tile-image-wrapper">
                                     <img src="{{this.path}}" alt="{{this.name}}" />
+                                    <button type="button" class="btn-edit-background-description tile-overlay-toggle-name {{#if this.hasDescription}}is-active{{/if}}" aria-expanded="false" title="{{#if this.descriptionTooltip}}{{localize 'NARRATIVE_CANVAS.Editor.EditBackgroundDescription'}}: {{this.descriptionTooltip}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.AddBackgroundDescription'}}{{/if}}">
+                                        <i class="fas {{#if this.hasDescription}}fa-comment-dots{{else}}fa-comment{{/if}}"></i>
+                                    </button>
+                                    <button type="button" class="btn-toggle-background-description-visibility {{#if this.showDescription}}is-active{{/if}}" title="{{#if this.showDescription}}{{localize 'NARRATIVE_CANVAS.Editor.HideBackgroundDescription'}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.ShowBackgroundDescription'}}{{/if}}" aria-label="{{#if this.showDescription}}{{localize 'NARRATIVE_CANVAS.Editor.HideBackgroundDescription'}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.ShowBackgroundDescription'}}{{/if}}">
+                                        <i class="fas {{#if this.showDescription}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
+                                    </button>
                                     <button type="button" class="btn-delete-item tile-overlay-delete"><i class="fas fa-times"></i></button>
                                 </div>
                                 <span class="tile-label-text">{{this.name}}</span>
+                                <div class="background-description-popup" aria-hidden="true">
+                                    <header>
+                                        <span>{{localize "NARRATIVE_CANVAS.Editor.ImageDescription"}}</span>
+                                        <button type="button" class="btn-close-background-description" title="{{localize 'NARRATIVE_CANVAS.Editor.CloseBackgroundDescription'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Editor.CloseBackgroundDescription'}}"><i class="fas fa-times"></i></button>
+                                    </header>
+                                    <prose-mirror class="background-description-editor" name="background-description" value="{{this.description}}" data-scene-id="{{../activeScene.id}}" data-background-index="{{@index}}"></prose-mirror>
+                                </div>
                             </div>
                         {{/each}}
                     </div>
