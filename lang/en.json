@@ -37,6 +37,8 @@
   "NARRATIVE_CANVAS.Labels.HideCanvas": "Hide from Players",
   "NARRATIVE_CANVAS.Status.Live": "LIVE",
   "NARRATIVE_CANVAS.Status.Preparing": "PREPARING",
+  "NARRATIVE_CANVAS.Status.LiveTooltip": "The Narrative Canvas is visible to players.",
+  "NARRATIVE_CANVAS.Status.PreparingTooltip": "The Narrative Canvas is not visible to players.",
   "NARRATIVE_CANVAS.Notifications.Activated": "Theatre of the Mind narrative mode has been activated.",
   "NARRATIVE_CANVAS.Notifications.Deactivated": "Theatre of the Mind narrative mode has ended.",
   "NARRATIVE_CANVAS.Notifications.GMDisconnected": "Theatre of the Mind mode ended because the Gamemaster disconnected.",

@@ -210,6 +210,11 @@ export class NarrativeCanvas {
       visibilityNotice.querySelector(".visibility-status-label").textContent = game.i18n.localize(
         isLive ? "NARRATIVE_CANVAS.Status.Live" : "NARRATIVE_CANVAS.Status.Preparing"
       );
+      const visibilityTooltip = game.i18n.localize(
+        isLive ? "NARRATIVE_CANVAS.Status.LiveTooltip" : "NARRATIVE_CANVAS.Status.PreparingTooltip"
+      );
+      visibilityNotice.title = visibilityTooltip;
+      visibilityNotice.dataset.tooltip = visibilityTooltip;
     }
 
     // 3. Update dialogue and handout layers in-place

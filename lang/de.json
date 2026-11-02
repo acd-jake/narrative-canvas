@@ -37,6 +37,8 @@
   "NARRATIVE_CANVAS.Labels.HideCanvas": "Vor Spielern verbergen",
   "NARRATIVE_CANVAS.Status.Live": "LIVE",
   "NARRATIVE_CANVAS.Status.Preparing": "VORBEREITUNG",
+  "NARRATIVE_CANVAS.Status.LiveTooltip": "Der Narrative Canvas ist für die Spieler sichtbar.",
+  "NARRATIVE_CANVAS.Status.PreparingTooltip": "Der Narrative Canvas ist für die Spieler nicht sichtbar.",
   "NARRATIVE_CANVAS.Notifications.Activated": "Der Erzählmodus (Theatre of the Mind) wurde gestartet.",
   "NARRATIVE_CANVAS.Notifications.Deactivated": "Der Erzählmodus (Theatre of the Mind) wurde beendet.",
   "NARRATIVE_CANVAS.Notifications.GMDisconnected": "Der Erzählmodus wurde beendet, da der Spielleiter das Spiel verlassen hat.",

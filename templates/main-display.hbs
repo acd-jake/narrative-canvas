@@ -1,6 +1,6 @@
 <div class="narrative-canvas-stage">
     {{#if isGM}}
-        <div class="narrative-visibility-notice {{#if playerViewActive}}status-live{{else}}status-preparing{{/if}}" role="status">
+        <div class="narrative-visibility-notice {{#if playerViewActive}}status-live{{else}}status-preparing{{/if}}" role="status" title="{{#if playerViewActive}}{{localize 'NARRATIVE_CANVAS.Status.LiveTooltip'}}{{else}}{{localize 'NARRATIVE_CANVAS.Status.PreparingTooltip'}}{{/if}}">
             <i class="fas {{#if playerViewActive}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
             <span class="visibility-status-label">
                 {{#if playerViewActive}}{{localize "NARRATIVE_CANVAS.Status.Live"}}{{else}}{{localize "NARRATIVE_CANVAS.Status.Preparing"}}{{/if}}

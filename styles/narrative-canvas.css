@@ -75,7 +75,7 @@ body.acd-nc-active {
         font-size: 1.1rem;
         font-weight: 700;
         line-height: 1.25;
-        pointer-events: none;
+        pointer-events: auto;
 
         &.status-preparing {
             border-color: #e0b84c;
