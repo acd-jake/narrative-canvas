@@ -1077,6 +1077,44 @@ body.acd-nc-active {
             }
         }
 
+        .journal-folder-navigation {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            min-width: 0;
+
+            .btn-journal-folder-up {
+                flex: 0 0 28px;
+                width: 28px;
+                height: 28px;
+                padding: 0;
+                border: 1px solid #444;
+                border-radius: 4px;
+                background: rgba(0, 0, 0, 0.35);
+                color: #aaa;
+                cursor: pointer;
+
+                &:hover:not(:disabled) {
+                    border-color: #7a6842;
+                    color: #fff;
+                }
+
+                &:disabled {
+                    opacity: 0.4;
+                    cursor: default;
+                }
+            }
+
+            .journal-current-folder {
+                overflow: hidden;
+                color: #aaa;
+                font-size: 0.75rem;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        }
+
         .sidebar-empty-hint {
             color: #777;
             font-size: 0.8rem;

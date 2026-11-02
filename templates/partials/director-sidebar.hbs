@@ -58,15 +58,35 @@
             <input type="search" class="input-journal-filter" placeholder="{{localize 'NARRATIVE_CANVAS.Director.FilterJournals'}}" value="{{journalQuery}}" />
         </div>
 
+        <div class="journal-folder-navigation">
+            <button type="button" class="btn-journal-folder-up type-icon" title="{{localize 'NARRATIVE_CANVAS.Director.NavigateToParentFolder'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.NavigateToParentFolder'}}" {{#unless canNavigateUp}}disabled{{/unless}}>
+                <i class="fas fa-arrow-up" aria-hidden="true"></i>
+            </button>
+            <span class="journal-current-folder" title="{{currentJournalFolderLabel}}">{{currentJournalFolderLabel}}</span>
+        </div>
+
         <!-- Concrete Journal Selection -->
         <div class="journal-control-row">
             <select class="select-journal-entry">
-                <option value="">{{localize "NARRATIVE_CANVAS.Director.SelectJournal"}}</option>
+                <option value="">{{localize "NARRATIVE_CANVAS.Director.SelectJournalOrFolder"}}</option>
+                {{#if childFolders.length}}
+                    <optgroup label="{{localize 'NARRATIVE_CANVAS.Director.Subfolders'}}">
+                        {{#each childFolders}}
+                            <option value="folder:{{this.id}}">{{this.name}}</option>
+                        {{/each}}
+                    </optgroup>
+                {{/if}}
                 {{#each availableJournals}}
-                    <option value="{{this.id}}" {{#if (eq ../selectedJournalId this.id)}}selected{{/if}}>{{this.name}}</option>
+                    {{#if @first}}<optgroup label="{{localize 'NARRATIVE_CANVAS.Director.Journals'}}">{{/if}}
+                    <option value="journal:{{this.id}}" {{#if (eq ../selectedJournalId this.id)}}selected{{/if}}>{{this.name}}</option>
+                    {{#if @last}}</optgroup>{{/if}}
                 {{/each}}
                 {{#if linkedJournalOption}}
-                    <option value="{{linkedJournalOption.id}}" selected>{{linkedJournalOption.name}}</option>
+                    {{#unless availableJournals.length}}
+                        <optgroup label="{{localize 'NARRATIVE_CANVAS.Director.Journals'}}">
+                    {{/unless}}
+                    <option value="journal:{{linkedJournalOption.id}}" data-linked-journal="true" selected>{{linkedJournalOption.name}}</option>
+                    {{#unless availableJournals.length}}</optgroup>{{/unless}}
                 {{/if}}
             </select>
         </div>

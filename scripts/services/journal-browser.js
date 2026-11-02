@@ -4,7 +4,7 @@
 export class JournalBrowser {
   /**
    * Retrieves all journal folders with their hierarchical path for display in dropdowns.
-   * @returns {{id: string, name: string, path: string}[]}
+    * @returns {{id: string, name: string, path: string, parentId: string|null}[]}
    */
   static getFolders() {
     const folders = game.folders ?? game.collections.get("Folder");
@@ -28,9 +28,46 @@ export class JournalBrowser {
       .map(folder => ({
         id: folder.id,
         name: folder.name,
-        path: buildPath(folder)
+        path: buildPath(folder),
+        parentId: typeof folder.folder === "string" ? folder.folder : folder.folder?.id ?? null
       }))
       .sort((a, b) => a.path.localeCompare(b.path));
+  }
+
+  /**
+   * Retrieves only the journals and child folders directly inside one folder level.
+   * @param {string|null} folderId
+   * @param {string} query
+   * @returns {{folders: {id: string, name: string, path: string, parentId: string|null}[], journals: {id: string, name: string, folderId: string|null}[]}}
+   */
+  static getLevelContents(folderId = null, query = "") {
+    const parentFolderId = folderId || null;
+    const normalizedQuery = (query || "").trim().toLowerCase();
+    const folders = this.getFolders().filter(folder => {
+      return folder.parentId === parentFolderId
+        && (!normalizedQuery || folder.name.toLowerCase().includes(normalizedQuery));
+    });
+    const journalCollection = game.journal ?? game.collections.get("JournalEntry");
+    const journals = journalCollection
+      ? journalCollection
+        .filter(entry => {
+          const entryFolderId = typeof entry.folder === "string" ? entry.folder : entry.folder?.id ?? null;
+          return entryFolderId === parentFolderId
+            && (!normalizedQuery || entry.name.toLowerCase().includes(normalizedQuery));
+        })
+        .map(entry => ({
+          id: entry.id,
+          name: entry.name,
+          folderId: typeof entry.folder === "string" ? entry.folder : entry.folder?.id ?? null
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+      : [];
+
+    return { folders, journals };
+  }
+
+  static getParentFolderId(folderId) {
+    return this.getFolders().find(folder => folder.id === folderId)?.parentId ?? null;
   }
 
   /**
@@ -91,7 +128,7 @@ export class JournalBrowser {
   /**
    * Loads a journal entry and enriches its pages' HTML content.
    * @param {string} journalId
-   * @returns {Promise<{id: string, name: string, pages: {id: string, name: string, type: string, content: string}[]}|null>}
+  * @returns {Promise<{id: string, name: string, uuid: string, folderId: string|null, pages: {id: string, name: string, type: string, content: string}[]}|null>}
    */
   static async getJournalDetails(journalId) {
     if (!journalId) return null;
@@ -183,6 +220,7 @@ export class JournalBrowser {
       id: entry.id,
       name: entry.name,
       uuid: entry.uuid,
+      folderId: typeof entry.folder === "string" ? entry.folder : entry.folder?.id ?? null,
       pages
     };
   }

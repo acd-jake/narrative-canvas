@@ -16,7 +16,8 @@ export class DirectorSidebar {
   #isCollapsed = false;
   #areScenesCollapsed = true;
   #isAudioCollapsed = true;
-  #selectedFolderId = "";
+  #rootJournalFolderId = "";
+  #currentJournalFolderId = "";
   #journalQuery = "";
   #selectedJournalId = "";
   #selectedPageId = "";
@@ -39,7 +40,8 @@ export class DirectorSidebar {
     this.#callbacks = { onSceneSelect, onVolumeChange, onJournalImageShow };
 
     const journalViewerState = NarrativeSettings.getJournalViewerState();
-    this.#selectedFolderId = NarrativeSettings.getJournalRootFolder();
+    this.#rootJournalFolderId = NarrativeSettings.getJournalRootFolder();
+    this.#currentJournalFolderId = this.#rootJournalFolderId;
     this.#journalQuery = journalViewerState.query;
     this.#selectedJournalId = journalViewerState.journalId;
     this.#selectedPageId = journalViewerState.pageId;
@@ -244,14 +246,17 @@ export class DirectorSidebar {
       };
     });
 
-    const availableJournals = JournalBrowser.getJournals({
-      folderId: this.#selectedFolderId || null,
-      query: this.#journalQuery
-    });
-
     let activeJournal = this.#selectedJournalId
       ? await JournalBrowser.getJournalDetails(this.#selectedJournalId)
       : null;
+    if (activeJournal && JournalBrowser.getJournals().some(journal => journal.id === activeJournal.id)) {
+      this.#currentJournalFolderId = activeJournal.folderId ?? "";
+    }
+
+    const { folders: childFolders, journals: availableJournals } = JournalBrowser.getLevelContents(
+      this.#currentJournalFolderId,
+      this.#journalQuery
+    );
     this.#linkedJournalOption = null;
 
     if (this.#selectedJournalId && !availableJournals.some(journal => journal.id === this.#selectedJournalId)) {
@@ -288,6 +293,7 @@ export class DirectorSidebar {
     });
 
     const gVol = this.#audioController?.globalVolume ?? 0.5;
+    const currentFolder = JournalBrowser.getFolders().find(folder => folder.id === this.#currentJournalFolderId);
 
     return {
       scenes: scenesWithJournalNames,
@@ -299,8 +305,11 @@ export class DirectorSidebar {
       isAudioCollapsed: this.#isAudioCollapsed,
       activeSceneId: this.#activeSceneId,
       journalQuery: this.#journalQuery,
+      childFolders,
       availableJournals,
       linkedJournalOption: this.#linkedJournalOption,
+      currentJournalFolderLabel: currentFolder?.path ?? game.i18n.localize("NARRATIVE_CANVAS.Director.AllFolders"),
+      canNavigateUp: this.#currentJournalFolderId !== this.#rootJournalFolderId,
       canGoBack: this.#journalNavigationHistory.length > 0,
       selectedJournalId: this.#selectedJournalId,
       activeJournal,
@@ -448,6 +457,10 @@ export class DirectorSidebar {
   #bindJournalControls(root) {
     const journalFilterInput = root.querySelector(".input-journal-filter");
     const journalSelect = root.querySelector(".select-journal-entry");
+    root.querySelector(".btn-journal-folder-up")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      this.#navigateToParentFolder();
+    });
 
     journalFilterInput?.addEventListener("input", (event) => {
       this.#journalQuery = event.target.value;
@@ -460,10 +473,21 @@ export class DirectorSidebar {
     });
 
     journalSelect?.addEventListener("change", (event) => {
-      this.#selectedJournalId = event.target.value;
+      const selectedValue = event.target.value;
+      if (selectedValue.startsWith("folder:")) {
+        this.#navigateToFolder(selectedValue.slice("folder:".length));
+        return;
+      }
+
+      this.#selectedJournalId = selectedValue.startsWith("journal:")
+        ? selectedValue.slice("journal:".length)
+        : "";
       this.#selectedPageId = "";
-      this.#linkedJournalOption = null;
-      this.#refreshJournalBody();
+      const selectedOption = event.target.selectedOptions[0];
+      this.#linkedJournalOption = selectedOption?.dataset.linkedJournal
+        ? { id: this.#selectedJournalId, name: selectedOption.textContent }
+        : null;
+      void this.#refreshJournalBody();
       this.#applySceneFilters();
       void this.#saveJournalViewerState();
     });
@@ -473,30 +497,46 @@ export class DirectorSidebar {
     const journalSelect = this.#element?.querySelector(".select-journal-entry");
     if (!journalSelect) return;
 
-    const journals = JournalBrowser.getJournals({
-      folderId: this.#selectedFolderId || null,
-      query: this.#journalQuery
-    });
+    const { folders, journals } = JournalBrowser.getLevelContents(
+      this.#currentJournalFolderId,
+      this.#journalQuery
+    );
 
     journalSelect.innerHTML = "";
     const defaultOption = document.createElement("option");
     defaultOption.value = "";
-    defaultOption.textContent = game.i18n.localize("NARRATIVE_CANVAS.Director.SelectJournal");
+    defaultOption.textContent = game.i18n.localize("NARRATIVE_CANVAS.Director.SelectJournalOrFolder");
     journalSelect.appendChild(defaultOption);
 
+    if (folders.length) {
+      const folderGroup = document.createElement("optgroup");
+      folderGroup.label = game.i18n.localize("NARRATIVE_CANVAS.Director.Subfolders");
+      folders.forEach(folder => {
+        const option = document.createElement("option");
+        option.value = `folder:${folder.id}`;
+        option.textContent = folder.name;
+        folderGroup.appendChild(option);
+      });
+      journalSelect.appendChild(folderGroup);
+    }
+
+    const journalGroup = document.createElement("optgroup");
+    journalGroup.label = game.i18n.localize("NARRATIVE_CANVAS.Director.Journals");
     journals.forEach(journal => {
       const option = document.createElement("option");
-      option.value = journal.id;
+      option.value = `journal:${journal.id}`;
       option.textContent = journal.name;
-      journalSelect.appendChild(option);
+      journalGroup.appendChild(option);
     });
 
-    if (this.#linkedJournalOption) {
+    if (this.#linkedJournalOption && !journals.some(journal => journal.id === this.#linkedJournalOption.id)) {
       const option = document.createElement("option");
-      option.value = this.#linkedJournalOption.id;
+      option.value = `journal:${this.#linkedJournalOption.id}`;
       option.textContent = this.#linkedJournalOption.name;
-      journalSelect.appendChild(option);
+      option.dataset.linkedJournal = "true";
+      journalGroup.appendChild(option);
     }
+    if (journalGroup.children.length) journalSelect.appendChild(journalGroup);
 
     if (this.#selectedJournalId && !journals.some(journal => journal.id === this.#selectedJournalId)
       && this.#linkedJournalOption?.id !== this.#selectedJournalId) {
@@ -506,7 +546,44 @@ export class DirectorSidebar {
       this.#applySceneFilters();
     }
 
-    journalSelect.value = this.#selectedJournalId;
+    journalSelect.value = this.#selectedJournalId ? `journal:${this.#selectedJournalId}` : "";
+    this.#updateJournalFolderNavigation();
+  }
+
+  #navigateToFolder(folderId) {
+    this.#currentJournalFolderId = folderId;
+    this.#selectedJournalId = "";
+    this.#selectedPageId = "";
+    this.#linkedJournalOption = null;
+    this.#refreshJournalSelect();
+    void this.#refreshJournalBody();
+    this.#applySceneFilters();
+    void this.#saveJournalViewerState();
+  }
+
+  #navigateToParentFolder() {
+    if (this.#currentJournalFolderId === this.#rootJournalFolderId) return;
+
+    const rootSubtree = this.#rootJournalFolderId
+      ? JournalBrowser.getFolderSubtreeIds(this.#rootJournalFolderId)
+      : null;
+    const isWithinRoot = !rootSubtree || rootSubtree.has(this.#currentJournalFolderId);
+    const parentFolderId = JournalBrowser.getParentFolderId(this.#currentJournalFolderId);
+    const nextFolderId = isWithinRoot
+      ? (parentFolderId ?? "")
+      : this.#rootJournalFolderId;
+    this.#navigateToFolder(nextFolderId);
+  }
+
+  #updateJournalFolderNavigation() {
+    const button = this.#element?.querySelector(".btn-journal-folder-up");
+    const label = this.#element?.querySelector(".journal-current-folder");
+    if (button) button.disabled = this.#currentJournalFolderId === this.#rootJournalFolderId;
+    if (label) {
+      const folder = JournalBrowser.getFolders().find(item => item.id === this.#currentJournalFolderId);
+      label.textContent = folder?.path ?? game.i18n.localize("NARRATIVE_CANVAS.Director.AllFolders");
+      label.title = label.textContent;
+    }
   }
 
   #bindContentLinks(root) {
@@ -554,6 +631,7 @@ export class DirectorSidebar {
     if (journal?.documentName !== "JournalEntry") return;
 
     this.#journalNavigationHistory.push({
+      folderId: this.#currentJournalFolderId,
       query: this.#journalQuery,
       journalId: this.#selectedJournalId,
       pageId: this.#selectedPageId,
@@ -563,12 +641,15 @@ export class DirectorSidebar {
     this.#updateJournalBackButton();
 
     const isWorldJournal = JournalBrowser.getJournals().some(entry => entry.id === journal.id);
+    this.#currentJournalFolderId = isWorldJournal
+      ? (typeof journal.folder === "string" ? journal.folder : journal.folder?.id ?? "")
+      : this.#rootJournalFolderId;
     this.#selectedJournalId = isWorldJournal ? journal.id : journal.uuid;
     this.#selectedPageId = isPage ? linkedDocument.id : "";
-    const availableJournals = JournalBrowser.getJournals({
-      folderId: this.#selectedFolderId || null,
-      query: this.#journalQuery
-    });
+    const { journals: availableJournals } = JournalBrowser.getLevelContents(
+      this.#currentJournalFolderId,
+      this.#journalQuery
+    );
     this.#linkedJournalOption = availableJournals.some(entry => entry.id === this.#selectedJournalId)
       ? null
       : { id: this.#selectedJournalId, name: journal.name };
@@ -584,6 +665,7 @@ export class DirectorSidebar {
       this.#selectedPageId = details?.pages[0]?.id ?? "";
     }
 
+    this.#updateJournalFolderNavigation();
     this.#refreshJournalSelect();
     await this.#refreshJournalBody();
     this.#applySceneFilters();
@@ -594,6 +676,7 @@ export class DirectorSidebar {
     const previousState = this.#journalNavigationHistory.pop();
     if (!previousState) return;
 
+    this.#currentJournalFolderId = previousState.folderId;
     this.#journalQuery = previousState.query;
     this.#selectedJournalId = previousState.journalId;
     this.#selectedPageId = previousState.pageId;
