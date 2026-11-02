@@ -1,4 +1,3 @@
-const DOCKED_WIDTH = 450;
 const DOCK_GAP = 8;
 
 function isJournalSheet(app) {
@@ -26,7 +25,9 @@ export class JournalDockController {
   #onReleased;
   #journalId = null;
   #freePosition = null;
+  #dockedWidth = null;
   #sheetObserver = null;
+  #journalActivationHandler = null;
 
   /**
    * @param {ApplicationV2} app - The window to dock.
@@ -47,6 +48,21 @@ export class JournalDockController {
 
   /** Subscribes to journal sheet lifecycle hooks. */
   register() {
+    this.#journalActivationHandler = event => {
+      if (!this.#app.rendered || !(event.target instanceof Node)) return;
+
+      const sheet = [...foundry.applications.instances.values()].find(candidate =>
+        isJournalSheet(candidate) && candidate.element?.contains(event.target)
+      );
+      if (!sheet) return;
+
+      const previousJournalId = this.#journalId;
+      this.#dockTo(sheet);
+      if (sheet.document.id !== previousJournalId) this.#app.render();
+    };
+    document.addEventListener("pointerdown", this.#journalActivationHandler, true);
+    document.addEventListener("focusin", this.#journalActivationHandler, true);
+
     Hooks.on("renderJournalEntrySheet", (sheet) => {
       if (!this.#app.rendered) return;
       this.#dockTo(sheet);
@@ -75,6 +91,7 @@ export class JournalDockController {
     if (this.#app.rendered) this.#app.setPosition(this.#freePosition);
     else Object.assign(this.#app.position, this.#freePosition);
     this.#freePosition = null;
+    this.#dockedWidth = null;
     this.#onReleased();
   }
 
@@ -85,9 +102,12 @@ export class JournalDockController {
     if (!previousJournalId) {
       const { left, top, width, height } = this.#app.position;
       this.#freePosition = { left, top, width, height };
+      this.#dockedWidth = width;
     }
     this.#journalId = journalId;
-    this.#onDocked({ journalId, previousJournalId });
+    if (journalId !== previousJournalId) {
+      this.#onDocked({ journalId, previousJournalId });
+    }
 
     this.#alignTo(sheet);
     this.#follow(sheet);
@@ -95,7 +115,16 @@ export class JournalDockController {
 
   #alignTo(sheet) {
     const bounds = sheet.element.getBoundingClientRect();
-    this.#app.setPosition({ left: bounds.right + DOCK_GAP, top: bounds.top, width: DOCKED_WIDTH, height: bounds.height });
+    const journalZIndex = Number.parseInt(getComputedStyle(sheet.element).zIndex, 10);
+    this.#app.setPosition({
+      left: bounds.right + DOCK_GAP,
+      top: bounds.top,
+      width: this.#dockedWidth ?? this.#app.position.width,
+      height: bounds.height
+    });
+    if (Number.isFinite(journalZIndex)) {
+      this.#app.element.style.zIndex = String(journalZIndex);
+    }
   }
 
   /** Sheets write left/top/width/height to their inline style on every drag or resize. */

@@ -54,9 +54,9 @@ Each image can have a rich-text description. The eye or caption control determin
 
 ### Actors and audio
 
-- Drag Actor documents into **Stage Actors**. The actor image and name are saved with the scene.
+- Drag Actor documents anywhere into the Scene Configurator workspace. They are added to **Stage Actors**, and their image and name are saved with the scene.
 - Use actor controls to show or hide a nameplate, set the active speaker, or remove an actor from the stage.
-- Drag Playlist Sound documents into **Scene Audio**, or select **Add Audio** to choose a sound file.
+- Drag Playlist Sound documents anywhere into the Scene Configurator workspace. They are added to **Scene Audio**. You can also select **Add Audio** to choose a sound file.
 - Mark one audio entry or one playlist for automatic playback when its scene is activated. Only one audio entry or playlist can be selected per scene.
 - Use track controls to play, pause, or stop audio. Track and master volume are adjustable in the Director Controls.
 

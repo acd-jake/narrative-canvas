@@ -461,6 +461,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
 
   async #onAssetDrop(event) {
     const dropzone = event.currentTarget;
+    event.stopPropagation();
     dropzone.classList.remove("drag-over");
     const { type: dropzoneType, sceneId, imageCollection } = dropzone.dataset;
 
@@ -473,10 +474,21 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       }
 
       const asset = await this.#toSceneAsset(raw);
-      if (asset?.type === "background" && imageCollection) {
-        await this.#persistAndRefresh(() => this.#addImage(sceneId, imageCollection, asset.path));
+      if (asset?.type === "background") {
+        if (imageCollection) {
+          await this.#persistAndRefresh(() => this.#addImage(sceneId, imageCollection, asset.path));
+        } else if (sceneId) {
+          return;
+        }
+        if (sceneId) return;
+      }
+
+      if (asset?.type === "Actor" || asset?.type === "PlaylistSound") {
+        const targetSceneId = sceneId || await this.#createSceneFor(asset);
+        await this.#persistAndRefresh(() => asset.addTo(targetSceneId));
         return;
       }
+
       if (!asset || (dropzoneType !== ANY_ASSET_TYPE && asset.type !== dropzoneType)) return;
 
       const targetSceneId = sceneId || await this.#createSceneFor(asset);
@@ -588,8 +600,28 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   }
 
   async #refreshViews() {
+    const scrollPositions = this.#captureScrollPositions();
     await this.render();
+    this.#restoreScrollPositions(scrollPositions);
     await this.#refreshDirector();
+  }
+
+  #captureScrollPositions() {
+    return [...this.element.querySelectorAll("[data-scroll-region]")].map(element => ({
+      region: element.dataset.scrollRegion,
+      top: element.scrollTop,
+      left: element.scrollLeft
+    }));
+  }
+
+  #restoreScrollPositions(scrollPositions) {
+    for (const position of scrollPositions) {
+      const element = this.element.querySelector(`[data-scroll-region="${position.region}"]`);
+      if (!element) continue;
+
+      element.scrollTop = position.top;
+      element.scrollLeft = position.left;
+    }
   }
 
   async #saveImageDescription(sceneId, collectionName, index, description) {

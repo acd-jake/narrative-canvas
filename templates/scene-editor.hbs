@@ -15,7 +15,7 @@
             <input type="range" class="slider-tile-scale" min="50" max="300" step="5" value="{{tileSize}}" />
         </div>
 
-        <div class="scenes-navigation-list">
+        <div class="scenes-navigation-list" data-scroll-region="scene-list">
             {{#each allScenes}}
                 <div class="scene-navigation-item {{#if (eq ../selectedSceneId this.id)}}is-selected{{/if}}" data-scene-id="{{this.id}}">
                     <div class="scene-nav-text">
@@ -33,7 +33,7 @@
     </aside>
 
     <!-- Right Workspace: Selected Scene Details (Independently Scrollable) -->
-    <main class="editor-workspace-details">
+    <main class="editor-workspace-details editor-dropzone" data-type="*" data-scene-id="{{activeScene.id}}">
         {{#if activeScene}}
             <header class="editor-workspace-header">
                 <div class="scene-title-edit-row">
@@ -46,7 +46,7 @@
                 {{/if}}
             </header>
 
-            <div class="workspace-scroll-container">
+            <div class="workspace-scroll-container" data-scroll-region="scene-workspace">
                 <!-- Section 1: Background Images -->
                 <section class="workspace-section editor-dropzone" data-type="ImageCollection" data-image-collection="backgrounds" data-scene-id="{{activeScene.id}}">
                     <header class="section-component-header">
@@ -178,7 +178,7 @@
             <div class="journal-asset-groups">
                 <div class="journal-asset-group">
                     <h4>{{localize "NARRATIVE_CANVAS.Editor.JournalActors"}}</h4>
-                    <div class="journal-asset-list">
+                    <div class="journal-asset-list" data-scroll-region="journal-actors">
                         {{#each journalAssets.actors}}
                             <div class="journal-asset-item" draggable="true" data-asset-type="Actor" data-asset-uuid="{{this.uuid}}" title="{{this.name}}">
                                 <img src="{{this.img}}" alt="{{this.name}}" />
@@ -191,7 +191,7 @@
                 </div>
                 <div class="journal-asset-group">
                     <h4>{{localize "NARRATIVE_CANVAS.Editor.JournalImages"}}</h4>
-                    <div class="journal-asset-list">
+                    <div class="journal-asset-list" data-scroll-region="journal-images">
                         {{#each journalAssets.images}}
                             <div class="journal-asset-item" draggable="true" data-asset-type="Image" data-asset-path="{{this.path}}" data-asset-name="{{this.name}}" title="{{this.name}}">
                                 <img src="{{this.path}}" alt="{{this.name}}" />
