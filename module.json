@@ -2,7 +2,7 @@
   "id": "narrative-canvas",
   "title": "Narrative Canvas",
   "description": "Introduces a Theatre of the Mind mode to display backgrounds, play audio, show handouts, and display actor dialogues seamlessly.",
-  "version": "1.0.0",
+  "version": "#{VERSION}#",
   "compatibility": {
     "minimum": "14",
     "verified": "14"
