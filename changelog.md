@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Scene Configurator options to select one automatic background and one automatic audio entry or playlist per scene.
 - Automatic background display and audio playback when a scene is activated.
+- An option to disable automatic activation of the first visible scene when a Journal Viewer selection filters out the active scene.
+- Actor and audio drops anywhere in the Scene Configurator workspace, with automatic routing to the matching scene lists.
+
+### Changed
+
+- The Scene Configurator preserves editor-area scroll positions after content changes.
+- The docked Scene Configurator follows the activated Journal Entry, matches its z-order, and retains its width across journal page changes.
 
 ## [0.1.0] - 2026-11-02
 

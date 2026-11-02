@@ -70,6 +70,8 @@ The Journal Viewer in the Director Controls can also show an image directly from
 
 The Narrative Canvas is the presentation stage. The GM's Director Controls are displayed on it and include a status badge indicating whether the presentation is being prepared or is live. Selecting a scene updates the available assets; it does not automatically replace the current background or close open handouts.
 
+When a Journal Viewer selection filters out the active scene, the first visible scene is activated automatically. Uncheck **Auto-activate first scene** in the scene-selection controls to disable this behavior.
+
 Select one of the previously created scenes to define which actors, background images, handout images, and audio tracks are available in the Director Controls. If no scene is active, Narrative Canvas uses the journal currently selected in the Journal Viewer as an asset source where possible: actors and images referenced by that journal are available, but this fallback does not provide background images or audio tracks.
 
 When a scene is activated, its **View Automatically** background replaces the current background. Its selected automatic audio entry starts playback; if a playlist is selected, Foundry plays that playlist using its configured playback order and mode. A scene can have at most one automatic background and one automatic audio selection.

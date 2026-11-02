@@ -13,6 +13,7 @@ export class DirectorSidebar {
   #element = null;
   #sceneQuery = "";
   #filterByJournal = true;
+  #autoActivateFirstSceneOnJournalChange = true;
   #isCollapsed = false;
   #areScenesCollapsed = true;
   #isAudioCollapsed = true;
@@ -302,6 +303,7 @@ export class DirectorSidebar {
       filteredScenes: scenesWithJournalNames,
       sceneQuery: this.#sceneQuery,
       filterByJournal: this.#filterByJournal,
+      autoActivateFirstSceneOnJournalChange: this.#autoActivateFirstSceneOnJournalChange,
       isCollapsed: this.#isCollapsed,
       isScenesCollapsed: this.#areScenesCollapsed,
       isAudioCollapsed: this.#isAudioCollapsed,
@@ -417,6 +419,11 @@ export class DirectorSidebar {
       this.#filterByJournal = event.target.checked;
       this.#applySceneFilters();
     });
+
+    const autoActivateCheckbox = root.querySelector(".input-auto-activate-first-scene");
+    autoActivateCheckbox?.addEventListener("change", (event) => {
+      this.#autoActivateFirstSceneOnJournalChange = event.target.checked;
+    });
   }
 
   /**
@@ -456,6 +463,25 @@ export class DirectorSidebar {
     } else if (hint) {
       hint.style.display = visibleCount === 0 ? "" : "none";
     }
+  }
+
+  #activateFirstVisibleSceneIfNeeded() {
+    if (!this.#autoActivateFirstSceneOnJournalChange) return;
+
+    const visibleItems = [...(this.#element?.querySelectorAll(".director-scene-item") ?? [])]
+      .filter(item => item.style.display !== "none");
+    if (visibleItems.some(item => item.dataset.sceneId === this.#activeSceneId)) return;
+
+    const firstItem = visibleItems[0];
+    if (!firstItem) return;
+
+    this.#activeSceneId = firstItem.dataset.sceneId;
+    this.#currentSceneData = this.#scenesList.find(scene => scene.id === this.#activeSceneId) ?? null;
+    this.#element.querySelectorAll(".director-scene-item").forEach(item => {
+      item.classList.toggle("is-active", item === firstItem);
+    });
+    this.#updateActiveSceneName();
+    this.#callbacks.onSceneSelect?.(this.#activeSceneId);
   }
 
   #bindSceneSelection(root) {
@@ -519,6 +545,7 @@ export class DirectorSidebar {
         : null;
       void this.#refreshJournalBody();
       this.#applySceneFilters();
+      this.#activateFirstVisibleSceneIfNeeded();
       void this.#saveJournalViewerState();
     });
   }

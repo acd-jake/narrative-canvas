@@ -28,6 +28,10 @@
                     <span class="journal-filter-label">{{localize "NARRATIVE_CANVAS.Director.JournalOnly"}}</span>
                 </label>
             </div>
+            <label class="scenes-auto-activate-toggle" title="{{localize 'NARRATIVE_CANVAS.Director.AutoActivateFirstSceneHint'}}">
+                <input type="checkbox" class="input-auto-activate-first-scene" {{#if autoActivateFirstSceneOnJournalChange}}checked{{/if}} />
+                <span>{{localize "NARRATIVE_CANVAS.Director.AutoActivateFirstScene"}}</span>
+            </label>
             <div class="director-scenes-list">
                 {{#each scenes}}
                     <div class="director-scene-item {{#if (eq ../activeSceneId this.id)}}is-active{{/if}}" data-scene-id="{{this.id}}" data-journal-id="{{this.journalId}}">

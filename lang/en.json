@@ -96,6 +96,8 @@
   "NARRATIVE_CANVAS.Director.FilterByJournal": "Filter by selected journal",
   "NARRATIVE_CANVAS.Director.FilterByJournalHint": "Show only scenes linked to the selected journal",
   "NARRATIVE_CANVAS.Director.JournalOnly": "Journal only",
+  "NARRATIVE_CANVAS.Director.AutoActivateFirstScene": "Auto-activate first scene",
+  "NARRATIVE_CANVAS.Director.AutoActivateFirstSceneHint": "When changing journals, activate the first visible scene if the current scene is no longer shown.",
   "NARRATIVE_CANVAS.Director.CollapseSidebar": "Collapse sidebar",
   "NARRATIVE_CANVAS.Director.ExpandSidebar": "Expand sidebar",
   "NARRATIVE_CANVAS.Director.CollapseScenes": "Collapse scene list",
