@@ -32,6 +32,7 @@
   "NARRATIVE_CANVAS.Notifications.Deactivated": "Theatre of the Mind narrative mode has ended.",
   "NARRATIVE_CANVAS.Notifications.GMDisconnected": "Theatre of the Mind mode ended because the Gamemaster disconnected.",
   "NARRATIVE_CANVAS.Director.Audio": "Scene Audio",
+  "NARRATIVE_CANVAS.Director.CanvasActions": "Canvas actions",
   "NARRATIVE_CANVAS.Director.Actors": "Stage Actors",
   "NARRATIVE_CANVAS.Labels.ActiveScene": "Active Narrative Scene",
   "NARRATIVE_CANVAS.Labels.SceneBackgrounds": "Background Images",

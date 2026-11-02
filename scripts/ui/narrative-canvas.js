@@ -189,6 +189,16 @@ export class NarrativeCanvas {
 
     // 2. Update background color variable
     this.stageElement.style.setProperty("--nc-custom-bg", context.customBgColor || "#000000");
+    const visibilityNotice = this.stageElement.querySelector(".narrative-visibility-notice");
+    if (visibilityNotice) {
+      const isLive = Boolean(context.playerViewActive);
+      visibilityNotice.classList.toggle("status-live", isLive);
+      visibilityNotice.classList.toggle("status-preparing", !isLive);
+      visibilityNotice.querySelector("i").className = `fas ${isLive ? "fa-eye" : "fa-eye-slash"}`;
+      visibilityNotice.querySelector(".visibility-status-label").textContent = game.i18n.localize(
+        isLive ? "NARRATIVE_CANVAS.Status.Live" : "NARRATIVE_CANVAS.Status.Preparing"
+      );
+    }
 
     // 3. Update dialogue and handout layers in-place
     this._updateDialogueInPlace(context);

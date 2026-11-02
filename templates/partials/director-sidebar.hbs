@@ -136,9 +136,6 @@
             <button type="button" class="sidebar-section-toggle" data-section-toggle="audio" aria-expanded="{{#unless isAudioCollapsed}}true{{else}}false{{/unless}}" aria-controls="director-audio-content" title="{{#if isAudioCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandAudio'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseAudio'}}{{/if}}" aria-label="{{#if isAudioCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandAudio'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseAudio'}}{{/if}}">
                 <i class="fas {{#if isAudioCollapsed}}fa-chevron-right{{else}}fa-chevron-down{{/if}}" aria-hidden="true"></i>
             </button>
-            <button type="button" class="btn-stop-all-audio type-icon" title="{{localize 'NARRATIVE_CANVAS.Director.StopAllAudio'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.StopAllAudio'}}">
-                <i class="fas fa-stop" aria-hidden="true"></i>
-            </button>
         </header>
 
         <div class="sidebar-section-content" id="director-audio-content">

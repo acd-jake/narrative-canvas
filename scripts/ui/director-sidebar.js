@@ -936,13 +936,6 @@ export class DirectorSidebar {
 
     // Track play/pause and stop clicks
     audioSection.addEventListener("click", async (event) => {
-      const stopAllButton = event.target.closest(".btn-stop-all-audio");
-      if (stopAllButton) {
-        event.preventDefault();
-        await this.#audioController?.stopAll();
-        return;
-      }
-
       const toggleBtn = event.target.closest(".btn-track-toggle");
       const stopBtn = event.target.closest(".btn-track-stop");
       const item = event.target.closest(".director-audio-track-item");

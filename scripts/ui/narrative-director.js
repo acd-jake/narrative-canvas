@@ -2,6 +2,7 @@ import { NarrativeCanvas } from "./narrative-canvas.js";
 import { DirectorSidebar } from "./director-sidebar.js";
 import { DirectorActorCarousel } from "./director-carousel.js";
 import { DirectorControls } from "./director-controls.js";
+import { DirectorCanvasToolbar } from "./director-canvas-toolbar.js";
 import { SceneAudioController } from "../services/audio-controller.js";
 
 /**
@@ -18,6 +19,12 @@ export class NarrativeDirector extends NarrativeCanvas {
     this.audioController = new SceneAudioController({
       globalVolume: 0.5,
       onStateChange: (trackId) => this.sidebar?.updateAudioTrackItem(trackId)
+    });
+    this.toolbar = new DirectorCanvasToolbar({
+      onVisibilityChange: (visible) => this.callbacks.onVisibilityChange(visible),
+      onClearDisplay: () => this.callbacks.onClearDisplay(),
+      onShutdown: () => this.callbacks.onShutdown(),
+      onStopAllAudio: () => this.audioController.stopAll()
     });
     this.sidebar = new DirectorSidebar({
       audioController: this.audioController,
@@ -41,6 +48,7 @@ export class NarrativeDirector extends NarrativeCanvas {
     this.audioController?.stopAll();
     await super.close();
     this.controls?.destroy();
+    this.toolbar?.destroy();
   }
 
   /** @override */
@@ -48,6 +56,9 @@ export class NarrativeDirector extends NarrativeCanvas {
     // 1. Right-side control panel
     const controlsElement = await this.controls.render(context);
     stageElement.appendChild(controlsElement);
+
+    const toolbarElement = await this.toolbar.render(context);
+    stageElement.appendChild(toolbarElement);
 
     // 2. Left-side scenes & journal sidebar
     const sidebarElement = await this.sidebar.render(context);
@@ -63,6 +74,7 @@ export class NarrativeDirector extends NarrativeCanvas {
   /** @override */
   async _onUpdateElements(context) {
     await this.controls?.updateInPlace(context);
+    await this.toolbar?.updateInPlace(context);
     this.sidebar?.update(context);
     await this.carousel?.update(this.stageElement, context);
   }
@@ -122,18 +134,6 @@ export class NarrativeDirector extends NarrativeCanvas {
         return;
       }
 
-      if (target.closest(".btn-publish-players")) {
-        event.preventDefault();
-        this.callbacks.onVisibilityChange(true);
-        return;
-      }
-
-      if (target.closest(".btn-hide-players")) {
-        event.preventDefault();
-        this.callbacks.onVisibilityChange(false);
-        return;
-      }
-
       if (target.closest(".btn-trigger-dialog")) {
         event.preventDefault();
         
@@ -149,23 +149,12 @@ export class NarrativeDirector extends NarrativeCanvas {
         return;
       }
 
-      if (target.closest(".btn-clear-display")) {
-        event.preventDefault();
-        this.callbacks.onClearDisplay();
-        return;
-      }
-
       if (target.closest(".btn-close-handout-image")) {
         event.preventDefault();
         this.callbacks.onHandoutImageClose?.(target.closest(".btn-close-handout-image").dataset.overlayId);
         return;
       }
 
-      if (target.closest(".btn-shutdown-canvas")) {
-        event.preventDefault();
-        this.callbacks.onShutdown();
-        return;
-      }
     });
   }
 }

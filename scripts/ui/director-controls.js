@@ -1,6 +1,6 @@
 /**
  * Controller for the GM Director panel (right-side control panel).
- * Manages the scene dropdown, background quick-selection grid, and canvas status actions.
+ * Manages the scene dropdown, sidebar toggle, and background quick-selection grid.
  */
 export class DirectorControls {
   /** @type {HTMLElement|null} */

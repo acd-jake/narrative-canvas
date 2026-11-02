@@ -32,6 +32,7 @@
   "NARRATIVE_CANVAS.Notifications.Deactivated": "Der Erzählmodus (Theatre of the Mind) wurde beendet.",
   "NARRATIVE_CANVAS.Notifications.GMDisconnected": "Der Erzählmodus wurde beendet, da der Spielleiter das Spiel verlassen hat.",
   "NARRATIVE_CANVAS.Director.Audio": "Szenen-Akustik",
+  "NARRATIVE_CANVAS.Director.CanvasActions": "Canvas-Aktionen",
   "NARRATIVE_CANVAS.Director.Actors": "Bühnen-Akteure",
   "NARRATIVE_CANVAS.Labels.ActiveScene": "Aktive Erzählszene",
   "NARRATIVE_CANVAS.Labels.SceneBackgrounds": "Hintergrundbilder",

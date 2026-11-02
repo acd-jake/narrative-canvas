@@ -2,9 +2,6 @@
     <header class="director-panel-header">
         <i class="fas fa-film"></i> 
         <h3>{{localize "NARRATIVE_CANVAS.DirectorTitle"}}</h3>
-        <span class="nc-status-badge {{#if playerViewActive}}status-live{{else}}status-preparing{{/if}}">
-            {{#if playerViewActive}}{{localize "NARRATIVE_CANVAS.Status.Live"}}{{else}}{{localize "NARRATIVE_CANVAS.Status.Preparing"}}{{/if}}
-        </span>
     </header>
 
     <!-- Active Scene Display & Sidebar Toggle -->
@@ -61,20 +58,4 @@
     </section>
     {{/if}}
 
-    <!-- Existing Player Visibility, Dialog Elements, and Footers Stay Intact below... -->
-    <section class="director-control-group">
-        <legend><i class="fas fa-eye"></i> {{localize "NARRATIVE_CANVAS.Labels.PlayerVisibility"}}</legend>
-        <div class="director-input-row">
-            {{#if playerViewActive}}
-                <button type="button" class="btn-hide-players button-secondary"><i class="fas fa-eye-slash"></i> {{localize "NARRATIVE_CANVAS.Labels.HideCanvas"}}</button>
-            {{else}}
-                <button type="button" class="btn-publish-players button-primary"><i class="fas fa-broadcast-tower"></i> {{localize "NARRATIVE_CANVAS.Labels.PublishCanvas"}}</button>
-            {{/if}}
-        </div>
-    </section>
-
-    <footer class="director-panel-footer director-input-column">
-        <button type="button" class="btn-clear-display button-secondary"><i class="fas fa-eraser"></i> {{localize "NARRATIVE_CANVAS.Labels.ClearAll"}}</button>
-        <button type="button" class="btn-shutdown-canvas button-destructive"><i class="fas fa-power-off"></i> {{localize "NARRATIVE_CANVAS.Labels.ShutdownCanvas"}}</button>
-    </footer>
 </div>
