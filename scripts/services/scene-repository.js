@@ -15,12 +15,19 @@ export class NarrativeSceneRepository {
 
   static #healScene(scene) {
     if (!scene) return scene;
-    if (Array.isArray(scene.backgrounds)) {
-      scene.backgrounds.forEach(background => {
-        background.description ??= "";
-        background.showDescription ??= false;
-        background.displayMode ??= "background";
-      });
+    scene.backgrounds ??= [];
+    scene.handoutImages ??= [];
+    const migratedHandouts = scene.backgrounds.filter(background => background.displayMode === "journal");
+    scene.backgrounds = scene.backgrounds.filter(background => background.displayMode !== "journal");
+    for (const handoutImage of migratedHandouts) {
+      if (!scene.handoutImages.some(existing => existing.path === handoutImage.path)) {
+        scene.handoutImages.push(handoutImage);
+      }
+    }
+    for (const image of [...scene.backgrounds, ...scene.handoutImages]) {
+      image.description ??= "";
+      image.showDescription ??= false;
+      delete image.displayMode;
     }
     if (Array.isArray(scene.tracks)) {
       scene.tracks.forEach(track => this.#healTrack(track));
@@ -103,6 +110,7 @@ export class NarrativeSceneRepository {
         id: `scene-${foundry.utils.randomID()}`,
         name: this.#toUniqueName(name, scenes),
         backgrounds: [],
+        handoutImages: [],
         actors: [],
         tracks: []
       };
@@ -127,36 +135,49 @@ export class NarrativeSceneRepository {
   }
 
   static async addBackground(sceneId, path) {
+    await this.#addImage(sceneId, "backgrounds", path);
+  }
+
+  static async addHandoutImage(sceneId, path) {
+    await this.#addImage(sceneId, "handoutImages", path);
+  }
+
+  static async #addImage(sceneId, collectionName, path) {
     await this.#update(sceneId, scene => {
-      scene.backgrounds.push({
+      scene[collectionName].push({
         name: path.split("/").pop(),
         path,
         description: "",
-        showDescription: false,
-        displayMode: "background"
+        showDescription: false
       });
     });
   }
 
-  static async updateBackgroundDescription(sceneId, index, description) {
+  static async updateImageDescription(sceneId, collectionName, index, description) {
     await this.#update(sceneId, scene => {
-      const background = scene.backgrounds[index];
-      if (background) background.description = description;
+      const image = scene[collectionName]?.[index];
+      if (image) image.description = description;
     });
   }
 
-  static async toggleBackgroundDescription(sceneId, index) {
+  static async toggleImageDescription(sceneId, collectionName, index) {
     await this.#update(sceneId, scene => {
-      const background = scene.backgrounds[index];
-      if (background) background.showDescription = background.showDescription !== true;
+      const image = scene[collectionName]?.[index];
+      if (image) image.showDescription = image.showDescription !== true;
     });
   }
 
-  static async setBackgroundDisplayMode(sceneId, index, displayMode) {
-    if (displayMode !== "background" && displayMode !== "journal") return;
+  static async moveImage(sceneId, sourceCollection, index) {
+    const targetCollection = sourceCollection === "backgrounds" ? "handoutImages" : "backgrounds";
+    if (sourceCollection !== "backgrounds" && sourceCollection !== "handoutImages") return;
+
     await this.#update(sceneId, scene => {
-      const background = scene.backgrounds[index];
-      if (background) background.displayMode = displayMode;
+      const [image] = scene[sourceCollection].splice(index, 1);
+      if (image && !scene[targetCollection].some(existing => existing.path === image.path)) {
+        scene[targetCollection].push(image);
+      } else if (image) {
+        scene[sourceCollection].splice(index, 0, image);
+      }
     });
   }
 
@@ -194,7 +215,12 @@ export class NarrativeSceneRepository {
   }
 
   static async removeBackground(sceneId, index) {
-    await this.#update(sceneId, scene => { scene.backgrounds.splice(index, 1); });
+    await this.removeImage(sceneId, "backgrounds", index);
+  }
+
+  static async removeImage(sceneId, collectionName, index) {
+    if (collectionName !== "backgrounds" && collectionName !== "handoutImages") return;
+    await this.#update(sceneId, scene => { scene[collectionName].splice(index, 1); });
   }
 
   static async removeActor(sceneId, actorId) {

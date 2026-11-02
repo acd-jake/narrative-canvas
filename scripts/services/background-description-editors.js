@@ -1,5 +1,5 @@
 /** Manages Foundry ProseMirror elements and debounced persistence for scene image descriptions. */
-export class BackgroundDescriptionEditors {
+export class SceneImageDescriptionEditors {
   #editors = new Set();
   #onSave;
 
@@ -15,7 +15,8 @@ export class BackgroundDescriptionEditors {
       const entry = {
         element,
         sceneId: element.dataset.sceneId,
-        index: Number(element.dataset.backgroundIndex),
+        collectionName: element.dataset.imageCollection,
+        index: Number(element.dataset.imageIndex),
         timer: null,
         savedHTML: element.value,
         saving: null,
@@ -36,8 +37,10 @@ export class BackgroundDescriptionEditors {
     }));
   }
 
-  focus(sceneId, index) {
-    const entry = [...this.#editors].find(candidate => candidate.sceneId === sceneId && candidate.index === index);
+  focus(sceneId, collectionName, index) {
+    const entry = [...this.#editors].find(candidate => candidate.sceneId === sceneId
+      && candidate.collectionName === collectionName
+      && candidate.index === index);
     entry?.element.focus();
   }
 
@@ -63,7 +66,7 @@ export class BackgroundDescriptionEditors {
       if (entry.element.value === entry.savedHTML) return;
     }
 
-    entry.saving = this.#onSave(entry.sceneId, entry.index, description);
+    entry.saving = this.#onSave(entry.sceneId, entry.collectionName, entry.index, description);
     try {
       await entry.saving;
       entry.savedHTML = description;

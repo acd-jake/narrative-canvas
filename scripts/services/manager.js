@@ -3,7 +3,7 @@ import { NarrativeSettings } from "./settings.js";
 import { NarrativeSceneRepository } from "./scene-repository.js";
 import { NarrativePlayer } from "../ui/narrative-player.js";
 import { NarrativeDirector } from "../ui/narrative-director.js";
-import { NarrativeSceneEditor } from "../ui/narrative-editor.js";
+import { NarrativeSceneEditor } from "../ui/scene-editor.js";
 
 export class NarrativeManager {
   constructor() {
@@ -11,7 +11,7 @@ export class NarrativeManager {
       active: false,
       playerViewActive: false,
       background: "",
-      backgroundDisplayMode: "background",
+      handoutImage: "",
       activeDialogue: null,
       handout: null,
       imageOverlay: null,
@@ -135,7 +135,7 @@ export class NarrativeManager {
     const payload = {
       activeSceneId: this.narrativeState.activeSceneId || "",
       background: this.narrativeState.background || "",
-      backgroundDisplayMode: this.narrativeState.backgroundDisplayMode || "background",
+      handoutImage: this.narrativeState.handoutImage || "",
       activeActors: (this.narrativeState.activeActors || []).map(actor => ({
         id: actor.id,
         name: actor.name,
@@ -167,11 +167,13 @@ export class NarrativeManager {
       }
     }
 
-    // Background validation: if saved background is non-empty, verify it exists in the active scene backgrounds
-    // or keep it if it is a valid path string.
+    const savedHandoutImage = saved.handoutImage
+      || (saved.backgroundDisplayMode === "journal" ? saved.background : "");
     let validatedBackground = "";
     if (typeof saved.background === "string" && saved.background.trim()) {
-      if (validatedSceneData?.backgrounds?.length) {
+      if (saved.backgroundDisplayMode === "journal") {
+        validatedBackground = "";
+      } else if (validatedSceneData?.backgrounds?.length) {
         const bgExists = validatedSceneData.backgrounds.some(bg => bg.path === saved.background);
         if (bgExists) {
           validatedBackground = saved.background;
@@ -180,6 +182,10 @@ export class NarrativeManager {
         validatedBackground = saved.background;
       }
     }
+
+    const validatedHandoutImage = validatedSceneData?.handoutImages?.length
+      ? validatedSceneData.handoutImages.some(image => image.path === savedHandoutImage) ? savedHandoutImage : ""
+      : savedHandoutImage;
 
     // Validate active actors against the active scene actors
     let validatedActors = [];
@@ -209,10 +215,7 @@ export class NarrativeManager {
     this.narrativeState.activeSceneId = validatedSceneId;
     this.narrativeState.currentSceneData = validatedSceneData;
     this.narrativeState.background = validatedBackground;
-    this.narrativeState.backgroundDisplayMode = validatedSceneData?.backgrounds
-      ?.find(background => background.path === validatedBackground)?.displayMode
-      ?? saved.backgroundDisplayMode
-      ?? "background";
+    this.narrativeState.handoutImage = validatedHandoutImage;
     this.narrativeState.activeActors = validatedActors;
     this.narrativeState.activeSpeakerId = validatedSpeakerId;
   }
@@ -328,7 +331,7 @@ export class NarrativeManager {
       onClearDisplay: () => {
         this.handleDisplayUpdate({
           background: "",
-          backgroundDisplayMode: "background",
+          handoutImage: "",
           activeActors: [],
           activeSpeakerId: null,
           activeDialogue: null,
@@ -338,31 +341,12 @@ export class NarrativeManager {
       },
       onImageOverlay: (imageOverlay) => this.handleDisplayUpdate({ imageOverlay }),
       onImageOverlayClose: () => this.handleDisplayUpdate({ imageOverlay: null }),
-      onBackgroundChange: (path) => {
-        const background = this.narrativeState.currentSceneData?.backgrounds
-          ?.find(entry => entry.path === path);
-        this.handleDisplayUpdate({
-          background: path,
-          backgroundDisplayMode: background?.displayMode ?? "background"
-        });
-      },
-      onBackgroundDisplayModeChange: async (path, displayMode, index) => {
-        const sceneId = this.narrativeState.activeSceneId;
-        if (!sceneId || (displayMode !== "background" && displayMode !== "journal")) return;
-        await NarrativeSceneRepository.setBackgroundDisplayMode(sceneId, index, displayMode);
-        const scenes = NarrativeSceneRepository.getAll();
-        const currentSceneData = scenes.find(scene => scene.id === sceneId) || null;
-        this.handleDisplayUpdate({
-          scenesList: scenes,
-          currentSceneData,
-          background: path,
-          backgroundDisplayMode: displayMode
-        });
-      },
-      onBackgroundDescriptionToggle: async (path, index) => {
+      onBackgroundChange: (path) => this.handleDisplayUpdate({ background: path }),
+      onHandoutImageChange: (path) => this.handleDisplayUpdate({ handoutImage: path }),
+      onImageDescriptionToggle: async (collectionName, index) => {
         const sceneId = this.narrativeState.activeSceneId;
         if (!sceneId) return;
-        await NarrativeSceneRepository.toggleBackgroundDescription(sceneId, index);
+        await NarrativeSceneRepository.toggleImageDescription(sceneId, collectionName, index);
         const scenes = NarrativeSceneRepository.getAll();
         const currentSceneData = scenes.find(scene => scene.id === sceneId) || null;
         this.handleDisplayUpdate({ scenesList: scenes, currentSceneData });

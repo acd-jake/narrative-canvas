@@ -48,16 +48,16 @@
 
             <div class="workspace-scroll-container">
                 <!-- Section 1: Background Images -->
-                <section class="workspace-section editor-dropzone" data-type="background" data-scene-id="{{activeScene.id}}">
+                <section class="workspace-section editor-dropzone" data-type="ImageCollection" data-image-collection="backgrounds" data-scene-id="{{activeScene.id}}">
                     <header class="section-component-header">
                         <h4><i class="fas fa-images"></i> {{localize "NARRATIVE_CANVAS.Labels.SceneBackgrounds"}}</h4>
-                        <button type="button" class="btn-editor-add-bg button-secondary" data-scene-id="{{activeScene.id}}">
-                            <i class="fas fa-plus"></i> {{localize "NARRATIVE_CANVAS.Labels.ChangeBg"}}
+                        <button type="button" class="btn-editor-add-image button-secondary" data-image-collection="backgrounds" data-scene-id="{{activeScene.id}}">
+                            <i class="fas fa-plus"></i> {{localize "NARRATIVE_CANVAS.Editor.AddImage"}}
                         </button>
                     </header>
                     <div class="tiles-wrapping-grid">
                         {{#each activeScene.backgrounds}}
-                            <div class="tile-thumbnail-card background-tile-card" data-index="{{@index}}" data-type="background">
+                            <div class="tile-thumbnail-card background-tile-card" data-index="{{@index}}" data-type="SceneImage" data-image-collection="backgrounds" draggable="true">
                                 <div class="tile-image-wrapper">
                                     <img src="{{this.path}}" alt="{{this.name}}" />
                                     <button type="button" class="btn-edit-background-description tile-overlay-toggle-name {{#if this.hasDescription}}is-active{{/if}}" aria-expanded="false" title="{{#if this.descriptionTooltip}}{{localize 'NARRATIVE_CANVAS.Editor.EditBackgroundDescription'}}: {{this.descriptionTooltip}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.AddBackgroundDescription'}}{{/if}}">
@@ -74,7 +74,40 @@
                                         <span>{{localize "NARRATIVE_CANVAS.Editor.ImageDescription"}}</span>
                                         <button type="button" class="btn-close-background-description" title="{{localize 'NARRATIVE_CANVAS.Editor.CloseBackgroundDescription'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Editor.CloseBackgroundDescription'}}"><i class="fas fa-times"></i></button>
                                     </header>
-                                    <prose-mirror class="background-description-editor" name="background-description" value="{{this.description}}" data-scene-id="{{../activeScene.id}}" data-background-index="{{@index}}"></prose-mirror>
+                                    <prose-mirror class="background-description-editor" name="background-description" value="{{this.description}}" data-scene-id="{{../activeScene.id}}" data-image-collection="backgrounds" data-image-index="{{@index}}"></prose-mirror>
+                                </div>
+                            </div>
+                        {{/each}}
+                    </div>
+                </section>
+
+                <section class="workspace-section editor-dropzone" data-type="ImageCollection" data-image-collection="handoutImages" data-scene-id="{{activeScene.id}}">
+                    <header class="section-component-header">
+                        <h4><i class="fas fa-book-open"></i> {{localize "NARRATIVE_CANVAS.Labels.HandoutImages"}}</h4>
+                        <button type="button" class="btn-editor-add-image button-secondary" data-image-collection="handoutImages" data-scene-id="{{activeScene.id}}">
+                            <i class="fas fa-plus"></i> {{localize "NARRATIVE_CANVAS.Editor.AddImage"}}
+                        </button>
+                    </header>
+                    <div class="tiles-wrapping-grid">
+                        {{#each activeScene.handoutImages}}
+                            <div class="tile-thumbnail-card background-tile-card" data-index="{{@index}}" data-type="SceneImage" data-image-collection="handoutImages" draggable="true">
+                                <div class="tile-image-wrapper">
+                                    <img src="{{this.path}}" alt="{{this.name}}" />
+                                    <button type="button" class="btn-edit-background-description tile-overlay-toggle-name {{#if this.hasDescription}}is-active{{/if}}" aria-expanded="false" title="{{#if this.descriptionTooltip}}{{localize 'NARRATIVE_CANVAS.Editor.EditBackgroundDescription'}}: {{this.descriptionTooltip}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.AddBackgroundDescription'}}{{/if}}">
+                                        <i class="fas {{#if this.hasDescription}}fa-comment-dots{{else}}fa-comment{{/if}}"></i>
+                                    </button>
+                                    <button type="button" class="btn-toggle-background-description-visibility {{#if this.showDescription}}is-active{{/if}}" title="{{#if this.showDescription}}{{localize 'NARRATIVE_CANVAS.Editor.HideBackgroundDescription'}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.ShowBackgroundDescription'}}{{/if}}" aria-label="{{#if this.showDescription}}{{localize 'NARRATIVE_CANVAS.Editor.HideBackgroundDescription'}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.ShowBackgroundDescription'}}{{/if}}">
+                                        <i class="fas {{#if this.showDescription}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="btn-delete-item tile-overlay-delete"><i class="fas fa-times"></i></button>
+                                </div>
+                                <span class="tile-label-text">{{this.name}}</span>
+                                <div class="background-description-popup" aria-hidden="true">
+                                    <header>
+                                        <span>{{localize "NARRATIVE_CANVAS.Editor.ImageDescription"}}</span>
+                                        <button type="button" class="btn-close-background-description" title="{{localize 'NARRATIVE_CANVAS.Editor.CloseBackgroundDescription'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Editor.CloseBackgroundDescription'}}"><i class="fas fa-times"></i></button>
+                                    </header>
+                                    <prose-mirror class="background-description-editor" name="handout-image-description" value="{{this.description}}" data-scene-id="{{../activeScene.id}}" data-image-collection="handoutImages" data-image-index="{{@index}}"></prose-mirror>
                                 </div>
                             </div>
                         {{/each}}

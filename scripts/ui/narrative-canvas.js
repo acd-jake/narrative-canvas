@@ -45,12 +45,9 @@ export class NarrativeCanvas {
     const defaultBg = NarrativeSettings.getDefaultBackgroundImage();
     const activeBackground = state.currentSceneData?.backgrounds
       ?.find(background => background.path === state.background);
-    const backgroundDisplayMode = activeBackground?.displayMode
-      ?? state.backgroundDisplayMode
-      ?? "background";
-    const effectiveBackground = (
-      backgroundDisplayMode === "journal" ? defaultBg : state.background || defaultBg || ""
-    ).trim();
+    const activeHandoutImage = state.currentSceneData?.handoutImages
+      ?.find(image => image.path === state.handoutImage);
+    const effectiveBackground = (state.background || defaultBg || "").trim();
     const enrichedBackgroundDescription = activeBackground?.showDescription === true
       ? await TextEditor.enrichHTML(activeBackground.description || "", {
           secrets: game.user.isGM,
@@ -61,21 +58,28 @@ export class NarrativeCanvas {
           async: true
         })
       : "";
-    const backgroundDescription = backgroundDisplayMode === "background"
-      ? enrichedBackgroundDescription
+    const enrichedHandoutDescription = activeHandoutImage?.showDescription === true
+      ? await TextEditor.enrichHTML(activeHandoutImage.description || "", {
+          secrets: game.user.isGM,
+          documents: true,
+          links: true,
+          rolls: true,
+          embeds: true,
+          async: true
+        })
       : "";
 
     const context = {
       ...state,
       background: effectiveBackground,
       selectedBackground: state.background || "",
-      backgroundDisplayMode,
-      backgroundDescription,
-      journalBackground: backgroundDisplayMode === "journal" && state.background
+      selectedHandoutImage: state.handoutImage || "",
+      backgroundDescription: enrichedBackgroundDescription,
+      handoutImageOverlay: activeHandoutImage && state.handoutImage
         ? {
-            src: state.background,
-            title: activeBackground?.name || "",
-            description: enrichedBackgroundDescription
+            src: activeHandoutImage.path,
+            title: activeHandoutImage.name || "",
+            description: enrichedHandoutDescription
           }
         : null,
       activeActors,
@@ -149,9 +153,8 @@ export class NarrativeCanvas {
       activeSceneId: context.activeSceneId,
       background: context.background,
       selectedBackground: context.selectedBackground,
-      backgroundDisplayMode: context.backgroundDisplayMode,
       backgroundDescription: context.backgroundDescription,
-      journalBackground: context.journalBackground,
+      handoutImageOverlay: context.handoutImageOverlay,
       customBgColor: context.customBgColor,
       playerViewActive: context.playerViewActive,
       handout: context.handout,
@@ -176,7 +179,7 @@ export class NarrativeCanvas {
     this.bgController.update(context.background, fadeDuration);
     this.vnStageController.update({ ...context, fadeDuration });
     this.#updateBackgroundDescription(context.backgroundDescription);
-    this.#updateJournalBackground(context.journalBackground);
+    this.#updateHandoutImageOverlay(context.handoutImageOverlay);
 
     // 2. Update background color variable
     this.stageElement.style.setProperty("--nc-custom-bg", context.customBgColor || "#000000");
@@ -340,8 +343,8 @@ export class NarrativeCanvas {
     caption.innerHTML = description;
   }
 
-  #updateJournalBackground(background) {
-    let overlay = this.stageElement.querySelector(".narrative-journal-image-overlay");
+  #updateHandoutImageOverlay(background) {
+    let overlay = this.stageElement.querySelector(".narrative-handout-image-overlay");
     if (!background) {
       overlay?.remove();
       return;
@@ -349,20 +352,20 @@ export class NarrativeCanvas {
 
     if (!overlay) {
       overlay = document.createElement("div");
-      overlay.className = "narrative-journal-image-overlay animate-fade-in";
+      overlay.className = "narrative-handout-image-overlay animate-fade-in";
       overlay.innerHTML = `
-        <div class="narrative-journal-image-frame">
-          <img class="narrative-journal-image" />
-          <div class="narrative-journal-image-description"></div>
+        <div class="narrative-scene-handout-image-frame">
+          <img class="narrative-scene-handout-image" />
+          <div class="narrative-scene-handout-image-description"></div>
         </div>
       `;
       this.stageElement.appendChild(overlay);
     }
 
-    const image = overlay.querySelector(".narrative-journal-image");
+    const image = overlay.querySelector(".narrative-scene-handout-image");
     image.src = background.src;
     image.alt = background.title;
-    const description = overlay.querySelector(".narrative-journal-image-description");
+    const description = overlay.querySelector(".narrative-scene-handout-image-description");
     description.innerHTML = background.description || "";
     description.hidden = !background.description;
   }

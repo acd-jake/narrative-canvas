@@ -1,32 +1,26 @@
 import { NarrativeSettings } from "../services/settings.js";
 import { NarrativeSceneRepository } from "../services/scene-repository.js";
-import { BackgroundDescriptionEditors } from "../services/background-description-editors.js";
+import { SceneImageDescriptionEditors } from "../services/background-description-editors.js";
 import { JournalAssetBrowser } from "../services/journal-asset-browser.js";
 import { JournalDockController } from "../services/journal-dock.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
-
-/** Dropzone type that accepts any supported asset and creates a scene for it. */
 const ANY_ASSET_TYPE = "*";
 
-/**
- * Window for building narrative scenes. It renders scene data and forwards user actions;
- * persistence lives in NarrativeSceneRepository, journal docking in JournalDockController.
- */
+/** Window for editing narrative scenes and forwarding their asset actions. */
 export class NarrativeSceneEditor extends HandlebarsApplicationMixin(ApplicationV2) {
-  /** Scene that was selected before docking; reselected when the dock is released. */
   #freeSceneId = null;
   #journalAssets = null;
   #journalAssetsJournalId = null;
-  #backgroundDescriptionEditors;
+  #imageDescriptionEditors;
   #dock;
 
   constructor(options = {}) {
     super(options);
-    
     this.selectedSceneId = null;
-    this.#backgroundDescriptionEditors = new BackgroundDescriptionEditors(
-      (sceneId, index, description) => this.#saveBackgroundDescription(sceneId, index, description)
+    this.#imageDescriptionEditors = new SceneImageDescriptionEditors(
+      (sceneId, collectionName, index, description) =>
+        this.#saveImageDescription(sceneId, collectionName, index, description)
     );
     this.#dock = new JournalDockController(this, {
       onDocked: ({ journalId, previousJournalId }) => {
@@ -42,7 +36,6 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
         this.#journalAssets = null;
       }
     });
-    
     this.#dock.register();
   }
 
@@ -59,7 +52,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   };
 
   /** @override */
-  async _prepareContext(options) {
+  async _prepareContext() {
     const journalId = this.#dock.journalId;
     if (journalId && (this.#journalAssetsJournalId !== journalId || !this.#journalAssets)) {
       const journalAssets = await JournalAssetBrowser.getForJournal(journalId);
@@ -72,14 +65,8 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       journalName: scene.journalId
         ? this.#journalNameOf(scene.journalId) ?? scene.journalName
         : scene.journalName,
-      backgrounds: (scene.backgrounds ?? []).map(background => {
-        const descriptionTooltip = this.#plainText(background.description);
-        return {
-          ...background,
-          descriptionTooltip,
-          hasDescription: Boolean(descriptionTooltip)
-        };
-      })
+      backgrounds: (scene.backgrounds ?? []).map(image => this.#imageContext(image)),
+      handoutImages: (scene.handoutImages ?? []).map(image => this.#imageContext(image))
     }));
 
     if (!scenes.some(scene => scene.id === this.selectedSceneId)) {
@@ -120,20 +107,19 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
 
   /** @override */
   async _onClose(options) {
-    await this.#backgroundDescriptionEditors.destroy();
+    await this.#imageDescriptionEditors.destroy();
     super._onClose(options);
     this.#dock.release();
   }
+
   /** @override */
   async _onRender(context, options) {
     super._onRender(context, options);
-    
-    if (this.element) {
-      this._dragDrop = this._dragDrop || this.#createDragDrop();
-      this._dragDrop.bind(this.element);
-      this.#bindListeners();
-      await this.#backgroundDescriptionEditors.mount(this.element);
-    }
+    if (!this.element) return;
+    this._dragDrop = this._dragDrop || this.#createDragDrop();
+    this._dragDrop.bind(this.element);
+    this.#bindListeners();
+    await this.#imageDescriptionEditors.mount(this.element);
   }
 
   #createDragDrop() {
@@ -153,12 +139,13 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     this.#bindSceneList(html);
     this.#bindJournalAssets(html);
     this.#bindSceneHeader(html);
-    this.#bindBackgroundPicker(html);
+    this.#bindImagePickers(html);
+    this.#bindSceneImageDrags(html);
     this.#bindAudioPicker(html);
     this.#bindTileDeletion(html);
     this.#bindActorNameToggle(html);
-    this.#bindBackgroundDescriptionEditor(html);
-    this.#bindBackgroundDescriptionVisibility(html);
+    this.#bindImageDescriptionEditor(html);
+    this.#bindImageDescriptionVisibility(html);
     this.#bindTileSizeSlider(html);
   }
 
@@ -166,14 +153,14 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     html.querySelectorAll(".scene-navigation-item").forEach(item => {
       item.addEventListener("click", async (event) => {
         if (event.target.closest(".btn-delete-scene")) return;
-        await this.#backgroundDescriptionEditors.saveAll();
+        await this.#imageDescriptionEditors.saveAll();
         this.selectedSceneId = item.dataset.sceneId;
         await this.render();
       });
     });
 
     html.querySelector(".btn-create-scene")?.addEventListener("click", async () => {
-      await this.#backgroundDescriptionEditors.saveAll();
+      await this.#imageDescriptionEditors.saveAll();
       const scene = await NarrativeSceneRepository.create({
         name: game.i18n.localize("NARRATIVE_CANVAS.Editor.NewSceneDefault"),
         journalId: this.#dock.journalId
@@ -211,14 +198,30 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     });
   }
 
-  #bindBackgroundPicker(html) {
-    html.querySelector(".btn-editor-add-bg")?.addEventListener("click", (event) => {
-      const sceneId = event.currentTarget.dataset.sceneId;
-      new FilePicker({
-        type: "image",
-        classes: ["filepicker", "acd-nc-elevation"],
-        callback: (path) => this.#persistAndRefresh(() => NarrativeSceneRepository.addBackground(sceneId, path))
-      }).browse();
+  #bindImagePickers(html) {
+    html.querySelectorAll(".btn-editor-add-image").forEach(button => {
+      button.addEventListener("click", (event) => {
+        const { sceneId, imageCollection } = event.currentTarget.dataset;
+        new FilePicker({
+          type: "image",
+          classes: ["filepicker", "acd-nc-elevation"],
+          callback: (path) => this.#persistAndRefresh(() => this.#addImage(sceneId, imageCollection, path))
+        }).browse();
+      });
+    });
+  }
+
+  #bindSceneImageDrags(html) {
+    html.querySelectorAll(".background-tile-card").forEach(card => {
+      card.addEventListener("dragstart", (event) => {
+        event.dataTransfer.setData("text/plain", JSON.stringify({
+          type: "SceneImage",
+          sceneId: this.selectedSceneId,
+          collectionName: card.dataset.imageCollection,
+          index: Number(card.dataset.index)
+        }));
+        event.dataTransfer.effectAllowed = "move";
+      });
     });
   }
 
@@ -245,16 +248,16 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     html.querySelectorAll(".btn-delete-item").forEach(button => {
       button.addEventListener("click", async (event) => {
         event.preventDefault();
-        const { type, index, id } = button.closest(".tile-thumbnail-card").dataset;
+        const card = button.closest(".tile-thumbnail-card");
+        const { type, index, id, imageCollection } = card.dataset;
         const sceneId = this.selectedSceneId;
-
         const removals = {
-          background: () => NarrativeSceneRepository.removeBackground(sceneId, parseInt(index)),
+          SceneImage: () => NarrativeSceneRepository.removeImage(sceneId, imageCollection, Number(index)),
           Actor: () => NarrativeSceneRepository.removeActor(sceneId, id),
           PlaylistSound: () => NarrativeSceneRepository.removeTrack(sceneId, id)
         };
         if (sceneId && removals[type]) {
-          await this.#backgroundDescriptionEditors.saveAll();
+          await this.#imageDescriptionEditors.saveAll();
           await this.#persistAndRefresh(removals[type]);
         }
       });
@@ -266,8 +269,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       button.addEventListener("click", async (event) => {
         event.preventDefault();
         event.stopPropagation();
-        const card = button.closest(".tile-thumbnail-card");
-        const actorId = card?.dataset.id;
+        const actorId = button.closest(".tile-thumbnail-card")?.dataset.id;
         const sceneId = this.selectedSceneId;
         if (sceneId && actorId) {
           await this.#persistAndRefresh(() => NarrativeSceneRepository.toggleActorName(sceneId, actorId));
@@ -276,22 +278,23 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     });
   }
 
-  #bindBackgroundDescriptionEditor(html) {
+  #bindImageDescriptionEditor(html) {
     html.querySelectorAll(".btn-edit-background-description").forEach(button => {
       button.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
         const card = button.closest(".tile-thumbnail-card");
+        const collectionName = card?.dataset.imageCollection;
         const sceneId = this.selectedSceneId;
         const index = Number(card?.dataset.index);
-        if (sceneId && Number.isInteger(index)) {
-          const popup = card.querySelector(".background-description-popup");
-          const isOpen = popup.classList.toggle("is-open");
-          card.classList.toggle("is-description-editing", isOpen);
-          popup.setAttribute("aria-hidden", String(!isOpen));
-          button.setAttribute("aria-expanded", String(isOpen));
-          if (isOpen) this.#backgroundDescriptionEditors.focus(sceneId, index);
-        }
+        if (!sceneId || !collectionName || !Number.isInteger(index)) return;
+
+        const popup = card.querySelector(".background-description-popup");
+        const isOpen = popup.classList.toggle("is-open");
+        card.classList.toggle("is-description-editing", isOpen);
+        popup.setAttribute("aria-hidden", String(!isOpen));
+        button.setAttribute("aria-expanded", String(isOpen));
+        if (isOpen) this.#imageDescriptionEditors.focus(sceneId, collectionName, index);
       });
     });
 
@@ -300,7 +303,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
         event.preventDefault();
         event.stopPropagation();
         const card = button.closest(".tile-thumbnail-card");
-        await this.#backgroundDescriptionEditors.saveAll();
+        await this.#imageDescriptionEditors.saveAll();
         card?.classList.remove("is-description-editing");
         card?.querySelector(".background-description-popup")?.classList.remove("is-open");
         card?.querySelector(".btn-edit-background-description")?.setAttribute("aria-expanded", "false");
@@ -309,17 +312,17 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     });
   }
 
-  #bindBackgroundDescriptionVisibility(html) {
+  #bindImageDescriptionVisibility(html) {
     html.querySelectorAll(".btn-toggle-background-description-visibility").forEach(button => {
       button.addEventListener("click", async (event) => {
         event.preventDefault();
         event.stopPropagation();
         const card = button.closest(".background-tile-card");
         const sceneId = this.selectedSceneId;
+        const collectionName = card?.dataset.imageCollection;
         const index = Number(card?.dataset.index);
-        if (!sceneId || !Number.isInteger(index)) return;
-
-        await this.#persistAndRefresh(() => NarrativeSceneRepository.toggleBackgroundDescription(sceneId, index));
+        if (!sceneId || !collectionName || !Number.isInteger(index)) return;
+        await this.#persistAndRefresh(() => NarrativeSceneRepository.toggleImageDescription(sceneId, collectionName, index));
       });
     });
   }
@@ -328,24 +331,43 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     return new DOMParser().parseFromString(html || "", "text/html").body.textContent?.trim() ?? "";
   }
 
+  #imageContext(image) {
+    const descriptionTooltip = this.#plainText(image.description);
+    return { ...image, descriptionTooltip, hasDescription: Boolean(descriptionTooltip) };
+  }
+
+  #addImage(sceneId, collectionName, path) {
+    return collectionName === "handoutImages"
+      ? NarrativeSceneRepository.addHandoutImage(sceneId, path)
+      : NarrativeSceneRepository.addBackground(sceneId, path);
+  }
+
   #bindTileSizeSlider(html) {
     html.querySelector(".slider-tile-scale")?.addEventListener("input", (event) => {
       const size = parseInt(event.target.value);
-
-      // Apply visually first; persisting is async and must not delay the update.
       html.querySelector(".narrative-editor-window")?.style.setProperty("--nc-tile-size", `${size}px`);
       NarrativeSettings.setTileSize(size);
     });
   }
-  
+
   async #onAssetDrop(event) {
     const dropzone = event.currentTarget;
     dropzone.classList.remove("drag-over");
-    const { type: dropzoneType, sceneId } = dropzone.dataset;
-    
+    const { type: dropzoneType, sceneId, imageCollection } = dropzone.dataset;
+
     try {
       const raw = JSON.parse(event.dataTransfer.getData("text/plain"));
+      if (raw.type === "SceneImage") {
+        if (raw.sceneId !== sceneId || raw.collectionName === imageCollection || !imageCollection) return;
+        await this.#persistAndRefresh(() => NarrativeSceneRepository.moveImage(sceneId, raw.collectionName, raw.index));
+        return;
+      }
+
       const asset = await this.#toSceneAsset(raw);
+      if (asset?.type === "background" && imageCollection) {
+        await this.#persistAndRefresh(() => this.#addImage(sceneId, imageCollection, asset.path));
+        return;
+      }
       if (!asset || (dropzoneType !== ANY_ASSET_TYPE && asset.type !== dropzoneType)) return;
 
       const targetSceneId = sceneId || await this.#createSceneFor(asset);
@@ -355,15 +377,14 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     }
   }
 
-  /** Translates dropped Foundry data into a scene asset, or null if it is not supported. */
   async #toSceneAsset(dropped) {
     if (!dropped) return null;
     let doc = null;
     if (dropped.uuid) {
       try {
         doc = await foundry.utils.fromUuid(dropped.uuid);
-      } catch (err) {
-        console.warn("Narrative Canvas | Failed to resolve dropped UUID:", dropped.uuid, err);
+      } catch (error) {
+        console.warn("Narrative Canvas | Failed to resolve dropped UUID:", dropped.uuid, error);
       }
     }
 
@@ -388,6 +409,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       return {
         type: "background",
         name: dropped.name || doc?.name || "Image",
+        path,
         addTo: (sceneId) => NarrativeSceneRepository.addBackground(sceneId, path)
       };
     }
@@ -431,11 +453,9 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
         }
       };
     }
-
     return null;
   }
 
-  /** Creates and selects a scene named after the docked journal, or after the dropped asset. */
   async #createSceneFor(asset) {
     const journalId = this.#dock.journalId;
     const scene = await NarrativeSceneRepository.create({
@@ -450,9 +470,8 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     return journalId ? game.collections.get("JournalEntry").get(journalId)?.name : undefined;
   }
 
-  /** Waits for a repository change, then refreshes every view that shows scene data. */
   async #persistAndRefresh(change) {
-    await this.#backgroundDescriptionEditors.saveAll();
+    await this.#imageDescriptionEditors.saveAll();
     await change();
     await this.#refreshViews();
   }
@@ -462,18 +481,17 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     await this.#refreshDirector();
   }
 
-  async #saveBackgroundDescription(sceneId, index, description) {
-    await NarrativeSceneRepository.updateBackgroundDescription(sceneId, index, description);
-    this.#updateBackgroundDescriptionIndicator(sceneId, index, description);
+  async #saveImageDescription(sceneId, collectionName, index, description) {
+    await NarrativeSceneRepository.updateImageDescription(sceneId, collectionName, index, description);
+    this.#updateImageDescriptionIndicator(sceneId, collectionName, index, description);
     await this.#refreshDirector();
   }
 
-  #updateBackgroundDescriptionIndicator(sceneId, index, description) {
-    if (this.selectedSceneId !== sceneId) return;
-    const root = this.element;
-    if (!root) return;
-    const card = [...root.querySelectorAll(".background-tile-card")]
-      .find(candidate => Number(candidate.dataset.index) === index);
+  #updateImageDescriptionIndicator(sceneId, collectionName, index, description) {
+    if (this.selectedSceneId !== sceneId || !this.element) return;
+    const card = [...this.element.querySelectorAll(".background-tile-card")]
+      .find(candidate => candidate.dataset.imageCollection === collectionName
+        && Number(candidate.dataset.index) === index);
     const button = card?.querySelector(".btn-edit-background-description");
     if (!button) return;
 
@@ -491,7 +509,6 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   async #refreshDirector() {
     const manager = game.modules.get("narrative-canvas").manager;
     if (!manager) return;
-
     const scenes = NarrativeSceneRepository.getAll();
     const currentSceneData = scenes.find(scene => scene.id === manager.narrativeState.activeSceneId) || null;
     await manager.handleDisplayUpdate({ scenesList: scenes, currentSceneData });

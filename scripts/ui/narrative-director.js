@@ -78,27 +78,13 @@ export class NarrativeDirector extends NarrativeCanvas {
 
       const target = event.target;
 
-      const displayModeButton = target.closest(".btn-background-display-mode");
-      if (displayModeButton) {
-        event.preventDefault();
-        event.stopPropagation();
-        const card = displayModeButton.closest(".bg-thumbnail-card");
-        this.callbacks.onBackgroundDisplayModeChange?.(
-          card?.dataset.bgPath,
-          displayModeButton.dataset.displayMode,
-          Number(card?.dataset.backgroundIndex)
-        );
-        return;
-      }
-
-      const descriptionButton = target.closest(".btn-toggle-background-description");
+      const descriptionButton = target.closest(".btn-toggle-image-description");
       if (descriptionButton) {
         event.preventDefault();
         event.stopPropagation();
-        const card = descriptionButton.closest(".bg-thumbnail-card");
-        this.callbacks.onBackgroundDescriptionToggle?.(
-          card?.dataset.bgPath,
-          Number(card?.dataset.backgroundIndex)
+        this.callbacks.onImageDescriptionToggle?.(
+          descriptionButton.dataset.imageCollection,
+          Number(descriptionButton.dataset.imageIndex)
         );
         return;
       }
@@ -113,6 +99,13 @@ export class NarrativeDirector extends NarrativeCanvas {
       if (bgCard?.dataset.bgPath) {
         event.preventDefault();
         this.callbacks.onBackgroundChange?.(bgCard.dataset.bgPath);
+        return;
+      }
+
+      const handoutCard = target.closest(".handout-thumbnail-card");
+      if (handoutCard?.dataset.handoutImagePath) {
+        event.preventDefault();
+        this.callbacks.onHandoutImageChange?.(handoutCard.dataset.handoutImagePath);
         return;
       }
 

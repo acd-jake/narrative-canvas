@@ -1,11 +1,11 @@
 # Narrative Canvas
 
-Narrative Canvas adds a Theatre of the Mind presentation mode to Foundry VTT. Build reusable narrative scenes with backgrounds, actors, and audio, then present the canvas to players while you control it from the GM interface.
+Narrative Canvas adds a Theatre of the Mind presentation mode to Foundry VTT. Build reusable narrative scenes with background images, Handoutimages, actors, and audio, then present the canvas to players while you control it from the GM interface.
 
 ## Features
 
 - Create and manage narrative scenes.
-- Add background images, actors, and audio tracks to scenes.
+- Add background images, Handoutimages, actors, and audio tracks to scenes.
 - Display actors and dialogue on the canvas.
 - Browse journal entries from the director sidebar and show journal images as canvas overlays.
 - Control scene audio and canvas visibility for players.
@@ -45,9 +45,9 @@ Data/
 ## Getting Started
 
 1. As a GM, open the **Token Controls** toolbar and select **Open Scene Editor**.
-2. Create a scene, then add background images with the background picker. Drag Actor documents into the Actors section and Playlist Sound documents into the Audio Tracks section. Scenes and their contents are stored as module world settings.
+2. Create a scene, then add background images and Handoutimages with their separate pickers. Drag images between the two lists to change how they are presented. Drag Actor documents into the Actors section and Playlist Sound documents into the Audio Tracks section. Scenes and their contents are stored as module world settings.
 3. Select **Enable Narrative Canvas** from the Token Controls toolbar. This opens the director canvas.
-4. Select a narrative scene in the left sidebar. Use the controls on the right to choose a scene background and manage actors, dialogue, and visibility.
+4. Select a narrative scene in the left sidebar. Click a background image or Handoutimage in the corresponding list to display it. Use the other controls to manage actors, dialogue, and visibility.
 5. Select **Publish to Players** when you are ready for players to see the canvas. Use **Hide from Players** to hide it without closing your director view.
 
 The canvas can also be activated by users who meet the configured activation permission. Scene editing is available to GMs.
@@ -64,7 +64,8 @@ The canvas must be published to players for them to see its current content.
 ## Director Controls
 
 - **Scene sidebar:** Filter scenes, select the active scene, and browse journals.
-- **Backgrounds:** Pick a scene background from the quick list or use the background picker.
+- **Background images:** Click an image to set it as the canvas background.
+- **Handoutimages:** Click an image to display it as a foreground overlay.
 - **Actors:** Add or remove scene actors from the stage, set the active speaker, and toggle actor nameplates.
 - **Dialogue:** Enter a speaker, optional portrait, and dialogue text, then display it on the canvas.
 - **Audio:** Play, pause, or stop scene tracks and adjust track or master volume.

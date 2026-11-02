@@ -106,7 +106,7 @@ body.acd-nc-active {
         p { margin: 0; }
     }
 
-    .narrative-journal-image-overlay {
+    .narrative-handout-image-overlay {
         position: absolute;
         inset: 0;
         z-index: 3;
@@ -117,7 +117,7 @@ body.acd-nc-active {
         pointer-events: none;
     }
 
-    .narrative-journal-image-frame {
+    .narrative-scene-handout-image-frame {
         position: relative;
         display: flex;
         max-width: 88vw;
@@ -126,7 +126,7 @@ body.acd-nc-active {
         justify-content: center;
     }
 
-    .narrative-journal-image {
+    .narrative-scene-handout-image {
         display: block;
         max-width: 88vw;
         max-height: 76vh;
@@ -134,7 +134,7 @@ body.acd-nc-active {
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.65);
     }
 
-    .narrative-journal-image-description {
+    .narrative-scene-handout-image-description {
         position: absolute;
         right: 0;
         bottom: 0;
@@ -828,7 +828,8 @@ body.acd-nc-active {
         overflow-y: auto;
     }
 
-    .bg-thumbnail-card {
+    .bg-thumbnail-card,
+    .handout-thumbnail-card {
         position: relative;
         cursor: pointer;
         border: 1px solid #444;

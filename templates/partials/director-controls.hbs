@@ -25,7 +25,7 @@
         </div>
     </section>
 
-    <!-- Background Quick List -->
+    <!-- Scene image lists -->
     {{#if currentSceneData}}
     <section class="director-control-group">
         <legend><i class="fas fa-images"></i> {{localize "NARRATIVE_CANVAS.Labels.SceneBackgrounds"}}</legend>
@@ -34,13 +34,23 @@
                 <div class="bg-thumbnail-card {{#if (eq ../selectedBackground this.path)}}is-active-bg{{/if}}" data-bg-path="{{this.path}}" data-background-index="{{@index}}">
                     <img src="{{this.path}}" alt="{{this.name}}" />
                     <div class="bg-thumbnail-actions">
-                        <button type="button" class="btn-background-display-mode {{#if (eq this.displayMode 'background')}}is-active{{/if}}" data-display-mode="background" title="{{localize 'NARRATIVE_CANVAS.Director.ShowAsBackground'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.ShowAsBackground'}}">
-                            <i class="fas fa-image" aria-hidden="true"></i>
+                        <button type="button" class="btn-toggle-image-description {{#if this.showDescription}}is-active{{/if}}" data-image-collection="backgrounds" data-image-index="{{@index}}" title="{{#if this.showDescription}}{{localize 'NARRATIVE_CANVAS.Director.HideBackgroundDescription'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowBackgroundDescription'}}{{/if}}" aria-label="{{#if this.showDescription}}{{localize 'NARRATIVE_CANVAS.Director.HideBackgroundDescription'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowBackgroundDescription'}}{{/if}}">
+                            <i class="fas {{#if this.showDescription}}fa-closed-captioning{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
                         </button>
-                        <button type="button" class="btn-background-display-mode {{#if (eq this.displayMode 'journal')}}is-active{{/if}}" data-display-mode="journal" title="{{localize 'NARRATIVE_CANVAS.Director.ShowAsJournalImage'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.ShowAsJournalImage'}}">
-                            <i class="fas fa-book-open" aria-hidden="true"></i>
-                        </button>
-                        <button type="button" class="btn-toggle-background-description {{#if this.showDescription}}is-active{{/if}}" title="{{#if this.showDescription}}{{localize 'NARRATIVE_CANVAS.Director.HideBackgroundDescription'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowBackgroundDescription'}}{{/if}}" aria-label="{{#if this.showDescription}}{{localize 'NARRATIVE_CANVAS.Director.HideBackgroundDescription'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowBackgroundDescription'}}{{/if}}">
+                    </div>
+                    <span class="bg-thumb-label">{{this.name}}</span>
+                </div>
+            {{/each}}
+        </div>
+    </section>
+    <section class="director-control-group">
+        <legend><i class="fas fa-book-open"></i> {{localize "NARRATIVE_CANVAS.Labels.HandoutImages"}}</legend>
+        <div class="director-bg-grid">
+            {{#each currentSceneData.handoutImages}}
+                <div class="handout-thumbnail-card {{#if (eq ../handoutImage this.path)}}is-active-bg{{/if}}" data-handout-image-path="{{this.path}}">
+                    <img src="{{this.path}}" alt="{{this.name}}" />
+                    <div class="bg-thumbnail-actions">
+                        <button type="button" class="btn-toggle-image-description {{#if this.showDescription}}is-active{{/if}}" data-image-collection="handoutImages" data-image-index="{{@index}}" title="{{#if this.showDescription}}{{localize 'NARRATIVE_CANVAS.Director.HideBackgroundDescription'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowBackgroundDescription'}}{{/if}}" aria-label="{{#if this.showDescription}}{{localize 'NARRATIVE_CANVAS.Director.HideBackgroundDescription'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowBackgroundDescription'}}{{/if}}">
                             <i class="fas {{#if this.showDescription}}fa-closed-captioning{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
                         </button>
                     </div>
