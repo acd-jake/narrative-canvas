@@ -55,7 +55,7 @@
                             <i class="fas fa-plus"></i> {{localize "NARRATIVE_CANVAS.Editor.AddImage"}}
                         </button>
                     </header>
-                    <div class="tiles-wrapping-grid">
+                    <div class="tiles-wrapping-grid image-collection-grid">
                         {{#each activeScene.backgrounds}}
                             <div class="tile-thumbnail-card background-tile-card" data-index="{{@index}}" data-type="SceneImage" data-image-collection="backgrounds" draggable="true">
                                 <div class="tile-image-wrapper">
@@ -88,7 +88,7 @@
                             <i class="fas fa-plus"></i> {{localize "NARRATIVE_CANVAS.Editor.AddImage"}}
                         </button>
                     </header>
-                    <div class="tiles-wrapping-grid">
+                    <div class="tiles-wrapping-grid image-collection-grid">
                         {{#each activeScene.handoutImages}}
                             <div class="tile-thumbnail-card background-tile-card" data-index="{{@index}}" data-type="SceneImage" data-image-collection="handoutImages" draggable="true">
                                 <div class="tile-image-wrapper">

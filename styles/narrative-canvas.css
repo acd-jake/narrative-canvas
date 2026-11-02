@@ -1847,6 +1847,26 @@ body.acd-nc-active {
         min-height: 70px;
     }
 
+    .image-collection-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--nc-tile-size, 200px)), 1fr));
+        gap: 8px;
+        align-items: start;
+
+        .background-tile-card {
+            flex: initial;
+            width: 100%;
+            max-width: none;
+            min-width: 0;
+        }
+
+        .tile-image-wrapper {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1;
+        }
+    }
+
     .tile-thumbnail-card {
         flex: 0 0 var(--nc-tile-size, 200px);
         width: var(--nc-tile-size, 200px);
