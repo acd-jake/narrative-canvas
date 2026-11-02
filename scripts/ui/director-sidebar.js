@@ -127,6 +127,7 @@ export class DirectorSidebar {
     const previousScenes = this.#scenesList;
     this.#scenesList = context.scenesList ?? this.#scenesList;
     this.#currentSceneData = context.currentSceneData ?? (this.#activeSceneId ? this.#scenesList.find(s => s.id === this.#activeSceneId) : null);
+    this.#updateActiveSceneName();
 
     // If the scenes collection reference changed, re-render the scenes list
     if (this.#scenesList !== previousScenes) {
@@ -304,6 +305,7 @@ export class DirectorSidebar {
       isScenesCollapsed: this.#areScenesCollapsed,
       isAudioCollapsed: this.#isAudioCollapsed,
       activeSceneId: this.#activeSceneId,
+      currentSceneName: this.#currentSceneData?.name ?? "",
       journalQuery: this.#journalQuery,
       childFolders,
       availableJournals,
@@ -319,6 +321,16 @@ export class DirectorSidebar {
       globalVolume: gVol,
       masterVolumePercent: Math.round(gVol * 100)
     };
+  }
+
+  #updateActiveSceneName() {
+    const sceneNameElement = this.#element?.querySelector(".sidebar-active-scene-name");
+    if (!sceneNameElement) return;
+
+    const sceneName = this.#currentSceneData?.name ?? "";
+    sceneNameElement.textContent = sceneName;
+    sceneNameElement.title = sceneName;
+    sceneNameElement.hidden = !sceneName;
   }
 
   #bindListeners(root) {

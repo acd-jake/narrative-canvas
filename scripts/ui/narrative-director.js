@@ -22,7 +22,8 @@ export class NarrativeDirector extends NarrativeCanvas {
     });
     this.toolbar = new DirectorCanvasToolbar({
       onVisibilityChange: (visible) => this.callbacks.onVisibilityChange(visible),
-      onClearDisplay: () => this.callbacks.onClearDisplay(),
+      onCloseAllHandouts: () => this.callbacks.onCloseAllHandouts(),
+      onBackgroundReset: () => this.callbacks.onBackgroundReset(),
       onShutdown: () => this.callbacks.onShutdown(),
       onStopAllAudio: () => this.audioController.stopAll()
     });
@@ -101,12 +102,6 @@ export class NarrativeDirector extends NarrativeCanvas {
           descriptionButton.dataset.imageCollection,
           Number(descriptionButton.dataset.imageIndex)
         );
-        return;
-      }
-
-      if (target.closest(".btn-toggle-sidebar")) {
-        event.preventDefault();
-        this.sidebar?.toggleCollapse();
         return;
       }
 

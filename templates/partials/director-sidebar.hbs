@@ -8,6 +8,7 @@
     <section class="sidebar-scenes-section {{#if isScenesCollapsed}}is-collapsed{{/if}}">
         <header class="sidebar-section-header">
             <h4><i class="fas fa-cubes"></i> {{localize "NARRATIVE_CANVAS.Editor.Scenes"}}</h4>
+            <span class="sidebar-active-scene-name" title="{{currentSceneName}}" {{#unless currentSceneName}}hidden{{/unless}}>{{currentSceneName}}</span>
             <button type="button" class="sidebar-section-toggle" data-section-toggle="scenes" aria-expanded="{{#unless isScenesCollapsed}}true{{else}}false{{/unless}}" aria-controls="director-scenes-content" title="{{#if isScenesCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandScenes'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseScenes'}}{{/if}}" aria-label="{{#if isScenesCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandScenes'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseScenes'}}{{/if}}">
                 <i class="fas {{#if isScenesCollapsed}}fa-chevron-right{{else}}fa-chevron-down{{/if}}" aria-hidden="true"></i>
             </button>

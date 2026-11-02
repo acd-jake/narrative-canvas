@@ -6,6 +6,8 @@
   "NARRATIVE_CANVAS.Labels.Dialogue": "Akteur-Dialog",
   "NARRATIVE_CANVAS.Labels.SendDialogue": "Dialog einblenden",
   "NARRATIVE_CANVAS.Labels.ClearAll": "Bühneninhalt zurücksetzen",
+  "NARRATIVE_CANVAS.Labels.CloseAllHandouts": "Alle geöffneten Handoutbilder schließen",
+  "NARRATIVE_CANVAS.Labels.ResetBackground": "Hintergrund zurücksetzen",
   "NARRATIVE_CANVAS.Labels.ShutdownCanvas": "Canvas ausschalten (Alle Clients)",
   "NARRATIVE_CANVAS.Placeholders.Speaker": "Name des Sprechers",
   "NARRATIVE_CANVAS.Placeholders.Dialogue": "Was sagt der Charakter?...",

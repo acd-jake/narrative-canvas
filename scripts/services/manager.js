@@ -91,7 +91,10 @@ export class NarrativeManager {
       }
 
       this.narrativeState.active = active;
-      if (!active) this.narrativeState.playerViewActive = false;
+      if (!active) {
+        this.narrativeState.playerViewActive = false;
+        await this.persistActiveState();
+      }
 
       NarrativeSocket.emit("UPDATE_DISPLAY", this.narrativeState);
       await this.refreshView();
@@ -137,6 +140,17 @@ export class NarrativeManager {
       activeSceneId: this.narrativeState.activeSceneId || "",
       background: this.narrativeState.background || "",
       handoutImage: this.narrativeState.handoutImage || "",
+      handoutImageOverlays: (this.narrativeState.handoutImageOverlays || []).map((overlay, index) => ({
+        id: overlay.id,
+        src: overlay.src,
+        title: overlay.title || "",
+        description: overlay.description || "",
+        showDescription: overlay.showDescription === true,
+        ...(Number.isFinite(overlay.position?.x) && Number.isFinite(overlay.position?.y)
+          ? { position: { x: overlay.position.x, y: overlay.position.y } }
+          : {}),
+        zOrder: Number.isFinite(overlay.zOrder) ? overlay.zOrder : index
+      })),
       activeActors: (this.narrativeState.activeActors || []).map(actor => ({
         id: actor.id,
         name: actor.name,
@@ -217,16 +231,45 @@ export class NarrativeManager {
     this.narrativeState.currentSceneData = validatedSceneData;
     this.narrativeState.background = validatedBackground;
     this.narrativeState.handoutImage = validatedHandoutImage;
-    this.narrativeState.handoutImageOverlays = [];
-    const restoredHandout = validatedSceneData?.handoutImages
-      ?.find(image => image.path === validatedHandoutImage);
-    if (restoredHandout) {
-      this.narrativeState.handoutImageOverlays = this.#addHandoutImageOverlay({
-        src: restoredHandout.path,
-        title: restoredHandout.name || "",
-        description: restoredHandout.description || "",
-        showDescription: restoredHandout.showDescription === true
-      });
+    if (Array.isArray(saved.handoutImageOverlays)) {
+      this.narrativeState.handoutImageOverlays = saved.handoutImageOverlays
+        .filter(overlay => typeof overlay?.src === "string" && overlay.src.trim())
+        .map((overlay, index) => {
+          const sceneImage = validatedSceneData?.handoutImages
+            ?.find(image => image.path === overlay.src);
+          const x = Number(overlay.position?.x);
+          const y = Number(overlay.position?.y);
+          const hasPosition = Number.isFinite(x) && Number.isFinite(y);
+
+          return {
+            id: typeof overlay.id === "string" ? overlay.id : `restored-handout-${index}`,
+            src: overlay.src,
+            title: sceneImage?.name || overlay.title || "",
+            description: sceneImage?.description || overlay.description || "",
+            showDescription: sceneImage
+              ? sceneImage.showDescription === true
+              : overlay.showDescription === true,
+            ...(hasPosition ? {
+              position: {
+                x: Math.max(0, Math.min(1, x)),
+                y: Math.max(0, Math.min(1, y))
+              }
+            } : {}),
+            zOrder: Number.isFinite(overlay.zOrder) ? overlay.zOrder : index
+          };
+        });
+    } else {
+      this.narrativeState.handoutImageOverlays = [];
+      const restoredHandout = validatedSceneData?.handoutImages
+        ?.find(image => image.path === validatedHandoutImage);
+      if (restoredHandout) {
+        this.narrativeState.handoutImageOverlays = this.#addHandoutImageOverlay({
+          src: restoredHandout.path,
+          title: restoredHandout.name || "",
+          description: restoredHandout.description || "",
+          showDescription: restoredHandout.showDescription === true
+        });
+      }
     }
     this.narrativeState.activeActors = validatedActors;
     this.narrativeState.activeSpeakerId = validatedSpeakerId;
@@ -340,18 +383,13 @@ export class NarrativeManager {
         });
       },
       onDialogueTrigger: (dialogue) => this.handleDisplayUpdate({ activeDialogue: dialogue }),
-      onClearDisplay: () => {
+      onCloseAllHandouts: () => {
         this.handleDisplayUpdate({
-          background: "",
           handoutImage: "",
-          handoutImageOverlays: [],
-          activeActors: [],
-          activeSpeakerId: null,
-          activeDialogue: null,
-          handout: null,
-          journalImage: null
+          handoutImageOverlays: []
         });
       },
+      onBackgroundReset: () => this.handleDisplayUpdate({ background: "" }),
       onJournalImageShow: (journalImage) => {
         this.handleDisplayUpdate({
           handoutImageOverlays: this.#addHandoutImageOverlay({ ...journalImage, showDescription: true })
@@ -372,9 +410,16 @@ export class NarrativeManager {
         });
       },
       onHandoutImageClose: (overlayId) => {
+        const currentOverlays = this.narrativeState.handoutImageOverlays || [];
+        const closingOverlay = currentOverlays.find(overlay => overlay.id === overlayId);
+        const remainingOverlays = currentOverlays.filter(overlay => overlay.id !== overlayId);
+        const selectedHandoutWasClosed = closingOverlay?.src === this.narrativeState.handoutImage;
+
         this.handleDisplayUpdate({
-          handoutImageOverlays: (this.narrativeState.handoutImageOverlays || [])
-            .filter(overlay => overlay.id !== overlayId)
+          handoutImage: selectedHandoutWasClosed
+            ? remainingOverlays[remainingOverlays.length - 1]?.src || ""
+            : this.narrativeState.handoutImage,
+          handoutImageOverlays: remainingOverlays
         });
       },
       onHandoutImageLayoutChange: (layout) => {

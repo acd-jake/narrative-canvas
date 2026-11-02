@@ -8,7 +8,8 @@ export class DirectorCanvasToolbar {
   /**
    * @param {object} callbacks
    * @param {(visible: boolean) => void} callbacks.onVisibilityChange
-   * @param {() => void} callbacks.onClearDisplay
+  * @param {() => void} callbacks.onCloseAllHandouts
+  * @param {() => void} callbacks.onBackgroundReset
    * @param {() => void} callbacks.onShutdown
    * @param {() => Promise<void>} callbacks.onStopAllAudio
    */
@@ -77,8 +78,11 @@ export class DirectorCanvasToolbar {
       case "stop-audio":
         await this.#callbacks.onStopAllAudio();
         break;
-      case "clear":
-        this.#callbacks.onClearDisplay();
+      case "close-handouts":
+        this.#callbacks.onCloseAllHandouts();
+        break;
+      case "reset-background":
+        this.#callbacks.onBackgroundReset();
         break;
       case "shutdown":
         this.#callbacks.onShutdown();

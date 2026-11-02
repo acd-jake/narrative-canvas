@@ -6,6 +6,8 @@
   "NARRATIVE_CANVAS.Labels.Dialogue": "Actor Dialogue",
   "NARRATIVE_CANVAS.Labels.SendDialogue": "Display Dialogue",
   "NARRATIVE_CANVAS.Labels.ClearAll": "Reset Stage Content",
+  "NARRATIVE_CANVAS.Labels.CloseAllHandouts": "Close all open handout images",
+  "NARRATIVE_CANVAS.Labels.ResetBackground": "Reset background",
   "NARRATIVE_CANVAS.Labels.ShutdownCanvas": "Turn Off Canvas (All Clients)",
   "NARRATIVE_CANVAS.Placeholders.Speaker": "Speaker Name",
   "NARRATIVE_CANVAS.Placeholders.Dialogue": "What does the character say?...",

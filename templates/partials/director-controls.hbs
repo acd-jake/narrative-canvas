@@ -1,26 +1,13 @@
-<div class="narrative-director-panel font-foundry">
+<div class="narrative-director-panel font-foundry" style="--nc-director-tile-size: {{tileSize}}px;">
     <header class="director-panel-header">
         <i class="fas fa-film"></i> 
         <h3>{{localize "NARRATIVE_CANVAS.DirectorTitle"}}</h3>
     </header>
 
-    <!-- Active Scene Display & Sidebar Toggle -->
-    <section class="director-control-group active-scene-group">
-        <legend><i class="fas fa-folder-open"></i> {{localize "NARRATIVE_CANVAS.Labels.ActiveScene"}}</legend>
-        <div class="active-scene-row">
-            <div class="active-scene-display">
-                <i class="fas fa-film"></i>
-                {{#if currentSceneData}}
-                    <span class="active-scene-name" title="{{currentSceneData.name}}">{{currentSceneData.name}}</span>
-                {{else}}
-                    <span class="active-scene-empty">-- {{localize "NARRATIVE_CANVAS.Placeholders.ChooseScene"}} --</span>
-                {{/if}}
-            </div>
-            <button type="button" class="btn-toggle-sidebar button-secondary" title="{{localize 'NARRATIVE_CANVAS.Director.ToggleSidebar'}}">
-                <i class="fas fa-bars"></i>
-            </button>
-        </div>
-    </section>
+    <div class="director-tile-scale-controller">
+        <label for="director-tile-scale">{{localize "NARRATIVE_CANVAS.Editor.TileSizeLabel"}}</label>
+        <input id="director-tile-scale" type="range" class="slider-tile-scale" min="50" max="300" step="5" value="{{tileSize}}" />
+    </div>
 
     <!-- Scene image lists -->
     {{#if currentSceneData}}
