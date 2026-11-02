@@ -1,5 +1,6 @@
 import { NarrativeSocket } from "./socket.js";
 import { NarrativeSettings } from "./settings.js";
+import { NarrativeControls } from "./controls.js";
 import { NarrativeSceneRepository } from "./scene-repository.js";
 import { JournalAssetBrowser } from "./journal-asset-browser.js";
 import { NarrativePlayer } from "../ui/narrative-player.js";
@@ -31,6 +32,7 @@ export class NarrativeManager {
     };
     this.view = null;
     this.editorApp = null;
+    this.playerCanvasDismissed = false;
   }
 
   async refreshView() {
@@ -66,17 +68,25 @@ export class NarrativeManager {
       });
     }
 
-    const shouldRender = game.user.isGM ? this.narrativeState.active : this.narrativeState.playerViewActive;
+    NarrativeControls.setCanvasControlEnabled(
+      game.user.isGM || Boolean(this.narrativeState.playerViewActive)
+    );
+
+    const shouldRender = game.user.isGM
+      ? this.narrativeState.active
+      : this.narrativeState.playerViewActive && !this.playerCanvasDismissed;
     if (shouldRender) {
       if (!this.view) {
-        this.view = game.user.isGM ? new NarrativeDirector(this._getGMCallbacks()) : new NarrativePlayer();
+        this.view = game.user.isGM
+          ? new NarrativeDirector(this._getGMCallbacks())
+          : new NarrativePlayer({ onClose: () => this.closePlayerCanvas() });
       }
       await this.view.render(this.narrativeState);
     } else {
       if (this.view) {
         const closingView = this.view;
         this.view = null;
-        await closingView.close();
+        await closingView.close({ isLocalDismissal: !game.user.isGM && this.playerCanvasDismissed });
       }
     }
   }
@@ -140,11 +150,34 @@ export class NarrativeManager {
       NarrativeSocket.emit("UPDATE_DISPLAY", this.narrativeState);
       await this.refreshView();
     } else {
-      if (NarrativeSettings.userHasPermission()) {
-        this.narrativeState.active = active;
-        await this.refreshView();
-      }
+      if (active) await this.openPlayerCanvas();
     }
+  }
+
+  async openPlayerCanvas() {
+    if (game.user.isGM || !this.narrativeState.playerViewActive) return;
+
+    this.playerCanvasDismissed = false;
+    await this.refreshView();
+  }
+
+  async reopenPlayerCanvas() {
+    if (game.user.isGM || !this.narrativeState.playerViewActive || !this.playerCanvasDismissed) return;
+
+    await this.openPlayerCanvas();
+  }
+
+  reopenPlayerCanvasesForPlayers() {
+    if (!game.user.isGM || !this.narrativeState.playerViewActive) return;
+
+    NarrativeSocket.emit("REOPEN_PLAYER_CANVAS", {});
+  }
+
+  async closePlayerCanvas() {
+    if (game.user.isGM || !this.narrativeState.playerViewActive) return;
+
+    this.playerCanvasDismissed = true;
+    await this.refreshView();
   }
 
   /**
@@ -162,6 +195,10 @@ export class NarrativeManager {
    * @param {boolean} [isRemote=false] - Flag indicating if the update came from the socket pipeline
    */
   async handleDisplayUpdate(data, isRemote = false) {
+    if (!game.user.isGM && data.playerViewActive === false) {
+      this.playerCanvasDismissed = false;
+    }
+
     this.narrativeState = { ...this.narrativeState, ...data };
     if (game.user.isGM && !isRemote) {
       NarrativeSocket.emit("UPDATE_DISPLAY", data);
@@ -570,6 +607,7 @@ export class NarrativeManager {
       onVisibilityChange: (visible) => this.handleDisplayUpdate(visible
         ? { ...this.narrativeState, playerViewActive: true }
         : { playerViewActive: false }),
+      onReopenPlayers: () => this.reopenPlayerCanvasesForPlayers(),
       onShutdown: () => this.toggleCanvasState(false)
     };
   }

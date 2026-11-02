@@ -10,6 +10,7 @@ export class DirectorCanvasToolbar {
    * @param {(visible: boolean) => void} callbacks.onVisibilityChange
   * @param {() => void} callbacks.onCloseAllHandouts
   * @param {() => void} callbacks.onBackgroundReset
+    * @param {() => void} callbacks.onReopenPlayers
    * @param {() => void} callbacks.onShutdown
    * @param {() => Promise<void>} callbacks.onStopAllAudio
    */
@@ -79,6 +80,9 @@ export class DirectorCanvasToolbar {
         break;
       case "hide":
         this.#callbacks.onVisibilityChange(false);
+        break;
+      case "reopen-players":
+        this.#callbacks.onReopenPlayers();
         break;
       case "stop-audio":
         await this.#callbacks.onStopAllAudio();

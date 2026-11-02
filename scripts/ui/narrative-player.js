@@ -6,14 +6,22 @@ import { NarrativeSettings } from "../services/settings.js";
  * configuration-controlled activation and deactivation toasts.
  */
 export class NarrativePlayer extends NarrativeCanvas {
-  constructor() {
+  constructor({ onClose } = {}) {
     super("narrative-player-display", "player-view");
+    this.onClose = onClose;
     
     /**
      * Guard flag to prevent duplicate notifications during subsequent state changes.
      * @type {boolean}
      */
     this.isAlreadyNotified = false;
+  }
+
+  /** @override */
+  async _onPrepareElements(stageElement) {
+    stageElement.querySelector(".btn-close-player-canvas")?.addEventListener("click", () => {
+      this.onClose?.();
+    });
   }
 
   /** @override */
@@ -30,9 +38,9 @@ export class NarrativePlayer extends NarrativeCanvas {
   }
 
   /** @override */
-  async close() {
+  async close({ isLocalDismissal = false } = {}) {
     // Only fire deactivation toast if the player was actively seeing the canvas overlay
-    if (this.stageElement && NarrativeSettings.areToastsEnabled()) {
+    if (!isLocalDismissal && this.stageElement && NarrativeSettings.areToastsEnabled()) {
       ui.notifications.info(game.i18n.localize("NARRATIVE_CANVAS.Notifications.Deactivated"));
     }
 

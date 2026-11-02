@@ -6,6 +6,10 @@
                 {{#if playerViewActive}}{{localize "NARRATIVE_CANVAS.Status.Live"}}{{else}}{{localize "NARRATIVE_CANVAS.Status.Preparing"}}{{/if}}
             </span>
         </div>
+    {{else}}
+        <button type="button" class="btn-close-player-canvas" title="{{localize 'NARRATIVE_CANVAS.Controls.ClosePlayerCanvas'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Controls.ClosePlayerCanvas'}}">
+            <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
     {{/if}}
 
     <!-- Ambient Background Crossfade Container -->

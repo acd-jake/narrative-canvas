@@ -133,6 +133,27 @@ body.acd-nc-active {
         }
     }
 
+    .btn-close-player-canvas {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 21;
+        display: grid;
+        width: 44px;
+        height: 44px;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.42);
+        border-radius: 4px;
+        background: rgba(24, 24, 24, 0.82);
+        color: #fff;
+        cursor: pointer;
+        font-size: 1.1rem;
+
+        &:hover {
+            background: rgba(80, 80, 80, 0.92);
+        }
+    }
+
     .toolbar-composite-icon {
         position: relative;
         display: inline-block;

@@ -34,6 +34,12 @@ export class NarrativeSocket {
             manager.handleDisplayUpdate(data, true);
           }
           break;
+
+        case "REOPEN_PLAYER_CANVAS":
+          if (game.users.get(userId)?.isGM) {
+            manager.reopenPlayerCanvas();
+          }
+          break;
       }
     });
   }

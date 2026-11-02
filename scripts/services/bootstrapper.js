@@ -38,6 +38,13 @@ export class NarrativeBootstrapper {
       NarrativeControls.initialize(controls);
     });
 
+    Hooks.on("renderSceneControls", () => {
+      const manager = game.modules.get("narrative-canvas").manager;
+      NarrativeControls.setCanvasControlEnabled(
+        game.user.isGM || Boolean(manager?.narrativeState.playerViewActive)
+      );
+    });
+
     Hooks.on("userConnected", (user, connected) => {
       if (connected) return;
 

@@ -22,6 +22,7 @@ export class NarrativeDirector extends NarrativeCanvas {
     });
     this.toolbar = new DirectorCanvasToolbar({
       onVisibilityChange: (visible) => this.callbacks.onVisibilityChange(visible),
+      onReopenPlayers: () => this.callbacks.onReopenPlayers?.(),
       onCloseAllHandouts: () => this.callbacks.onCloseAllHandouts(),
       onBackgroundReset: () => this.callbacks.onBackgroundReset(),
       onShutdown: () => this.callbacks.onShutdown(),
