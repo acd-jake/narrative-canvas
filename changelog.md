@@ -7,24 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3] - 2026-11-03
+
+### Added
+
+- A Director mute toggle that silences scene audio independently from **Stop All**.
+
+### Changed
+
+- The Scene Audio section is visibly dimmed while audio is muted.
+- A journal-docked Scene Configurator can extend beyond the browser edge without changing its width.
+
+### Fixed
+
+- The Journal Viewer selection now follows the configured ordering of journals and subfolders.
+
+## [0.2] - 2026-11-03
+
 ### Added
 
 - Scene Configurator options to select one automatic background and one automatic audio entry or playlist per scene.
 - Automatic background display and audio playback when a scene is activated.
 - An option to disable automatic activation of the first visible scene when a Journal Viewer selection filters out the active scene.
 - Actor and audio drops anywhere in the Scene Configurator workspace, with automatic routing to the matching scene lists.
-- A Director mute toggle to silence scene audio independently from the Stop All action.
 
 ### Changed
 
 - The Scene Configurator preserves editor-area scroll positions after content changes.
 - The docked Scene Configurator follows the activated Journal Entry, matches its z-order, and retains its width across journal page changes.
+- Images can be dropped into their designated Background Images or Handout Images areas.
 
-### Fixed
-
-- The Journal Viewer selection now follows each folder's configured ordering for journals and subfolders.
-
-## [0.1.0] - 2026-11-02
+## [0.1] - 2026-11-03
 
 ### Added
 
@@ -47,5 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Dragging handout images no longer changes their size unintentionally.
 
-[Unreleased]: https://github.com/acd-jake/narrative-canvas/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/acd-jake/narrative-canvas/releases/tag/v0.1.0
+[Unreleased]: https://github.com/acd-jake/narrative-canvas/compare/0.3...HEAD
+[0.3]: https://github.com/acd-jake/narrative-canvas/compare/0.2...0.3
+[0.2]: https://github.com/acd-jake/narrative-canvas/compare/0.1...0.2
+[0.1]: https://github.com/acd-jake/narrative-canvas/releases/tag/0.1

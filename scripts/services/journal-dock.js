@@ -25,7 +25,6 @@ export class JournalDockController {
   #onReleased;
   #journalId = null;
   #freePosition = null;
-  #dockedWidth = null;
   #sheetObserver = null;
   #journalActivationHandler = null;
 
@@ -91,7 +90,6 @@ export class JournalDockController {
     if (this.#app.rendered) this.#app.setPosition(this.#freePosition);
     else Object.assign(this.#app.position, this.#freePosition);
     this.#freePosition = null;
-    this.#dockedWidth = null;
     this.#onReleased();
   }
 
@@ -102,7 +100,6 @@ export class JournalDockController {
     if (!previousJournalId) {
       const { left, top, width, height } = this.#app.position;
       this.#freePosition = { left, top, width, height };
-      this.#dockedWidth = width;
     }
     this.#journalId = journalId;
     if (journalId !== previousJournalId) {
@@ -119,7 +116,6 @@ export class JournalDockController {
     this.#app.setPosition({
       left: bounds.right + DOCK_GAP,
       top: bounds.top,
-      width: this.#dockedWidth ?? this.#app.position.width,
       height: bounds.height
     });
     if (Number.isFinite(journalZIndex)) {

@@ -64,6 +64,11 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     main: { template: "modules/narrative-canvas/templates/scene-editor.hbs" }
   };
 
+  _updatePosition(position) {
+    if (this.#dock?.journalId) return position;
+    return super._updatePosition(position);
+  }
+
   /** @override */
   async _prepareContext() {
     const journalId = this.#dock.journalId;
