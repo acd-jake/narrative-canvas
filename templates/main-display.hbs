@@ -11,7 +11,7 @@
     {{/if}}
 
     {{#each handoutImageOverlays}}
-        <div class="narrative-handout-image-overlay" data-overlay-id="{{this.id}}">
+        <div class="narrative-handout-image-overlay" data-overlay-id="{{this.id}}" data-position-x="{{this.position.x}}" data-position-y="{{this.position.y}}">
             <div class="narrative-scene-handout-image-frame">
                 <img src="{{this.src}}" alt="{{this.title}}" class="narrative-scene-handout-image" draggable="false" />
                 {{#if this.description}}

@@ -67,6 +67,10 @@ export class NarrativeDirector extends NarrativeCanvas {
     await this.carousel?.update(this.stageElement, context);
   }
 
+  _onHandoutImageLayoutChange(layout) {
+    this.callbacks.onHandoutImageLayoutChange?.(layout);
+  }
+
   /**
    * Event Delegation Pattern to guarantee buttons stay responsive after asynchronous re-renders.
    * @private

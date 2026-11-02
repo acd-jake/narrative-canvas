@@ -1,31 +1,46 @@
 export class HandoutImageOverlayController {
-  constructor({ animateOpacity, fadeOutAndRemove, isAnimatingOpacity }) {
+  constructor({ animateOpacity, fadeOutAndRemove, isAnimatingOpacity, onLayoutChange, canControl }) {
     this.animateOpacity = animateOpacity;
     this.fadeOutAndRemove = fadeOutAndRemove;
     this.isAnimatingOpacity = isAnimatingOpacity;
+    this.onLayoutChange = onLayoutChange;
+    this.canControl = canControl;
     this.stage = null;
     this.zIndex = 12;
     this.drag = null;
     this.pointerHandlers = null;
     this.overlayOrder = [];
+    this.domOrder = [];
+    this.positions = new Map();
+    this.transitioningOverlayIds = new Set();
+    this.orderTransitionId = 0;
+    this.duration = 400;
   }
 
-  mount(stage) {
+  mount(stage, duration = 400) {
     this.stage = stage;
+    this.duration = duration;
     const overlays = [...stage.querySelectorAll(".narrative-handout-image-overlay")];
     overlays.forEach((overlay, index) => {
       overlay.style.zIndex = String(++this.zIndex);
-      this.#offsetOverlay(overlay, index);
+      const position = this.#readPosition(overlay) ?? this.#defaultPosition(index);
+      this.positions.set(overlay.dataset.overlayId, position);
+      this.#applyPosition(overlay, position);
     });
     this.overlayOrder = overlays.map(overlay => overlay.dataset.overlayId);
+    this.domOrder = [...this.overlayOrder];
     this.#bindPointerHandlers();
   }
 
   update(overlays, duration) {
     if (!this.stage) return;
+    this.duration = duration;
     const nextOrder = overlays.map(overlay => overlay.id);
     const orderChanged = nextOrder.length !== this.overlayOrder.length
       || nextOrder.some((id, index) => id !== this.overlayOrder[index]);
+    const sameOverlaySet = orderChanged
+      && nextOrder.length === this.overlayOrder.length
+      && nextOrder.every(id => this.overlayOrder.includes(id));
     const remainingOverlays = new Map(
       [...this.stage.querySelectorAll(".narrative-handout-image-overlay")]
         .map(overlay => [overlay.dataset.overlayId, overlay])
@@ -41,11 +56,14 @@ export class HandoutImageOverlayController {
         overlay = this.#createOverlay(data);
         this.stage.appendChild(overlay);
         overlay.style.zIndex = String(++this.zIndex);
-        this.#offsetOverlay(overlay, this.stage.querySelectorAll(".narrative-handout-image-overlay").length - 1);
         overlay.style.opacity = "0";
         this.animateOpacity(overlay, 1, duration);
       }
       activeOverlays.set(data.id, overlay);
+      const position = data.position ?? this.positions.get(data.id)
+        ?? this.#defaultPosition(this.stage.querySelectorAll(".narrative-handout-image-overlay").length - 1);
+      this.positions.set(data.id, position);
+      if (this.drag?.overlayId !== data.id) this.#applyPosition(overlay, position);
 
       const image = overlay.querySelector(".narrative-scene-handout-image");
       image.alt = data.title || "";
@@ -53,19 +71,27 @@ export class HandoutImageOverlayController {
       const description = overlay.querySelector(".narrative-scene-handout-image-description");
       description.innerHTML = data.description || "";
       description.hidden = !data.description;
-      if (!isNewOverlay && this.isAnimatingOpacity(overlay)) this.animateOpacity(overlay, 1, duration);
+      if (!isNewOverlay && this.isAnimatingOpacity(overlay)
+        && !this.transitioningOverlayIds.has(data.id)) {
+        this.animateOpacity(overlay, 1, duration);
+      }
     }
 
     for (const overlay of remainingOverlays.values()) {
+      this.positions.delete(overlay.dataset.overlayId);
       this.fadeOutAndRemove(overlay, duration);
     }
 
     if (orderChanged) {
-      for (const id of nextOrder) {
-        activeOverlays.get(id).style.zIndex = String(++this.zIndex);
+      if (sameOverlaySet) {
+        this.#transitionToOrder(nextOrder, duration, false);
+      } else {
+        this.#cancelOrderTransition(nextOrder, duration);
+        this.overlayOrder = [...nextOrder];
+        this.domOrder = [...nextOrder];
+        this.#applyOverlayOrder(nextOrder);
       }
     }
-    this.overlayOrder = nextOrder;
   }
 
   destroy() {
@@ -79,6 +105,10 @@ export class HandoutImageOverlayController {
     this.stage = null;
     this.pointerHandlers = null;
     this.overlayOrder = [];
+    this.domOrder = [];
+    this.positions.clear();
+    this.transitioningOverlayIds.clear();
+    this.orderTransitionId++;
   }
 
   #createOverlay(data) {
@@ -115,57 +145,146 @@ export class HandoutImageOverlayController {
     return overlay;
   }
 
-  #offsetOverlay(overlay, index) {
-    const frame = overlay.querySelector(".narrative-scene-handout-image-frame");
+  #readPosition(overlay) {
+    const rawX = overlay.dataset.positionX;
+    const rawY = overlay.dataset.positionY;
+    if (!rawX || !rawY) return null;
+    const x = Number(rawX);
+    const y = Number(rawY);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    return { x, y };
+  }
+
+  #defaultPosition(index) {
+    const bounds = this.stage.getBoundingClientRect();
     const offset = Math.min(index, 5) * 32;
-    frame.style.left = `calc(50% + ${offset}px)`;
-    frame.style.top = `calc(50% + ${offset}px)`;
+    return {
+      x: bounds.width ? Math.min(0.95, 0.5 + offset / bounds.width) : 0.5,
+      y: bounds.height ? Math.min(0.95, 0.5 + offset / bounds.height) : 0.5
+    };
+  }
+
+  #applyPosition(overlay, position) {
+    if (!overlay) return;
+    const frame = overlay.querySelector(".narrative-scene-handout-image-frame");
+    frame.style.left = `${Math.max(0, Math.min(1, position.x)) * 100}%`;
+    frame.style.top = `${Math.max(0, Math.min(1, position.y)) * 100}%`;
+    frame.style.transform = "translate(-50%, -50%)";
+  }
+
+  #raiseOverlay(overlay) {
+    const overlayId = overlay.dataset.overlayId;
+    const nextOrder = this.overlayOrder.filter(id => id !== overlayId);
+    nextOrder.push(overlayId);
+    if (nextOrder.every((id, index) => id === this.overlayOrder[index])) return;
+
+    this.#transitionToOrder(nextOrder, this.duration, true);
+  }
+
+  #transitionToOrder(nextOrder, duration, notify) {
+    const transitionId = ++this.orderTransitionId;
+    const targetIndex = this.domOrder.indexOf(nextOrder.at(-1));
+    const outgoingIds = targetIndex < 0 ? [] : this.domOrder.slice(targetIndex + 1);
+    const outgoingOverlays = outgoingIds
+      .map(id => this.stage.querySelector(`.narrative-handout-image-overlay[data-overlay-id="${id}"]`))
+      .filter(Boolean);
+
+    this.overlayOrder = [...nextOrder];
+    this.transitioningOverlayIds = new Set(outgoingIds);
+    if (notify) this.#emitLayoutChange();
+
+    if (!outgoingOverlays.length) {
+      this.#applyOverlayOrder(nextOrder);
+      this.domOrder = [...nextOrder];
+      this.transitioningOverlayIds.clear();
+      return;
+    }
+
+    Promise.all(outgoingOverlays.map(overlay => this.animateOpacity(overlay, 0, duration)))
+      .then(completed => {
+        if (transitionId !== this.orderTransitionId || completed.some(result => !result)) return;
+        this.#applyOverlayOrder(nextOrder);
+        this.domOrder = [...nextOrder];
+        return Promise.all(outgoingOverlays.map(overlay => this.animateOpacity(overlay, 1, duration)));
+      })
+      .finally(() => {
+        if (transitionId === this.orderTransitionId) this.transitioningOverlayIds.clear();
+      });
+  }
+
+  #cancelOrderTransition(nextOrder, duration) {
+    this.orderTransitionId++;
+    for (const id of this.transitioningOverlayIds) {
+      if (!nextOrder.includes(id)) continue;
+      const overlay = this.stage.querySelector(`.narrative-handout-image-overlay[data-overlay-id="${id}"]`);
+      if (overlay) this.animateOpacity(overlay, 1, duration);
+    }
+    this.transitioningOverlayIds.clear();
+  }
+
+  #applyOverlayOrder(order) {
+    for (const [index, id] of order.entries()) {
+      const element = this.stage.querySelector(`.narrative-handout-image-overlay[data-overlay-id="${id}"]`);
+      if (element) element.style.zIndex = String(13 + index);
+    }
+    this.zIndex = 12 + order.length;
+  }
+
+  #emitLayoutChange() {
+    if (!this.canControl?.()) return;
+    this.onLayoutChange?.(this.overlayOrder.map(id => ({
+      id,
+      position: this.positions.get(id) ?? { x: 0.5, y: 0.5 }
+    })));
   }
 
   #bindPointerHandlers() {
-    const raiseOverlay = (overlay) => {
-      overlay.style.zIndex = String(++this.zIndex);
-    };
     const pointerdown = (event) => {
+      if (!this.canControl?.()) return;
       const overlay = event.target.closest(".narrative-handout-image-overlay");
       if (!overlay || !this.stage.contains(overlay)) return;
-      raiseOverlay(overlay);
+      this.#raiseOverlay(overlay);
 
       const image = event.target.closest(".narrative-scene-handout-image");
       if (!image) return;
       const frame = image.closest(".narrative-scene-handout-image-frame");
       const frameBounds = frame.getBoundingClientRect();
       const stageBounds = this.stage.getBoundingClientRect();
-      const left = frameBounds.left - stageBounds.left;
-      const top = frameBounds.top - stageBounds.top;
-      frame.style.left = `${left}px`;
-      frame.style.top = `${top}px`;
-      frame.style.transform = "none";
+      const centerX = frameBounds.left - stageBounds.left + frameBounds.width / 2;
+      const centerY = frameBounds.top - stageBounds.top + frameBounds.height / 2;
       this.drag = {
         pointerId: event.pointerId,
+        overlayId: overlay.dataset.overlayId,
         frame,
         image,
         startX: event.clientX,
         startY: event.clientY,
-        left,
-        top
+        centerX,
+        centerY
       };
       image.setPointerCapture(event.pointerId);
       event.preventDefault();
     };
     const pointermove = (event) => {
-      if (!this.drag || this.drag.pointerId !== event.pointerId) return;
+      if (!this.canControl?.() || !this.drag || this.drag.pointerId !== event.pointerId) return;
       const stageBounds = this.stage.getBoundingClientRect();
       const frameBounds = this.drag.frame.getBoundingClientRect();
-      const maxLeft = Math.max(0, stageBounds.width - frameBounds.width);
-      const maxTop = Math.max(0, stageBounds.height - frameBounds.height);
-      const left = this.drag.left + event.clientX - this.drag.startX;
-      const top = this.drag.top + event.clientY - this.drag.startY;
-      this.drag.frame.style.left = `${Math.max(0, Math.min(maxLeft, left))}px`;
-      this.drag.frame.style.top = `${Math.max(0, Math.min(maxTop, top))}px`;
+      const halfWidth = frameBounds.width / 2;
+      const halfHeight = frameBounds.height / 2;
+      const x = Math.max(halfWidth, Math.min(stageBounds.width - halfWidth,
+        this.drag.centerX + event.clientX - this.drag.startX));
+      const y = Math.max(halfHeight, Math.min(stageBounds.height - halfHeight,
+        this.drag.centerY + event.clientY - this.drag.startY));
+      const position = { x: x / stageBounds.width, y: y / stageBounds.height };
+      this.positions.set(this.drag.overlayId, position);
+      this.#applyPosition(this.stage.querySelector(
+        `.narrative-handout-image-overlay[data-overlay-id="${this.drag.overlayId}"]`
+      ), position);
     };
     const finishDrag = (event) => {
-      if (this.drag?.pointerId === event.pointerId) this.drag = null;
+      if (this.drag?.pointerId !== event.pointerId) return;
+      this.drag = null;
+      this.#emitLayoutChange();
     };
 
     this.pointerHandlers = { pointerdown, pointermove, finishDrag };

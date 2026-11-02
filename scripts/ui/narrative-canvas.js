@@ -29,7 +29,9 @@ export class NarrativeCanvas {
     this.handoutImageOverlayController = new HandoutImageOverlayController({
       animateOpacity: (element, opacity, duration) => this._animateElementOpacity(element, opacity, duration),
       fadeOutAndRemove: (element, duration) => this._fadeOutAndRemove(element, duration),
-      isAnimatingOpacity: element => this._opacityAnimations.has(element)
+      isAnimatingOpacity: element => this._opacityAnimations.has(element),
+      onLayoutChange: layout => this._onHandoutImageLayoutChange(layout),
+      canControl: () => game.user.isGM
     });
   }
 
@@ -120,7 +122,7 @@ export class NarrativeCanvas {
 
     document.body.appendChild(newStage);
     this.stageElement = newStage;
-    this.handoutImageOverlayController.mount(newStage);
+    this.handoutImageOverlayController.mount(newStage, context.fadeDuration);
     this._recordContext(context);
     document.body.style.setProperty("--nc-fade-duration", `${context.fadeDuration}ms`);
     document.body.classList.add("acd-nc-active");
@@ -306,6 +308,8 @@ export class NarrativeCanvas {
    * @param {object} context
    */
   async _onUpdateElements(context) {}
+
+  _onHandoutImageLayoutChange(layout) {}
 
   _fadeOutAndRemove(element, duration) {
     this._animateElementOpacity(element, 0, duration).then(completed => {

@@ -1,5 +1,6 @@
 import { JournalBrowser } from "../services/journal-browser.js";
 import { NarrativeSceneRepository } from "../services/scene-repository.js";
+import { NarrativeSettings } from "../services/settings.js";
 
 /**
  * Controller for the Director Left Sidebar, managing filterable scenes,
@@ -13,10 +14,13 @@ export class DirectorSidebar {
   #sceneQuery = "";
   #filterByJournal = true;
   #isCollapsed = false;
+  #areScenesCollapsed = true;
+  #isAudioCollapsed = true;
   #selectedFolderId = "";
   #journalQuery = "";
   #selectedJournalId = "";
   #selectedPageId = "";
+  #journalStateSaveTimeout = null;
   #activeSceneId = "";
   #scenesList = [];
   #currentSceneData = null;
@@ -31,6 +35,12 @@ export class DirectorSidebar {
   constructor({ audioController, onSceneSelect, onVolumeChange, onJournalImageShow }) {
     this.#audioController = audioController;
     this.#callbacks = { onSceneSelect, onVolumeChange, onJournalImageShow };
+
+    const journalViewerState = NarrativeSettings.getJournalViewerState();
+    this.#selectedFolderId = journalViewerState.folderId;
+    this.#journalQuery = journalViewerState.query;
+    this.#selectedJournalId = journalViewerState.journalId;
+    this.#selectedPageId = journalViewerState.pageId;
   }
 
   /**
@@ -71,12 +81,6 @@ export class DirectorSidebar {
       }
     }
 
-    const headerCollapseBtn = this.#element.querySelector(".btn-sidebar-collapse");
-    if (headerCollapseBtn) {
-      headerCollapseBtn.title = this.#isCollapsed
-        ? game.i18n.localize("NARRATIVE_CANVAS.Director.ExpandSidebar")
-        : game.i18n.localize("NARRATIVE_CANVAS.Director.CollapseSidebar");
-    }
   }
 
   /**
@@ -222,6 +226,11 @@ export class DirectorSidebar {
   }
 
   async #prepareTemplateData() {
+    const restoredState = {
+      folderId: this.#selectedFolderId,
+      journalId: this.#selectedJournalId,
+      pageId: this.#selectedPageId
+    };
     const scenesWithJournalNames = this.#scenesList.map(scene => {
       let journalName = scene.journalName;
       if (scene.journalId && !journalName) {
@@ -235,10 +244,19 @@ export class DirectorSidebar {
     });
 
     const folders = JournalBrowser.getFolders();
+    if (this.#selectedFolderId && !folders.some(folder => folder.id === this.#selectedFolderId)) {
+      this.#selectedFolderId = "";
+    }
+
     const availableJournals = JournalBrowser.getJournals({
       folderId: this.#selectedFolderId || null,
       query: this.#journalQuery
     });
+
+    if (this.#selectedJournalId && !availableJournals.some(journal => journal.id === this.#selectedJournalId)) {
+      this.#selectedJournalId = "";
+      this.#selectedPageId = "";
+    }
 
     const activeJournal = this.#selectedJournalId
       ? await JournalBrowser.getJournalDetails(this.#selectedJournalId)
@@ -248,6 +266,12 @@ export class DirectorSidebar {
     if (activeJournal?.pages.length) {
       activePage = activeJournal.pages.find(page => page.id === this.#selectedPageId) ?? activeJournal.pages[0];
       if (activePage) this.#selectedPageId = activePage.id;
+    }
+
+    if (restoredState.folderId !== this.#selectedFolderId
+      || restoredState.journalId !== this.#selectedJournalId
+      || restoredState.pageId !== this.#selectedPageId) {
+      void this.#saveJournalViewerState();
     }
 
     const rawTracks = this.#currentSceneData?.tracks ?? [];
@@ -270,6 +294,8 @@ export class DirectorSidebar {
       sceneQuery: this.#sceneQuery,
       filterByJournal: this.#filterByJournal,
       isCollapsed: this.#isCollapsed,
+      isScenesCollapsed: this.#areScenesCollapsed,
+      isAudioCollapsed: this.#isAudioCollapsed,
       activeSceneId: this.#activeSceneId,
       folders,
       selectedFolderId: this.#selectedFolderId,
@@ -287,6 +313,7 @@ export class DirectorSidebar {
 
   #bindListeners(root) {
     this.#bindCollapseControls(root);
+    this.#bindSectionToggles(root);
     this.#bindSceneFilter(root);
     this.#bindSceneSelection(root);
     this.#bindJournalControls(root);
@@ -321,9 +348,27 @@ export class DirectorSidebar {
       this.toggleCollapse();
     });
 
-    root.querySelector(".btn-sidebar-collapse")?.addEventListener("click", (event) => {
-      event.preventDefault();
-      this.toggleCollapse();
+  }
+
+  #bindSectionToggles(root) {
+    root.querySelectorAll(".sidebar-section-toggle").forEach(button => {
+      button.addEventListener("click", () => {
+        const section = button.closest(".sidebar-scenes-section, .sidebar-audio-section");
+        const content = section?.querySelector(".sidebar-section-content");
+        if (!section || !content) return;
+
+        const isCollapsed = !section.classList.contains("is-collapsed");
+        const sectionName = button.dataset.sectionToggle;
+        section.classList.toggle("is-collapsed", isCollapsed);
+        button.setAttribute("aria-expanded", String(!isCollapsed));
+        button.title = game.i18n.localize(`NARRATIVE_CANVAS.Director.${isCollapsed ? "Expand" : "Collapse"}${sectionName === "scenes" ? "Scenes" : "Audio"}`);
+        button.setAttribute("aria-label", button.title);
+        const icon = button.querySelector("i");
+        if (icon) icon.className = `fas ${isCollapsed ? "fa-chevron-right" : "fa-chevron-down"}`;
+
+        if (sectionName === "scenes") this.#areScenesCollapsed = isCollapsed;
+        if (sectionName === "audio") this.#isAudioCollapsed = isCollapsed;
+      });
     });
   }
 
@@ -435,11 +480,17 @@ export class DirectorSidebar {
     folderSelect?.addEventListener("change", (event) => {
       this.#selectedFolderId = event.target.value;
       refreshJournalSelect();
+      void this.#saveJournalViewerState();
     });
 
     journalFilterInput?.addEventListener("input", (event) => {
       this.#journalQuery = event.target.value;
       refreshJournalSelect();
+      this.#scheduleJournalViewerStateSave();
+    });
+
+    journalFilterInput?.addEventListener("change", () => {
+      void this.#saveJournalViewerState();
     });
 
     journalSelect?.addEventListener("change", (event) => {
@@ -447,7 +498,37 @@ export class DirectorSidebar {
       this.#selectedPageId = "";
       this.#refreshJournalBody();
       this.#applySceneFilters();
+      void this.#saveJournalViewerState();
     });
+  }
+
+  #scheduleJournalViewerStateSave() {
+    if (this.#journalStateSaveTimeout !== null) {
+      clearTimeout(this.#journalStateSaveTimeout);
+    }
+
+    this.#journalStateSaveTimeout = setTimeout(() => {
+      this.#journalStateSaveTimeout = null;
+      void this.#saveJournalViewerState();
+    }, 300);
+  }
+
+  async #saveJournalViewerState() {
+    if (this.#journalStateSaveTimeout !== null) {
+      clearTimeout(this.#journalStateSaveTimeout);
+      this.#journalStateSaveTimeout = null;
+    }
+
+    try {
+      await NarrativeSettings.saveJournalViewerState({
+        folderId: this.#selectedFolderId,
+        query: this.#journalQuery,
+        journalId: this.#selectedJournalId,
+        pageId: this.#selectedPageId
+      });
+    } catch (error) {
+      console.error("Narrative Canvas | Failed to save Journal Viewer state.", error);
+    }
   }
 
   async #refreshJournalBody() {
@@ -587,6 +668,7 @@ export class DirectorSidebar {
   async #selectPage(pageId) {
     if (!pageId) return;
     this.#selectedPageId = pageId;
+    void this.#saveJournalViewerState();
 
     if (!this.#element) return;
 

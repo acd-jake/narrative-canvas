@@ -377,6 +377,34 @@ export class NarrativeManager {
             .filter(overlay => overlay.id !== overlayId)
         });
       },
+      onHandoutImageLayoutChange: (layout) => {
+        const currentOverlays = this.narrativeState.handoutImageOverlays || [];
+        const overlaysById = new Map(currentOverlays.map(overlay => [overlay.id, overlay]));
+        const orderedOverlays = [];
+        const includedIds = new Set();
+
+        for (const [zOrder, item] of layout.entries()) {
+          const overlay = overlaysById.get(item.id);
+          if (!overlay) continue;
+          const x = Number(item.position?.x);
+          const y = Number(item.position?.y);
+          orderedOverlays.push({
+            ...overlay,
+            position: {
+              x: Number.isFinite(x) ? Math.max(0, Math.min(1, x)) : 0.5,
+              y: Number.isFinite(y) ? Math.max(0, Math.min(1, y)) : 0.5
+            },
+            zOrder
+          });
+          includedIds.add(item.id);
+        }
+
+        for (const overlay of currentOverlays) {
+          if (includedIds.has(overlay.id)) continue;
+          orderedOverlays.push({ ...overlay, zOrder: orderedOverlays.length });
+        }
+        this.handleDisplayUpdate({ handoutImageOverlays: orderedOverlays });
+      },
       onImageDescriptionToggle: async (collectionName, index) => {
         const sceneId = this.narrativeState.activeSceneId;
         if (!sceneId) return;

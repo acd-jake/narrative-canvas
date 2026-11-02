@@ -10,6 +10,7 @@ export class NarrativeSettings {
   static SETTING_SCENES_DATA = "configuredScenesDataset";
   static SETTING_TILE_SIZE = "editorTileSize";
   static SETTING_ACTIVE_STATE = "activeNarrativeState";
+  static SETTING_JOURNAL_VIEWER_STATE = "journalViewerState";
 
   /**
    * Registers all settings within Foundry VTT.
@@ -102,6 +103,13 @@ export class NarrativeSettings {
       type: Object,
       default: null
     });
+
+    game.settings.register("narrative-canvas", this.SETTING_JOURNAL_VIEWER_STATE, {
+      scope: "client",
+      config: false,
+      type: Object,
+      default: {}
+    });
   }
 
   static getAllScenes() {
@@ -164,6 +172,33 @@ export class NarrativeSettings {
   static async saveActiveState(state) {
     if (!game.user.isGM) return;
     await game.settings.set("narrative-canvas", this.SETTING_ACTIVE_STATE, state);
+  }
+
+  /**
+   * Retrieves the current user's saved Journal Viewer state.
+   * @returns {{folderId: string, query: string, journalId: string, pageId: string}}
+   */
+  static getJournalViewerState() {
+    const state = game.settings.get("narrative-canvas", this.SETTING_JOURNAL_VIEWER_STATE);
+    return {
+      folderId: typeof state?.folderId === "string" ? state.folderId : "",
+      query: typeof state?.query === "string" ? state.query : "",
+      journalId: typeof state?.journalId === "string" ? state.journalId : "",
+      pageId: typeof state?.pageId === "string" ? state.pageId : ""
+    };
+  }
+
+  /**
+   * Persists the current user's Journal Viewer state locally.
+   * @param {{folderId: string, query: string, journalId: string, pageId: string}} state
+   */
+  static async saveJournalViewerState(state) {
+    await game.settings.set("narrative-canvas", this.SETTING_JOURNAL_VIEWER_STATE, {
+      folderId: typeof state?.folderId === "string" ? state.folderId : "",
+      query: typeof state?.query === "string" ? state.query : "",
+      journalId: typeof state?.journalId === "string" ? state.journalId : "",
+      pageId: typeof state?.pageId === "string" ? state.pageId : ""
+    });
   }
 
   static areToastsEnabled() {
