@@ -22,7 +22,6 @@ export class NarrativeDirector extends NarrativeCanvas {
     this.sidebar = new DirectorSidebar({
       audioController: this.audioController,
       onSceneSelect: (sceneId) => {
-        this.audioController.stopAll();
         this.callbacks.onSceneSelect?.(sceneId);
       },
       onJournalImageShow: (image) => this.callbacks.onJournalImageShow?.(image),

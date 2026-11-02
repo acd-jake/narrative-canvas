@@ -1355,6 +1355,13 @@ body.acd-nc-active {
             min-height: 120px;
             overflow: hidden;
 
+            .btn-stop-all-audio {
+                margin-left: auto;
+                color: #d7a3a3;
+
+                &:hover { color: #fff; }
+            }
+
             .director-audio-tracks-list {
                 flex: 1 1 auto;
                 overflow-y: auto;
@@ -2029,14 +2036,88 @@ body.acd-nc-active {
         }
     }
 
-    .audio-tile-placeholder {
-        width: 100%;
-        height: 100%;
+    .audio-entry-list {
         display: flex;
-        justify-content: center;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 8px;
+        min-height: 36px;
+    }
+
+    .audio-entry-badge {
+        flex: 0 1 auto;
+        flex-direction: row;
+        justify-content: flex-start;
         align-items: center;
-        font-size: 1.5rem;
-        color: #555;
+        gap: 7px;
+        width: auto;
+        max-width: 100%;
+        min-width: 0;
+        padding: 4px 5px 4px 9px;
+        border: 1px solid;
+        border-radius: 18px;
+        font-size: 0.8rem;
+        box-sizing: border-box;
+
+        &.audio-entry-badge--sound {
+            border-color: #397887;
+            background: rgba(32, 99, 116, 0.24);
+
+            .audio-entry-type-icon { color: #80c4d2; }
+        }
+
+        &.audio-entry-badge--playlist {
+            border-color: #78834d;
+            background: rgba(100, 112, 52, 0.24);
+
+            .audio-entry-type-icon { color: #c3d17a; }
+        }
+
+        &.is-previewing { box-shadow: 0 0 0 1px currentColor; }
+    }
+
+    .audio-entry-type-icon {
+        flex: 0 0 auto;
+        width: 14px;
+        text-align: center;
+    }
+
+    .audio-entry-name {
+        flex: 0 1 auto;
+        min-width: 48px;
+        max-width: min(260px, 40vw);
+        overflow: hidden;
+        color: #eee;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .btn-audio-preview,
+    .btn-delete-audio-entry {
+        display: grid !important;
+        flex: 0 0 24px;
+        width: 24px !important;
+        height: 24px !important;
+        padding: 0 !important;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.24) !important;
+        border-radius: 50% !important;
+        color: #f0f0f3 !important;
+        cursor: pointer;
+    }
+
+    .btn-audio-preview {
+        background: rgba(24, 106, 92, 0.8) !important;
+
+        &:hover { background: #227b68 !important; }
+    }
+
+    .btn-delete-audio-entry {
+        position: static !important;
+        margin: 0 !important;
+        background: rgba(138, 31, 31, 0.85) !important;
+
+        &:hover { background: #a52c2c !important; }
     }
 
     /* Target Overlay Delete Button - Fixed bottom right corner */

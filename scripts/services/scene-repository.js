@@ -235,6 +235,12 @@ export class NarrativeSceneRepository {
     });
   }
 
+  static async removePlaylistTracks(sceneId, playlistId) {
+    await this.#update(sceneId, scene => {
+      scene.tracks = scene.tracks.filter(track => track.sourcePlaylistId !== playlistId);
+    });
+  }
+
   /** Appends the lowest free number ("Name 2", "Name 3", ...) when the name is already taken. */
   static #toUniqueName(name, scenes, ignoredSceneId = null) {
     const takenNames = new Set(scenes.filter(scene => scene.id !== ignoredSceneId).map(scene => scene.name));

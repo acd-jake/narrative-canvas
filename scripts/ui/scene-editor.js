@@ -3,6 +3,7 @@ import { NarrativeSceneRepository } from "../services/scene-repository.js";
 import { SceneImageDescriptionEditors } from "../services/background-description-editors.js";
 import { JournalAssetBrowser } from "../services/journal-asset-browser.js";
 import { JournalDockController } from "../services/journal-dock.js";
+import { SceneAudioPreview } from "../services/scene-audio-preview.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 const ANY_ASSET_TYPE = "*";
@@ -18,6 +19,18 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   constructor(options = {}) {
     super(options);
     this.selectedSceneId = null;
+    this.audioPreview = new SceneAudioPreview((entryId, isPlaying) => {
+      for (const button of this.element?.querySelectorAll(".btn-audio-preview") ?? []) {
+        if (button.dataset.audioEntryId !== entryId) continue;
+        const title = game.i18n.localize(isPlaying
+          ? "NARRATIVE_CANVAS.Editor.StopAudioPreview"
+          : "NARRATIVE_CANVAS.Editor.PreviewAudio");
+        button.title = title;
+        button.setAttribute("aria-label", title);
+        button.innerHTML = `<i class="fas ${isPlaying ? "fa-stop" : "fa-play"}" aria-hidden="true"></i>`;
+        button.closest(".audio-entry-badge")?.classList.toggle("is-previewing", isPlaying);
+      }
+    });
     this.#imageDescriptionEditors = new SceneImageDescriptionEditors(
       (sceneId, collectionName, index, description) =>
         this.#saveImageDescription(sceneId, collectionName, index, description)
@@ -66,7 +79,8 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
         ? this.#journalNameOf(scene.journalId) ?? scene.journalName
         : scene.journalName,
       backgrounds: (scene.backgrounds ?? []).map(image => this.#imageContext(image)),
-      handoutImages: (scene.handoutImages ?? []).map(image => this.#imageContext(image))
+      handoutImages: (scene.handoutImages ?? []).map(image => this.#imageContext(image)),
+      audioEntries: this.#audioEntries(scene)
     }));
 
     if (!scenes.some(scene => scene.id === this.selectedSceneId)) {
@@ -108,6 +122,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   /** @override */
   async _onClose(options) {
     await this.#imageDescriptionEditors.destroy();
+    await this.audioPreview.stop();
     super._onClose(options);
     this.#dock.release();
   }
@@ -147,6 +162,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     this.#bindImageDescriptionEditor(html);
     this.#bindImageDescriptionVisibility(html);
     this.#bindTileSizeSlider(html);
+    this.#bindAudioPreview(html);
   }
 
   #bindSceneList(html) {
@@ -154,6 +170,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       item.addEventListener("click", async (event) => {
         if (event.target.closest(".btn-delete-scene")) return;
         await this.#imageDescriptionEditors.saveAll();
+        await this.audioPreview.stop();
         this.selectedSceneId = item.dataset.sceneId;
         await this.render();
       });
@@ -254,9 +271,11 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
         const removals = {
           SceneImage: () => NarrativeSceneRepository.removeImage(sceneId, imageCollection, Number(index)),
           Actor: () => NarrativeSceneRepository.removeActor(sceneId, id),
-          PlaylistSound: () => NarrativeSceneRepository.removeTrack(sceneId, id)
+          PlaylistSound: () => NarrativeSceneRepository.removeTrack(sceneId, id),
+          PlaylistGroup: () => NarrativeSceneRepository.removePlaylistTracks(sceneId, id)
         };
         if (sceneId && removals[type]) {
+          if (type === "PlaylistSound" || type === "PlaylistGroup") await this.audioPreview.stop();
           await this.#imageDescriptionEditors.saveAll();
           await this.#persistAndRefresh(removals[type]);
         }
@@ -348,6 +367,53 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       html.querySelector(".narrative-editor-window")?.style.setProperty("--nc-tile-size", `${size}px`);
       NarrativeSettings.setTileSize(size);
     });
+  }
+
+  #bindAudioPreview(html) {
+    html.addEventListener("click", async (event) => {
+      const button = event.target.closest(".btn-audio-preview");
+      if (!button) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const badge = button.closest(".audio-entry-badge");
+      await this.audioPreview.toggle({
+        id: button.dataset.audioEntryId,
+        type: badge.dataset.audioType,
+        playlistId: badge.dataset.playlistId,
+        path: badge.dataset.audioPath
+      });
+    });
+  }
+
+  #audioEntries(scene) {
+    const entries = [];
+    const seenPlaylists = new Set();
+    for (const track of scene.tracks ?? []) {
+      if (track.sourcePlaylistId) {
+        if (seenPlaylists.has(track.sourcePlaylistId)) continue;
+        seenPlaylists.add(track.sourcePlaylistId);
+        entries.push({
+          id: track.sourcePlaylistId,
+          entryId: `playlist:${track.sourcePlaylistId}`,
+          type: "playlist",
+          playlistId: track.sourcePlaylistId,
+          repositoryType: "PlaylistGroup",
+          name: track.sourcePlaylistName || track.name,
+          isPreviewing: this.audioPreview.activeEntryId === `playlist:${track.sourcePlaylistId}`
+        });
+      } else {
+        entries.push({
+          id: track.id,
+          entryId: `sound:${track.id}`,
+          type: "sound",
+          repositoryType: "PlaylistSound",
+          name: track.name,
+          path: track.path,
+          isPreviewing: this.audioPreview.activeEntryId === `sound:${track.id}`
+        });
+      }
+    }
+    return entries;
   }
 
   async #onAssetDrop(event) {
@@ -446,7 +512,9 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
                 id: sound.id,
                 name: sound.name,
                 path: sound.path,
-                uuid: sound.uuid
+                uuid: sound.uuid,
+                sourcePlaylistId: playlist.id,
+                sourcePlaylistName: playlist.name
               });
             }
           }
