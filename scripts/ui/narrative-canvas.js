@@ -32,6 +32,7 @@ export class NarrativeCanvas {
       fadeOutAndRemove: (element, duration) => this._fadeOutAndRemove(element, duration),
       isAnimatingOpacity: element => this._opacityAnimations.has(element),
       onLayoutChange: layout => this._onHandoutImageLayoutChange(layout),
+      onCloseImage: overlayId => this._onHandoutImageClose(overlayId),
       canControl: () => game.user.isGM
     });
   }
@@ -332,6 +333,8 @@ export class NarrativeCanvas {
   async _onUpdateElements(context) {}
 
   _onHandoutImageLayoutChange(layout) {}
+
+  _onHandoutImageClose(overlayId) {}
 
   applyHandoutImageLayout(layout) {
     this.handoutImageOverlayController.applyLayout(layout);

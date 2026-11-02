@@ -30,7 +30,7 @@ export class DirectorCanvasToolbar {
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");
     this.#element = doc.body.firstElementChild;
-    this.#element.addEventListener("click", event => this.#handleClick(event));
+    this.#element.addEventListener("click", event => this.#handleClick(event), true);
     return this.#element;
   }
 
@@ -38,8 +38,10 @@ export class DirectorCanvasToolbar {
    * Updates the visibility action without replacing the toolbar element.
    * @param {object} context
    */
-  async updateInPlace(context = {}) {
-    if (!this.#element) return;
+  async updateInPlace(context = {}, container = null) {
+    const toolbarElement = container?.querySelector(".narrative-canvas-toolbar")
+      ?? (this.#element?.isConnected ? this.#element : null);
+    if (!toolbarElement) return;
 
     const htmlString = await renderTemplate(
       "modules/narrative-canvas/templates/partials/director-canvas-toolbar.hbs",
@@ -49,7 +51,10 @@ export class DirectorCanvasToolbar {
     const doc = parser.parseFromString(htmlString, "text/html");
     const newElement = doc.body.firstElementChild;
 
-    if (newElement) this.#element.innerHTML = newElement.innerHTML;
+    if (newElement) {
+      toolbarElement.innerHTML = newElement.innerHTML;
+      this.#element = toolbarElement;
+    }
   }
 
   /**
@@ -63,7 +68,7 @@ export class DirectorCanvasToolbar {
   async #handleClick(event) {
     if (!(event.target instanceof Element)) return;
     const button = event.target.closest("button[data-canvas-action]");
-    if (!button || !this.#element.contains(button)) return;
+    if (!(event.currentTarget instanceof Element) || !button || !event.currentTarget.contains(button)) return;
 
     event.preventDefault();
     event.stopPropagation();

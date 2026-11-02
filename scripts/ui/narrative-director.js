@@ -47,6 +47,7 @@ export class NarrativeDirector extends NarrativeCanvas {
 
   /** @override */
   async close() {
+    this.globalClickAbortController?.abort();
     this.audioController?.stopAll();
     await super.close();
     this.imageControls?.destroy();
@@ -81,7 +82,7 @@ export class NarrativeDirector extends NarrativeCanvas {
   /** @override */
   async _onUpdateElements(context) {
     await this.imageControls?.updateInPlace(context);
-    await this.toolbar?.updateInPlace(context);
+    await this.toolbar?.updateInPlace(context, this.stageElement);
     this.sidebar?.update(context);
     const uiLayer = this.stageElement?.querySelector(".narrative-director-ui-layer");
     await this.carousel?.update(uiLayer ?? this.stageElement, context);
@@ -91,12 +92,17 @@ export class NarrativeDirector extends NarrativeCanvas {
     this.callbacks.onHandoutImageLayoutChange?.(layout);
   }
 
+  _onHandoutImageClose(overlayId) {
+    this.callbacks.onHandoutImageClose?.(overlayId);
+  }
+
   /**
    * Event Delegation Pattern to guarantee buttons stay responsive after asynchronous re-renders.
    * @private
    */
   _setupGlobalDelegatedListeners() {
-    document.body.addEventListener("click", (event) => {
+    this.globalClickAbortController = new AbortController();
+    document.addEventListener("click", (event) => {
       if (!this.stageElement) return;
 
       const target = event.target;
@@ -151,12 +157,6 @@ export class NarrativeDirector extends NarrativeCanvas {
         return;
       }
 
-      if (target.closest(".btn-close-handout-image")) {
-        event.preventDefault();
-        this.callbacks.onHandoutImageClose?.(target.closest(".btn-close-handout-image").dataset.overlayId);
-        return;
-      }
-
-    });
+    }, { capture: true, signal: this.globalClickAbortController.signal });
   }
 }

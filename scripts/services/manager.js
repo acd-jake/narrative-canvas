@@ -303,6 +303,15 @@ export class NarrativeManager {
             });
           }
         }
+      } else if (!saved.activeSceneId) {
+        validatedActors = saved.activeActors
+          .filter(actor => typeof actor?.id === "string" && typeof actor.img === "string")
+          .map(actor => ({
+            id: actor.id,
+            name: typeof actor.name === "string" ? actor.name : "",
+            img: actor.img,
+            showName: actor.showName !== false
+          }));
       }
     }
 

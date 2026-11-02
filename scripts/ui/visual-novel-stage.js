@@ -154,6 +154,7 @@ export class VisualNovelStage {
     const top = rect.top - stageRect.top;
 
     el.classList.add("is-exiting");
+    el.classList.remove("is-speaker");
     el.style.position = "absolute";
     el.style.left = `${left}px`;
     el.style.top = `${top}px`;

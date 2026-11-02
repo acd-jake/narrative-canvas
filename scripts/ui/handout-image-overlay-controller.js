@@ -1,9 +1,10 @@
 export class HandoutImageOverlayController {
-  constructor({ animateOpacity, fadeOutAndRemove, isAnimatingOpacity, onLayoutChange, canControl }) {
+  constructor({ animateOpacity, fadeOutAndRemove, isAnimatingOpacity, onLayoutChange, onCloseImage, canControl }) {
     this.animateOpacity = animateOpacity;
     this.fadeOutAndRemove = fadeOutAndRemove;
     this.isAnimatingOpacity = isAnimatingOpacity;
     this.onLayoutChange = onLayoutChange;
+    this.onCloseImage = onCloseImage;
     this.canControl = canControl;
     this.stage = null;
     this.zIndex = 12;
@@ -15,8 +16,6 @@ export class HandoutImageOverlayController {
     this.sizes = new Map();
     this.pendingLayoutChange = false;
     this.layoutChangeFrame = null;
-    this.transitioningOverlayIds = new Set();
-    this.orderTransitionId = 0;
     this.duration = 400;
   }
 
@@ -74,11 +73,17 @@ export class HandoutImageOverlayController {
       const image = overlay.querySelector(".narrative-scene-handout-image");
       image.alt = data.title || "";
       if (image.getAttribute("src") !== data.src) image.src = data.src;
-      const description = overlay.querySelector(".narrative-scene-handout-image-description");
-      description.innerHTML = data.description || "";
-      description.hidden = !data.description;
-      if (!isNewOverlay && this.isAnimatingOpacity(overlay)
-        && !this.transitioningOverlayIds.has(data.id)) {
+      let description = overlay.querySelector(".narrative-scene-handout-image-description");
+      if (!description && data.description) {
+        description = document.createElement("div");
+        description.className = "narrative-scene-handout-image-description";
+        overlay.querySelector(".narrative-scene-handout-image-frame").appendChild(description);
+      }
+      if (description) {
+        description.innerHTML = data.description || "";
+        description.hidden = !data.description;
+      }
+      if (!isNewOverlay && this.isAnimatingOpacity(overlay)) {
         this.animateOpacity(overlay, 1, duration);
       }
     }
@@ -91,12 +96,9 @@ export class HandoutImageOverlayController {
 
     if (orderChanged) {
       if (sameOverlaySet) {
-        this.#transitionToOrder(nextOrder, duration, false);
+        this.#setOverlayOrder(nextOrder);
       } else {
-        this.#cancelOrderTransition(nextOrder, duration);
-        this.overlayOrder = [...nextOrder];
-        this.domOrder = [...nextOrder];
-        this.#applyOverlayOrder(nextOrder);
+        this.#setOverlayOrder(nextOrder);
       }
     }
   }
@@ -108,10 +110,11 @@ export class HandoutImageOverlayController {
       this.layoutChangeFrame = null;
     }
     if (this.stage && this.pointerHandlers) {
-      this.stage.removeEventListener("pointerdown", this.pointerHandlers.pointerdown);
-      this.stage.removeEventListener("pointermove", this.pointerHandlers.pointermove);
-      this.stage.removeEventListener("pointerup", this.pointerHandlers.finishDrag);
-      this.stage.removeEventListener("pointercancel", this.pointerHandlers.finishDrag);
+      this.stage.removeEventListener("pointerdown", this.pointerHandlers.pointerdown, true);
+      this.stage.removeEventListener("pointermove", this.pointerHandlers.pointermove, true);
+      this.stage.removeEventListener("pointerup", this.pointerHandlers.finishDrag, true);
+      this.stage.removeEventListener("pointercancel", this.pointerHandlers.finishDrag, true);
+      this.stage.removeEventListener("click", this.pointerHandlers.closeImage, true);
     }
     this.stage = null;
     this.pointerHandlers = null;
@@ -120,8 +123,6 @@ export class HandoutImageOverlayController {
     this.positions.clear();
     this.sizes.clear();
     this.pendingLayoutChange = false;
-    this.transitioningOverlayIds.clear();
-    this.orderTransitionId++;
   }
 
   applyLayout(layout) {
@@ -148,10 +149,11 @@ export class HandoutImageOverlayController {
       nextOrder.push(item.id);
     }
 
-    if (nextOrder.length === this.overlayOrder.length) {
-      this.overlayOrder = [...nextOrder];
-      this.domOrder = [...nextOrder];
-      this.#applyOverlayOrder(nextOrder);
+    if (nextOrder.length !== this.overlayOrder.length) return;
+
+    const orderChanged = nextOrder.some((id, index) => id !== this.overlayOrder[index]);
+    if (orderChanged) {
+      this.#setOverlayOrder(nextOrder);
     }
   }
 
@@ -252,51 +254,16 @@ export class HandoutImageOverlayController {
     nextOrder.push(overlayId);
     if (nextOrder.every((id, index) => id === this.overlayOrder[index])) return false;
 
-    this.#transitionToOrder(nextOrder, this.duration, false);
+    this.#setOverlayOrder(nextOrder);
     this.pendingLayoutChange = true;
     this.#scheduleLayoutChange();
     return true;
   }
 
-  #transitionToOrder(nextOrder, duration, notify) {
-    const transitionId = ++this.orderTransitionId;
-    const targetIndex = this.domOrder.indexOf(nextOrder.at(-1));
-    const outgoingIds = targetIndex < 0 ? [] : this.domOrder.slice(targetIndex + 1);
-    const outgoingOverlays = outgoingIds
-      .map(id => this.stage.querySelector(`.narrative-handout-image-overlay[data-overlay-id="${id}"]`))
-      .filter(Boolean);
-
+  #setOverlayOrder(nextOrder) {
     this.overlayOrder = [...nextOrder];
-    this.transitioningOverlayIds = new Set(outgoingIds);
-    if (notify) this.#emitLayoutChange();
-
-    if (!outgoingOverlays.length) {
-      this.#applyOverlayOrder(nextOrder);
-      this.domOrder = [...nextOrder];
-      this.transitioningOverlayIds.clear();
-      return;
-    }
-
-    Promise.all(outgoingOverlays.map(overlay => this.animateOpacity(overlay, 0, duration)))
-      .then(completed => {
-        if (transitionId !== this.orderTransitionId || completed.some(result => !result)) return;
-        this.#applyOverlayOrder(nextOrder);
-        this.domOrder = [...nextOrder];
-        return Promise.all(outgoingOverlays.map(overlay => this.animateOpacity(overlay, 1, duration)));
-      })
-      .finally(() => {
-        if (transitionId === this.orderTransitionId) this.transitioningOverlayIds.clear();
-      });
-  }
-
-  #cancelOrderTransition(nextOrder, duration) {
-    this.orderTransitionId++;
-    for (const id of this.transitioningOverlayIds) {
-      if (!nextOrder.includes(id)) continue;
-      const overlay = this.stage.querySelector(`.narrative-handout-image-overlay[data-overlay-id="${id}"]`);
-      if (overlay) this.animateOpacity(overlay, 1, duration);
-    }
-    this.transitioningOverlayIds.clear();
+    this.domOrder = [...nextOrder];
+    this.#applyOverlayOrder(nextOrder);
   }
 
   #applyOverlayOrder(order) {
@@ -418,10 +385,21 @@ export class HandoutImageOverlayController {
       this.#emitLayoutChange(true);
     };
 
-    this.pointerHandlers = { pointerdown, pointermove, finishDrag };
-    this.stage.addEventListener("pointerdown", pointerdown);
-    this.stage.addEventListener("pointermove", pointermove);
-    this.stage.addEventListener("pointerup", finishDrag);
-    this.stage.addEventListener("pointercancel", finishDrag);
+    const closeImage = (event) => {
+      if (!this.canControl?.() || !(event.target instanceof Element)) return;
+      const closeButton = event.target.closest(".btn-close-handout-image");
+      if (!closeButton || !this.stage.contains(closeButton)) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      this.onCloseImage?.(closeButton.dataset.overlayId);
+    };
+
+    this.pointerHandlers = { pointerdown, pointermove, finishDrag, closeImage };
+    this.stage.addEventListener("pointerdown", pointerdown, true);
+    this.stage.addEventListener("pointermove", pointermove, true);
+    this.stage.addEventListener("pointerup", finishDrag, true);
+    this.stage.addEventListener("pointercancel", finishDrag, true);
+    this.stage.addEventListener("click", closeImage, true);
   }
 }
