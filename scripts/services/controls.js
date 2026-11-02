@@ -1,6 +1,12 @@
 import { NarrativeSettings } from "./settings.js";
 
 export class NarrativeControls {
+  static getSceneConfiguratorTooltipKey(isOpen) {
+    return isOpen
+      ? "NARRATIVE_CANVAS.Controls.CloseSceneConfigurator"
+      : "NARRATIVE_CANVAS.Controls.OpenSceneConfigurator";
+  }
+
   static initialize(controls) {
     try {
       if (!game || !game.settings || !NarrativeSettings.userHasPermission()) return;
@@ -8,23 +14,29 @@ export class NarrativeControls {
 
     if (controls.tokens && controls.tokens.tools) {
       // 1. Creator Scene Editor Button Configuration
-      controls.tokens.tools["open-scene-editor"] = {
+      const manager = game.modules.get("narrative-canvas").manager;
+      const sceneConfiguratorTool = {
         name: "open-scene-editor",
-        title: "NARRATIVE_CANVAS.Editor.WindowTitle",
-        icon: "fas fa-book-open",
+        title: NarrativeControls.getSceneConfiguratorTooltipKey(manager?.editorApp?.rendered === true),
+        icon: "fa-solid fa-clapperboard",
         button: true,
         visible: game.user.isGM, // Reserved strictly for Gamemasters
-        onClick: () => {
-          const manager = game.modules.get("narrative-canvas").manager;
-          if (manager) manager.toggleEditorWindow();
+        onClick: (event) => {
+          if (!manager) return;
+
+          const wasOpen = manager.editorApp?.rendered === true;
+          manager.toggleEditorWindow();
+          sceneConfiguratorTool.title = NarrativeControls.getSceneConfiguratorTooltipKey(!wasOpen);
+          event?.currentTarget?.setAttribute("title", game.i18n.localize(sceneConfiguratorTool.title));
         }
       };
+      controls.tokens.tools["open-scene-editor"] = sceneConfiguratorTool;
 
       // 2. Existing Play-Mode Activation Button
       controls.tokens.tools["activate-canvas"] = {
         name: "activate-canvas",
-        title: "NARRATIVE_CANVAS.Controls.ToggleCanvas",
-        icon: "fa-solid fa-clapperboard", // Beautiful clapperboard icon for editor mode
+        title: "NARRATIVE_CANVAS.Controls.OpenCanvas",
+        icon: "fa-solid fa-masks-theater",
         button: true,
         visible: true,
         onClick: () => game.modules.get("narrative-canvas").manager.toggleCanvasState(true)
