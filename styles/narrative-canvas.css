@@ -133,6 +133,49 @@ body.acd-nc-active {
         }
     }
 
+    .toolbar-composite-icon {
+        position: relative;
+        display: inline-block;
+        width: 1.2em;
+        height: 1em;
+        line-height: 1;
+
+        .fa-images {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+        }
+
+        .fa-times {
+            position: absolute;
+            top: -0.35em;
+            right: -0.35em;
+            font-size: 0.6em;
+            text-shadow: 0 1px 2px #000;
+        }
+    }
+
+    .narrative-handout-image-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 12;
+        pointer-events: none;
+    }
+
+    .narrative-director-ui-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 21;
+        pointer-events: none;
+
+        .narrative-canvas-toolbar,
+        .narrative-director-sidebar,
+        .narrative-director-image-controls,
+        .narrative-director-actors-bar {
+            pointer-events: auto;
+        }
+    }
+
     &.director-view {
         .narrative-background-description {
             top: 86px;
@@ -150,10 +193,10 @@ body.acd-nc-active {
             right: 12px;
         }
 
-        .narrative-director-panel {
+        .narrative-director-image-controls {
             top: 128px;
             right: 12px;
-            width: min(max(220px, calc(var(--nc-director-tile-size, 200px) + 34px)), calc(100vw - 24px));
+            width: min(calc(var(--nc-director-image-tile-size, 200px) + 34px), calc(100vw - 24px));
         }
     }
 
@@ -266,6 +309,28 @@ body.acd-nc-active {
         pointer-events: auto;
 
         p { margin: 0; }
+    }
+
+    .narrative-vn-name-plate {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 2;
+        padding: 10px 18px;
+        background: rgba(16, 16, 20, 0.88);
+        color: #f0f0f3;
+        font-family: "Signika", sans-serif;
+        font-size: 1.05rem;
+        line-height: 1.35;
+        text-align: center;
+        text-shadow: 0 1px 3px #000;
+        pointer-events: none;
+    }
+
+    .narrative-vn-name-text {
+        display: block;
+        overflow-wrap: anywhere;
     }
 
     .btn-close-handout-image {
@@ -390,12 +455,12 @@ body.acd-nc-active {
     }
 
     /* Floating GM Control panel overlay configuration */
-    .narrative-director-panel {
+    .narrative-director-image-controls {
         position: absolute;
         top: 82px;
         right: 25px;
         z-index: 10;
-        width: max(220px, calc(var(--nc-director-tile-size, 200px) + 34px));
+        width: calc(var(--nc-director-image-tile-size, 200px) + 34px);
         background: rgba(22, 22, 26, 0.96);
         border: 1px solid #444;
         border-radius: 8px;
@@ -403,22 +468,6 @@ body.acd-nc-active {
         box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8);
         color: #c8c8c8;
         box-sizing: border-box;
-
-        input, textarea {
-            background: rgba(0, 0, 0, 0.4);
-            color: #fff;
-            border: 1px solid #555;
-            border-radius: 4px;
-            padding: 8px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        textarea {
-            resize: none;
-            height: 70px;
-            font-family: inherit;
-        }
 
         .slider-tile-scale {
             margin: 0;
@@ -430,7 +479,7 @@ body.acd-nc-active {
         }
     }
 
-    .director-tile-scale-controller {
+    .director-image-scale-controller {
         display: flex;
         flex-direction: column;
         gap: 4px;
@@ -438,11 +487,16 @@ body.acd-nc-active {
         color: #bbb;
         font-size: 0.8rem;
 
-        label { display: block; }
+        label {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
         input[type="range"] { width: 100%; }
     }
 
-    .director-panel-header {
+    .director-image-controls-header {
         display: flex;
         align-items: center;
         gap: 10px;
@@ -451,23 +505,56 @@ body.acd-nc-active {
         margin-bottom: 16px;
 
         h3 {
+            flex: 1 1 auto;
+            min-width: 0;
             margin: 0;
+            overflow: hidden;
             font-size: 1.2rem;
             color: #f0f0f3;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .btn-toggle-image-controls {
+            display: grid;
+            width: 30px;
+            height: 30px;
+            flex: 0 0 30px;
+            place-items: center;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.4);
+            color: #c8c8c8;
+            cursor: pointer;
+
+            &:hover,
+            &:focus-visible {
+                border-color: #7a6842;
+                color: #fff;
+            }
         }
     }
 
-    .director-control-group {
+    .director-image-controls-content[hidden] {
+        display: none;
+    }
+
+    .director-image-control-group {
         border: none;
         padding: 0;
         margin: 0 0 16px 0;
 
         legend {
+            display: block;
+            max-width: 100%;
+            overflow: hidden;
             font-size: 0.9rem;
             font-weight: bold;
             text-transform: uppercase;
             color: #7a6842;
             margin-bottom: 8px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
     }
 
@@ -501,7 +588,7 @@ body.acd-nc-active {
        ========================================================================== */
     .narrative-visual-novel-stage {
         position: absolute;
-        bottom: 120px; /* Sits cleanly above the dialogue stage banner box */
+        bottom: 160px;
         left: 5%;
         width: 90%;
         height: 60%;
@@ -515,9 +602,9 @@ body.acd-nc-active {
 
         &.has-speaker {
             .narrative-vn-character:not(.is-speaker):not(.is-exiting) {
-                opacity: 0.72;
-                filter: brightness(0.65) contrast(0.95);
-                transform: scale(0.96);
+                opacity: 0.78;
+                filter: brightness(0.8) contrast(0.95);
+                transform: scale(0.98);
             }
         }
     }
@@ -530,6 +617,7 @@ body.acd-nc-active {
         align-items: flex-end;
         transition: transform var(--nc-fade-duration, 400ms) cubic-bezier(0.2, 0.8, 0.2, 1), filter var(--nc-fade-duration, 400ms) ease, opacity var(--nc-fade-duration, 400ms) ease;
         position: relative;
+        transform-origin: center bottom;
         will-change: transform, opacity;
 
         &.is-entering {
@@ -544,6 +632,45 @@ body.acd-nc-active {
                 box-shadow: 0 0 16px rgba(255, 215, 0, 0.65), 0 4px 12px rgba(0, 0, 0, 0.8);
             }
         }
+    }
+
+    .narrative-vn-character.is-speaker {
+        transform: scale(1.05);
+
+        .narrative-vn-image-wrapper::before {
+            position: absolute;
+            inset: -8px;
+            z-index: 0;
+            border: 2px solid var(--nc-vn-speaker-highlight, #ffd700);
+            border-radius: 8px;
+            background: color-mix(in srgb, var(--nc-vn-speaker-highlight, #ffd700) 22%, transparent);
+            box-shadow:
+                0 0 20px color-mix(in srgb, var(--nc-vn-speaker-highlight, #ffd700) 70%, transparent),
+                0 0 42px color-mix(in srgb, var(--nc-vn-speaker-highlight, #ffd700) 35%, transparent);
+            content: "";
+            pointer-events: none;
+        }
+    }
+
+    .narrative-vn-image-wrapper {
+        position: relative;
+        display: flex;
+        max-width: 100%;
+        max-height: 100%;
+        align-items: flex-end;
+        justify-content: center;
+    }
+
+    .narrative-vn-image {
+        position: relative;
+        z-index: 1;
+        display: block;
+        width: auto;
+        height: var(--nc-vn-actor-image-height, 30vh);
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        object-position: center bottom;
     }
 
     /* ==========================================================================
@@ -790,7 +917,7 @@ body.acd-nc-active {
         border-radius: 4px;
     }
 
-    .director-bg-grid {
+    .director-image-list {
         display: grid;
         grid-template-columns: 1fr;
         gap: 8px;
@@ -802,7 +929,7 @@ body.acd-nc-active {
     .handout-thumbnail-card {
         position: relative;
         align-self: start;
-        width: min(100%, var(--nc-director-tile-size, 200px));
+        width: min(100%, var(--nc-director-image-tile-size, 200px));
         aspect-ratio: 1;
         box-sizing: border-box;
         cursor: pointer;
@@ -828,6 +955,7 @@ body.acd-nc-active {
         bottom: 0;
         left: 0;
         z-index: 1;
+        box-sizing: border-box;
         overflow: hidden;
         padding: 3px 6px;
         background: rgba(0, 0, 0, 0.72);
@@ -835,6 +963,7 @@ body.acd-nc-active {
         font-size: 0.8rem;
         text-overflow: ellipsis;
         white-space: nowrap;
+        max-width: 100%;
     }
 
     .bg-thumbnail-actions {

@@ -1,7 +1,7 @@
 import { NarrativeCanvas } from "./narrative-canvas.js";
 import { DirectorSidebar } from "./director-sidebar.js";
 import { DirectorActorCarousel } from "./director-carousel.js";
-import { DirectorControls } from "./director-controls.js";
+import { DirectorImageControls } from "./director-image-controls.js";
 import { DirectorCanvasToolbar } from "./director-canvas-toolbar.js";
 import { SceneAudioController } from "../services/audio-controller.js";
 
@@ -15,7 +15,7 @@ export class NarrativeDirector extends NarrativeCanvas {
   constructor(callbacks) {
     super("narrative-canvas-director", "director-view");
     this.callbacks = callbacks;
-    this.controls = new DirectorControls();
+    this.imageControls = new DirectorImageControls();
     this.audioController = new SceneAudioController({
       globalVolume: 0.5,
       onStateChange: (trackId) => this.sidebar?.updateAudioTrackItem(trackId)
@@ -48,36 +48,42 @@ export class NarrativeDirector extends NarrativeCanvas {
   async close() {
     this.audioController?.stopAll();
     await super.close();
-    this.controls?.destroy();
+    this.imageControls?.destroy();
     this.toolbar?.destroy();
   }
 
   /** @override */
   async _onPrepareElements(stageElement, context) {
-    // 1. Right-side control panel
-    const controlsElement = await this.controls.render(context);
-    stageElement.appendChild(controlsElement);
+    const uiLayer = document.createElement("div");
+    uiLayer.className = "narrative-director-ui-layer";
+
+    // 1. Right-side image controls
+    const imageControlsElement = await this.imageControls.render(context);
+    uiLayer.appendChild(imageControlsElement);
 
     const toolbarElement = await this.toolbar.render(context);
-    stageElement.appendChild(toolbarElement);
+    uiLayer.appendChild(toolbarElement);
 
     // 2. Left-side scenes & journal sidebar
     const sidebarElement = await this.sidebar.render(context);
-    stageElement.appendChild(sidebarElement);
+    uiLayer.appendChild(sidebarElement);
 
     // 3. Bottom actor carousel (if actors exist in scene)
     const carouselElement = await this.carousel.render(context);
     if (carouselElement) {
-      stageElement.appendChild(carouselElement);
+      uiLayer.appendChild(carouselElement);
     }
+
+    stageElement.appendChild(uiLayer);
   }
 
   /** @override */
   async _onUpdateElements(context) {
-    await this.controls?.updateInPlace(context);
+    await this.imageControls?.updateInPlace(context);
     await this.toolbar?.updateInPlace(context);
     this.sidebar?.update(context);
-    await this.carousel?.update(this.stageElement, context);
+    const uiLayer = this.stageElement?.querySelector(".narrative-director-ui-layer");
+    await this.carousel?.update(uiLayer ?? this.stageElement, context);
   }
 
   _onHandoutImageLayoutChange(layout) {

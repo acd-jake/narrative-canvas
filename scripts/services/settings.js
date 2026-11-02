@@ -7,6 +7,8 @@ export class NarrativeSettings {
   static SETTING_PERMISSION = "activationPermission";
   static SETTING_BG_COLOR = "canvasBackgroundColor";
   static SETTING_DEFAULT_BG_IMAGE = "defaultBackgroundImage";
+  static SETTING_ACTOR_IMAGE_HEIGHT = "actorImageHeight";
+  static SETTING_SPEAKER_HIGHLIGHT_COLOR = "speakerHighlightColor";
   static SETTING_TOASTS = "enableToastNotifications";
   static SETTING_FADE_DURATION = "fadeDuration";
   static SETTING_SCENES_DATA = "configuredScenesDataset";
@@ -60,6 +62,33 @@ export class NarrativeSettings {
         if (manager && !manager.narrativeState.background) {
           manager.refreshView();
         }
+      }
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_ACTOR_IMAGE_HEIGHT, {
+      name: "NARRATIVE_CANVAS.Settings.ActorImageHeightLabel",
+      hint: "NARRATIVE_CANVAS.Settings.ActorImageHeightHint",
+      scope: "world",
+      config: true,
+      type: Number,
+      range: { min: 10, max: 60, step: 5 },
+      default: 30,
+      onChange: () => {
+        const manager = game.modules?.get("narrative-canvas")?.manager;
+        manager?.refreshView();
+      }
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_SPEAKER_HIGHLIGHT_COLOR, {
+      name: "NARRATIVE_CANVAS.Settings.SpeakerHighlightColorLabel",
+      hint: "NARRATIVE_CANVAS.Settings.SpeakerHighlightColorHint",
+      scope: "world",
+      config: true,
+      type: new foundry.data.fields.ColorField(),
+      default: "#ffd700",
+      onChange: () => {
+        const manager = game.modules?.get("narrative-canvas")?.manager;
+        manager?.refreshView();
       }
     });
 
@@ -234,5 +263,13 @@ export class NarrativeSettings {
 
   static getFadeDuration() {
     return game.settings.get("narrative-canvas", this.SETTING_FADE_DURATION);
+  }
+
+  static getActorImageHeight() {
+    return game.settings.get("narrative-canvas", this.SETTING_ACTOR_IMAGE_HEIGHT);
+  }
+
+  static getSpeakerHighlightColor() {
+    return game.settings.get("narrative-canvas", this.SETTING_SPEAKER_HIGHLIGHT_COLOR);
   }
 }

@@ -89,7 +89,9 @@ export class NarrativeCanvas {
       hasActiveSpeaker: Boolean(state.activeSpeakerId),
       isGM: game.user.isGM,
       customBgColor: NarrativeSettings.getBackgroundColor(),
-      fadeDuration: NarrativeSettings.getFadeDuration()
+      fadeDuration: NarrativeSettings.getFadeDuration(),
+      actorImageHeight: NarrativeSettings.getActorImageHeight(),
+      speakerHighlightColor: NarrativeSettings.getSpeakerHighlightColor()
     };
 
     // If already rendered in DOM, check if we can update the stage in-place to prevent image flickering
@@ -112,6 +114,8 @@ export class NarrativeCanvas {
     newStage.classList.add("acd-nc", this.viewClass);
     newStage.style.setProperty("--nc-custom-bg", context.customBgColor || "#000000");
     newStage.style.setProperty("--nc-fade-duration", `${context.fadeDuration}ms`);
+    newStage.style.setProperty("--nc-vn-actor-image-height", `${context.actorImageHeight}vh`);
+    newStage.style.setProperty("--nc-vn-speaker-highlight", context.speakerHighlightColor || "#ffd700");
     newStage.style.opacity = "0";
 
     // Initialize background controller and visual novel character layer
@@ -177,6 +181,8 @@ export class NarrativeCanvas {
 
     const fadeDuration = context.fadeDuration;
     this.stageElement.style.setProperty("--nc-fade-duration", `${fadeDuration}ms`);
+    this.stageElement.style.setProperty("--nc-vn-actor-image-height", `${context.actorImageHeight}vh`);
+    this.stageElement.style.setProperty("--nc-vn-speaker-highlight", context.speakerHighlightColor || "#ffd700");
     document.body.style.setProperty("--nc-fade-duration", `${fadeDuration}ms`);
 
     // 1. Update background and actor layers

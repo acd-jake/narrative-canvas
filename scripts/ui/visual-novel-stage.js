@@ -98,7 +98,7 @@ export class VisualNovelStage {
         if (Math.abs(deltaX) > 0.5 || Math.abs(deltaY) > 0.5) {
           el.style.transition = "none";
           const isSpeaker = el.classList.contains("is-speaker");
-          const baseTransform = isSpeaker ? "scale(1.05) translateY(-8px)" : "";
+          const baseTransform = isSpeaker ? "scale(1.05)" : "";
           el.style.transform = `translate(${deltaX}px, ${deltaY}px) ${baseTransform}`;
         }
       }
@@ -111,11 +111,12 @@ export class VisualNovelStage {
     requestAnimationFrame(() => {
       for (const el of inFlowElements) {
         const isSpeaker = el.classList.contains("is-speaker");
-        const baseTransform = isSpeaker ? "scale(1.05) translateY(-8px)" : "";
+        const isDimmed = this.#vnStage.classList.contains("has-speaker") && !isSpeaker;
+        const baseTransform = isSpeaker ? "scale(1.05)" : "";
 
         el.style.transition = `transform ${fadeDuration}ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity ${fadeDuration}ms ease, filter ${fadeDuration}ms ease`;
         el.style.transform = baseTransform;
-        el.style.opacity = "1";
+        el.style.opacity = isDimmed ? "0.78" : "1";
 
         if (el.classList.contains("is-entering")) {
           el.classList.remove("is-entering");

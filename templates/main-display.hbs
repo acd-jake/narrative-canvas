@@ -19,21 +19,23 @@
         <div class="narrative-background-description">{{{backgroundDescription}}}</div>
     {{/if}}
 
-    {{#each handoutImageOverlays}}
-        <div class="narrative-handout-image-overlay" data-overlay-id="{{this.id}}" data-position-x="{{this.position.x}}" data-position-y="{{this.position.y}}">
-            <div class="narrative-scene-handout-image-frame">
-                <img src="{{this.src}}" alt="{{this.title}}" class="narrative-scene-handout-image" draggable="false" />
-                {{#if this.description}}
-                    <div class="narrative-scene-handout-image-description">{{{this.description}}}</div>
-                {{/if}}
-                {{#if ../isGM}}
-                    <button type="button" class="btn-close-handout-image" data-overlay-id="{{this.id}}" title="{{localize 'NARRATIVE_CANVAS.Director.CloseImageOverlay'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.CloseImageOverlay'}}">
-                        <i class="fas fa-times" aria-hidden="true"></i>
-                    </button>
-                {{/if}}
+    <div class="narrative-handout-image-layer">
+        {{#each handoutImageOverlays}}
+            <div class="narrative-handout-image-overlay" data-overlay-id="{{this.id}}" data-position-x="{{this.position.x}}" data-position-y="{{this.position.y}}">
+                <div class="narrative-scene-handout-image-frame">
+                    <img src="{{this.src}}" alt="{{this.title}}" class="narrative-scene-handout-image" draggable="false" />
+                    {{#if this.description}}
+                        <div class="narrative-scene-handout-image-description">{{{this.description}}}</div>
+                    {{/if}}
+                    {{#if ../isGM}}
+                        <button type="button" class="btn-close-handout-image" data-overlay-id="{{this.id}}" title="{{localize 'NARRATIVE_CANVAS.Director.CloseImageOverlay'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.CloseImageOverlay'}}">
+                            <i class="fas fa-times" aria-hidden="true"></i>
+                        </button>
+                    {{/if}}
+                </div>
             </div>
-        </div>
-    {{/each}}
+        {{/each}}
+    </div>
     
     <!-- Ambient Overlay Vignette -->
     <div class="narrative-overlay-vignette"></div>
