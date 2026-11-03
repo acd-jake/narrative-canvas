@@ -7,9 +7,21 @@
             </span>
         </div>
     {{else}}
-        <button type="button" class="btn-close-player-canvas" title="{{localize 'NARRATIVE_CANVAS.Controls.ClosePlayerCanvas'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Controls.ClosePlayerCanvas'}}">
-            <i class="fas fa-times" aria-hidden="true"></i>
-        </button>
+        <div class="narrative-player-toolbar" role="toolbar" aria-label="{{localize 'NARRATIVE_CANVAS.Player.AudioControls'}}">
+            <div class="player-audio-mix-control">
+                <label class="player-audio-volume-control" title="{{localize 'NARRATIVE_CANVAS.Player.AudioVolume'}}">
+                    <i class="fas fa-volume-low" aria-hidden="true"></i>
+                    <input type="range" class="player-audio-volume" min="0" max="1" step="0.05" value="{{playerAudioVolume}}" aria-label="{{localize 'NARRATIVE_CANVAS.Player.AudioVolume'}}" aria-valuetext="{{playerAudioVolumePercent}}%" />
+                    <output class="player-audio-volume-percent">{{playerAudioVolumePercent}}%</output>
+                </label>
+                <button type="button" class="btn-player-audio-mute" data-muted="{{playerAudioMuted}}" title="{{#if playerAudioMuted}}{{localize 'NARRATIVE_CANVAS.Player.UnmuteAudio'}}{{else}}{{localize 'NARRATIVE_CANVAS.Player.MuteAudio'}}{{/if}}" aria-label="{{#if playerAudioMuted}}{{localize 'NARRATIVE_CANVAS.Player.UnmuteAudio'}}{{else}}{{localize 'NARRATIVE_CANVAS.Player.MuteAudio'}}{{/if}}">
+                    <i class="fas {{#if playerAudioMuted}}fa-volume-xmark{{else}}fa-volume-high{{/if}}" aria-hidden="true"></i>
+                </button>
+            </div>
+            <button type="button" class="btn-close-player-canvas" title="{{localize 'NARRATIVE_CANVAS.Controls.ClosePlayerCanvas'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Controls.ClosePlayerCanvas'}}">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+        </div>
     {{/if}}
 
     <!-- Ambient Background Crossfade Container -->

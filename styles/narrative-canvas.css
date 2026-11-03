@@ -133,24 +133,91 @@ body.acd-nc-active {
         }
     }
 
-    .btn-close-player-canvas {
+    .narrative-player-toolbar {
         position: absolute;
         top: 20px;
         right: 20px;
         z-index: 21;
-        display: grid;
-        width: 44px;
-        height: 44px;
-        place-items: center;
-        border: 1px solid rgba(255, 255, 255, 0.42);
-        border-radius: 4px;
-        background: rgba(24, 24, 24, 0.82);
-        color: #fff;
-        cursor: pointer;
-        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        opacity: 0.3;
+        pointer-events: auto;
+        transition: opacity 0.16s ease;
 
-        &:hover {
-            background: rgba(80, 80, 80, 0.92);
+        &:hover,
+        &:focus-within {
+            opacity: 1;
+        }
+
+        .player-audio-mix-control {
+            display: flex;
+            align-items: center;
+
+            &:hover,
+            &:focus-within {
+                .player-audio-volume-control {
+                    width: 168px;
+                    margin-right: 6px;
+                    padding: 0 8px;
+                    border-color: rgba(255, 255, 255, 0.42);
+                    opacity: 1;
+                    visibility: visible;
+                }
+            }
+        }
+
+        .player-audio-volume-control {
+            display: flex;
+            width: 0;
+            height: 40px;
+            align-items: center;
+            gap: 7px;
+            margin-left: 0;
+            margin-right: 0;
+            overflow: hidden;
+            padding: 0;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            background: rgba(24, 24, 24, 0.94);
+            color: #fff;
+            opacity: 0;
+            visibility: hidden;
+            transition: width 0.16s ease, margin-right 0.16s ease, opacity 0.16s ease;
+
+            input {
+                width: 100%;
+                min-width: 40px;
+                margin: 0;
+            }
+
+            output {
+                min-width: 31px;
+                color: #fff;
+                font-size: 0.75rem;
+                text-align: right;
+            }
+        }
+
+        .btn-player-audio-mute,
+        .btn-close-player-canvas {
+            display: grid;
+            width: 40px;
+            height: 40px;
+            flex: 0 0 40px;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.42);
+            border-radius: 4px;
+            background: rgba(24, 24, 24, 0.94);
+            color: #fff;
+            cursor: pointer;
+            font-size: 1rem;
+
+            &:hover,
+            &:focus-visible {
+                border-color: #e0b84c;
+                background: #38342a;
+            }
         }
     }
 
@@ -212,6 +279,31 @@ body.acd-nc-active {
         .narrative-canvas-toolbar {
             top: 12px;
             right: 12px;
+        }
+
+        .narrative-player-toolbar {
+            top: 12px;
+            right: 12px;
+            gap: 4px;
+
+            .player-audio-volume-control {
+                width: 0;
+                height: 36px;
+            }
+
+            .player-audio-mix-control:hover,
+            .player-audio-mix-control:focus-within {
+                .player-audio-volume-control {
+                    width: 132px;
+                }
+            }
+
+            .btn-player-audio-mute,
+            .btn-close-player-canvas {
+                width: 36px;
+                height: 36px;
+                flex-basis: 36px;
+            }
         }
 
         .narrative-director-image-controls {

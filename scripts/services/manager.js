@@ -12,6 +12,8 @@ import { PlaylistAudioMixer } from "./playlist-audio-mixer.js";
 export class NarrativeManager {
   #journalAssetRequestId = 0;
   #playerAudioMixer = new PlaylistAudioMixer();
+  #playerAudioVolume = 1;
+  #playerAudioMuted = false;
 
   constructor() {
     this.narrativeState = {
@@ -51,8 +53,7 @@ export class NarrativeManager {
 
     if (!game.user.isGM) {
       this.#playerAudioMixer.setSceneTracks(this.narrativeState.currentSceneData?.tracks ?? []);
-      this.#playerAudioMixer.globalVolume = this.narrativeState.globalVolume;
-      this.#playerAudioMixer.muted = this.narrativeState.audioMuted;
+      this.#applyPlayerAudioMix();
     }
 
     // Synchronize active actors and current scene actor statuses
@@ -89,9 +90,19 @@ export class NarrativeManager {
       if (!this.view) {
         this.view = game.user.isGM
           ? new NarrativeDirector(this._getGMCallbacks())
-          : new NarrativePlayer({ onClose: () => this.closePlayerCanvas() });
+          : new NarrativePlayer({
+            onClose: () => this.closePlayerCanvas(),
+            onAudioVolumeChange: volume => this.setPlayerAudioVolume(volume),
+            onAudioMuteChange: muted => this.setPlayerAudioMuted(muted)
+          });
       }
-      await this.view.render(this.narrativeState);
+      const renderState = game.user.isGM ? this.narrativeState : {
+        ...this.narrativeState,
+        playerAudioVolume: this.#playerAudioVolume,
+        playerAudioVolumePercent: Math.round(this.#playerAudioVolume * 100),
+        playerAudioMuted: this.#playerAudioMuted
+      };
+      await this.view.render(renderState);
     } else {
       if (this.view) {
         const closingView = this.view;
@@ -169,6 +180,21 @@ export class NarrativeManager {
 
     this.playerCanvasDismissed = false;
     await this.refreshView();
+  }
+
+  setPlayerAudioVolume(volume) {
+    this.#playerAudioVolume = Math.max(0, Math.min(1, Number(volume) || 0));
+    this.#applyPlayerAudioMix();
+  }
+
+  setPlayerAudioMuted(muted) {
+    this.#playerAudioMuted = Boolean(muted);
+    this.#applyPlayerAudioMix();
+  }
+
+  #applyPlayerAudioMix() {
+    this.#playerAudioMixer.globalVolume = this.narrativeState.globalVolume * this.#playerAudioVolume;
+    this.#playerAudioMixer.muted = Boolean(this.narrativeState.audioMuted) || this.#playerAudioMuted;
   }
 
   async reopenPlayerCanvas() {
