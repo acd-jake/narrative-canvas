@@ -9,6 +9,8 @@ import { NarrativeSceneEditor } from "../ui/scene-editor.js";
 import { NarrativeLogger } from "./logger.js";
 import { PlaylistAudioMixer } from "./playlist-audio-mixer.js";
 import { ThemeManager } from "./themes/theme-manager.js";
+import { NarrativeActiveStateStore } from "./active-state-store.js";
+import { NarrativeDirectorActions } from "./director-actions.js";
 
 export class NarrativeManager {
   #journalAssetRequestId = 0;
@@ -41,6 +43,18 @@ export class NarrativeManager {
     this.view = null;
     this.editorApp = null;
     this.playerCanvasDismissed = false;
+    this.directorActions = new NarrativeDirectorActions({
+      getState: () => this.narrativeState,
+      handleDisplayUpdate: (update, isRemote) => this.handleDisplayUpdate(update, isRemote),
+      handleHandoutImageLayout: (layout, isFinal) => this.handleHandoutImageLayout(layout, isFinal),
+      activateSceneAudio: sceneData => this.view?.activateSceneAudio?.(sceneData),
+      reopenPlayerCanvases: () => this.reopenPlayerCanvasesForPlayers(),
+      toggleCanvasState: active => this.toggleCanvasState(active),
+      addHandoutImageOverlay: image => this.#addHandoutImageOverlay(image)
+    });
+    this.activeStateStore = new NarrativeActiveStateStore({
+      addHandoutImageOverlay: (image, overlays) => this.#addHandoutImageOverlay(image, overlays)
+    });
   }
 
   async refreshView() {
@@ -299,34 +313,7 @@ export class NarrativeManager {
    * so it can be restored on world reload or upon opening the canvas.
    */
   async persistActiveState() {
-    if (!game.user.isGM) return;
-
-    const payload = {
-      activeSceneId: this.narrativeState.activeSceneId || "",
-      background: this.narrativeState.background || "",
-      handoutImage: this.narrativeState.handoutImage || "",
-      handoutImageOverlays: (this.narrativeState.handoutImageOverlays || []).map((overlay, index) => ({
-        id: overlay.id,
-        src: overlay.src,
-        title: overlay.title || "",
-        description: overlay.description || "",
-        showDescription: overlay.showDescription === true,
-        size: Number.isFinite(overlay.size) ? Math.max(0.25, Math.min(1.5, overlay.size)) : 1,
-        ...(Number.isFinite(overlay.position?.x) && Number.isFinite(overlay.position?.y)
-          ? { position: { x: overlay.position.x, y: overlay.position.y } }
-          : {}),
-        zOrder: Number.isFinite(overlay.zOrder) ? overlay.zOrder : index
-      })),
-      activeActors: (this.narrativeState.activeActors || []).map(actor => ({
-        id: actor.id,
-        name: actor.name,
-        img: actor.img,
-        showName: actor.showName !== false
-      })),
-      activeSpeakerId: this.narrativeState.activeSpeakerId || null
-    };
-
-    await NarrativeSettings.saveActiveState(payload);
+    await this.activeStateStore.persist(this.narrativeState);
   }
 
   /**
@@ -334,337 +321,15 @@ export class NarrativeManager {
    * Validates that scenes and actors still exist before applying them.
    */
   restorePersistedState() {
-    const saved = NarrativeSettings.getActiveState();
-    if (!saved || typeof saved !== "object") return;
-
-    const scenes = NarrativeSceneRepository.getAll();
-    let validatedSceneId = "";
-    let validatedSceneData = null;
-
-    if (saved.activeSceneId) {
-      validatedSceneData = scenes.find(s => s.id === saved.activeSceneId) || null;
-      if (validatedSceneData) {
-        validatedSceneId = validatedSceneData.id;
-      }
-    }
-
-    const savedHandoutImage = saved.handoutImage
-      || (saved.backgroundDisplayMode === "journal" ? saved.background : "");
-    let validatedBackground = "";
-    if (typeof saved.background === "string" && saved.background.trim()) {
-      if (saved.backgroundDisplayMode === "journal") {
-        validatedBackground = "";
-      } else if (validatedSceneData?.backgrounds?.length) {
-        const bgExists = validatedSceneData.backgrounds.some(bg => bg.path === saved.background);
-        if (bgExists) {
-          validatedBackground = saved.background;
-        }
-      } else {
-        validatedBackground = saved.background;
-      }
-    }
-
-    const validatedHandoutImage = validatedSceneData?.handoutImages?.length
-      ? validatedSceneData.handoutImages.some(image => image.path === savedHandoutImage) ? savedHandoutImage : ""
-      : savedHandoutImage;
-
-    // Validate active actors against the active scene actors
-    let validatedActors = [];
-    if (Array.isArray(saved.activeActors) && saved.activeActors.length) {
-      if (validatedSceneData?.actors?.length) {
-        const sceneActorMap = new Map(validatedSceneData.actors.map(a => [a.id, a]));
-        for (const savedActor of saved.activeActors) {
-          const matched = sceneActorMap.get(savedActor.id);
-          if (matched) {
-            validatedActors.push({
-              id: matched.id,
-              name: matched.name,
-              img: matched.img,
-              showName: matched.showName !== false
-            });
-          }
-        }
-      } else if (!saved.activeSceneId) {
-        validatedActors = saved.activeActors
-          .filter(actor => typeof actor?.id === "string" && typeof actor.img === "string")
-          .map(actor => ({
-            id: actor.id,
-            name: typeof actor.name === "string" ? actor.name : "",
-            img: actor.img,
-            showName: actor.showName !== false
-          }));
-      }
-    }
-
-    // Validate active speaker
-    let validatedSpeakerId = null;
-    if (saved.activeSpeakerId && validatedActors.some(a => a.id === saved.activeSpeakerId)) {
-      validatedSpeakerId = saved.activeSpeakerId;
-    }
-
-    this.narrativeState.activeSceneId = validatedSceneId;
-    this.narrativeState.currentSceneData = validatedSceneData;
-    this.narrativeState.background = validatedBackground;
-    this.narrativeState.handoutImage = validatedHandoutImage;
-    if (Array.isArray(saved.handoutImageOverlays)) {
-      this.narrativeState.handoutImageOverlays = saved.handoutImageOverlays
-        .filter(overlay => typeof overlay?.src === "string" && overlay.src.trim())
-        .map((overlay, index) => {
-          const sceneImage = validatedSceneData?.handoutImages
-            ?.find(image => image.path === overlay.src);
-          const x = Number(overlay.position?.x);
-          const y = Number(overlay.position?.y);
-          const hasPosition = Number.isFinite(x) && Number.isFinite(y);
-
-          return {
-            id: typeof overlay.id === "string" ? overlay.id : `restored-handout-${index}`,
-            src: overlay.src,
-            title: sceneImage?.name || overlay.title || "",
-            description: sceneImage?.description || overlay.description || "",
-            showDescription: sceneImage
-              ? sceneImage.showDescription === true
-              : overlay.showDescription === true,
-            size: Number.isFinite(Number(overlay.size))
-              ? Math.max(0.25, Math.min(1.5, Number(overlay.size)))
-              : 1,
-            ...(hasPosition ? {
-              position: {
-                x,
-                y
-              }
-            } : {}),
-            zOrder: Number.isFinite(overlay.zOrder) ? overlay.zOrder : index
-          };
-        });
-    } else {
-      this.narrativeState.handoutImageOverlays = [];
-      const restoredHandout = validatedSceneData?.handoutImages
-        ?.find(image => image.path === validatedHandoutImage);
-      if (restoredHandout) {
-        this.narrativeState.handoutImageOverlays = this.#addHandoutImageOverlay({
-          src: restoredHandout.path,
-          title: restoredHandout.name || "",
-          description: restoredHandout.description || "",
-          showDescription: restoredHandout.showDescription === true
-        });
-      }
-    }
-    this.narrativeState.activeActors = validatedActors;
-    this.narrativeState.activeSpeakerId = validatedSpeakerId;
+    this.activeStateStore.restore(this.narrativeState);
   }
 
   _getGMCallbacks() {
-    return {
-      onJournalSelect: (journalId) => {
-        if (this.narrativeState.journalViewerId === journalId) return;
-        this.narrativeState.journalViewerId = journalId;
-        if (this.narrativeState.activeSceneId) return;
-
-        this.handleDisplayUpdate({
-          journalViewerId: journalId,
-          currentSceneData: null,
-          activeActors: [],
-          activeSpeakerId: null,
-          activeTrackId: null
-        });
-      },
-      onSceneSelect: async (sceneId) => {
-        const scenes = NarrativeSceneRepository.getAll();
-        const selectedData = sceneId ? scenes.find(s => s.id === sceneId) || null : null;
-        if (sceneId && !selectedData) return;
-
-        // Retain only actors available from the newly selected source.
-        const newSceneActorIds = new Set((selectedData?.actors || []).map(a => a.id));
-        const survivingActiveActors = selectedData
-          ? (this.narrativeState.activeActors || []).filter(a => newSceneActorIds.has(a.id))
-          : [];
-        const survivingSpeakerId = selectedData && newSceneActorIds.has(this.narrativeState.activeSpeakerId)
-          ? this.narrativeState.activeSpeakerId
-          : null;
-
-        const automaticBackground = selectedData?.backgrounds?.find(
-          background => background.viewAutomatically === true
-        );
-        const update = {
-          activeSceneId: selectedData?.id || "",
-          currentSceneData: selectedData,
-          activeActors: survivingActiveActors,
-          activeSpeakerId: survivingSpeakerId,
-          activeTrackId: null
-        };
-        if (automaticBackground) update.background = automaticBackground.path;
-
-        await this.handleDisplayUpdate(update);
-        await this.view?.activateSceneAudio?.(selectedData);
-      },
-      onActorStageToggle: (actorId) => {
-        const actorData = this.narrativeState.currentSceneData?.actors.find(a => a.id === actorId);
-        if (!actorData) return;
-
-        let activeList = [...this.narrativeState.activeActors];
-        let activeSpeakerId = this.narrativeState.activeSpeakerId;
-        const existingIndex = activeList.findIndex(a => a.id === actorId);
-
-        if (existingIndex > -1) {
-          activeList.splice(existingIndex, 1);
-          if (activeSpeakerId === actorId) {
-            activeSpeakerId = null;
-          }
-        } else {
-          activeList.push({
-            id: actorData.id,
-            name: actorData.name,
-            img: actorData.img,
-            showName: actorData.showName !== false,
-            isSpeaker: activeSpeakerId === actorData.id
-          });
-        }
-
-        this.handleDisplayUpdate({ activeActors: activeList, activeSpeakerId });
-      },
-      onActorStageRemove: (actorId) => {
-        const activeList = this.narrativeState.activeActors.filter(a => a.id !== actorId);
-        let activeSpeakerId = this.narrativeState.activeSpeakerId;
-        if (activeSpeakerId === actorId) {
-          activeSpeakerId = null;
-        }
-        this.handleDisplayUpdate({ activeActors: activeList, activeSpeakerId });
-      },
-      onActorSpeakerToggle: (actorId) => {
-        let activeSpeakerId = this.narrativeState.activeSpeakerId;
-        let activeList = [...this.narrativeState.activeActors];
-
-        if (activeSpeakerId === actorId) {
-          activeSpeakerId = null;
-        } else {
-          activeSpeakerId = actorId;
-          if (!activeList.some(a => a.id === actorId)) {
-            const actorData = this.narrativeState.currentSceneData?.actors.find(a => a.id === actorId);
-            if (actorData) {
-              activeList.push({
-                id: actorData.id,
-                name: actorData.name,
-                img: actorData.img,
-                showName: actorData.showName !== false,
-                isSpeaker: true
-              });
-            }
-          }
-        }
-
-        activeList = activeList.map(a => ({
-          ...a,
-          isSpeaker: a.id === activeSpeakerId
-        }));
-
-        this.handleDisplayUpdate({ activeActors: activeList, activeSpeakerId });
-      },
-      onActorToggleName: async (actorId) => {
-        const sceneId = this.narrativeState.activeSceneId;
-        if (!sceneId) {
-          const currentSceneData = this.narrativeState.currentSceneData;
-          const actor = currentSceneData?.isJournalAssetSource
-            ? currentSceneData.actors.find(item => item.id === actorId)
-            : null;
-          if (!actor) return;
-
-          const showName = actor.showName === false;
-          this.handleDisplayUpdate({
-            currentSceneData: {
-              ...currentSceneData,
-              actors: currentSceneData.actors.map(item => item.id === actorId ? { ...item, showName } : item)
-            },
-            activeActors: this.narrativeState.activeActors.map(item => item.id === actorId ? { ...item, showName } : item)
-          });
-          return;
-        }
-
-        await NarrativeSceneRepository.toggleActorName(sceneId, actorId);
-        const scenes = NarrativeSceneRepository.getAll();
-        const updatedScene = scenes.find(s => s.id === sceneId) || null;
-
-        const activeList = this.narrativeState.activeActors.map(a => {
-          if (a.id === actorId) {
-            const scActor = updatedScene?.actors.find(sa => sa.id === actorId);
-            return { ...a, showName: scActor ? scActor.showName !== false : !a.showName };
-          }
-          return a;
-        });
-
-        this.handleDisplayUpdate({
-          scenesList: scenes,
-          currentSceneData: updatedScene,
-          activeActors: activeList
-        });
-      },
-      onDialogueTrigger: (dialogue) => this.handleDisplayUpdate({ activeDialogue: dialogue }),
-      onCloseAllHandouts: () => {
-        this.handleDisplayUpdate({
-          handoutImage: "",
-          handoutImageOverlays: []
-        });
-      },
-      onBackgroundReset: () => this.handleDisplayUpdate({ background: "" }),
-      onThemeSelect: themeId => this.handleDisplayUpdate({ themeOverrideId: themeId }),
-      onJournalImageShow: (journalImage) => {
-        this.handleDisplayUpdate({
-          handoutImageOverlays: this.#addHandoutImageOverlay({ ...journalImage, showDescription: true })
-        });
-      },
-      onBackgroundChange: (path) => this.handleDisplayUpdate({ background: path }),
-      onHandoutImageChange: (path) => {
-        const image = this.narrativeState.currentSceneData?.handoutImages?.find(item => item.path === path);
-        if (!image) return;
-        this.handleDisplayUpdate({
-          handoutImage: path,
-          handoutImageOverlays: this.#addHandoutImageOverlay({
-            src: image.path,
-            title: image.name || "",
-            description: image.description || "",
-            showDescription: image.showDescription === true
-          })
-        });
-      },
-      onHandoutImageClose: (overlayId) => {
-        const currentOverlays = this.narrativeState.handoutImageOverlays || [];
-        const closingOverlay = currentOverlays.find(overlay => overlay.id === overlayId);
-        const remainingOverlays = currentOverlays.filter(overlay => overlay.id !== overlayId);
-        const selectedHandoutWasClosed = closingOverlay?.src === this.narrativeState.handoutImage;
-
-        this.handleDisplayUpdate({
-          handoutImage: selectedHandoutWasClosed
-            ? remainingOverlays[remainingOverlays.length - 1]?.src || ""
-            : this.narrativeState.handoutImage,
-          handoutImageOverlays: remainingOverlays
-        });
-      },
-      onHandoutImageLayoutChange: (layout, isFinal) =>
-        this.handleHandoutImageLayout(layout, isFinal),
-      onImageDescriptionToggle: async (collectionName, index) => {
-        const sceneId = this.narrativeState.activeSceneId;
-        if (!sceneId) return;
-        await NarrativeSceneRepository.toggleImageDescription(sceneId, collectionName, index);
-        const scenes = NarrativeSceneRepository.getAll();
-        const currentSceneData = scenes.find(scene => scene.id === sceneId) || null;
-        this.handleDisplayUpdate({
-          scenesList: scenes,
-          currentSceneData,
-          handoutImageOverlays: this.#refreshSceneHandoutOverlays(currentSceneData)
-        });
-      },
-      onTrackPlay: (trackId) => this.handleDisplayUpdate({ activeTrackId: trackId }),
-      onVolumeChange: (volume) => this.handleDisplayUpdate({ globalVolume: volume }),
-      onAudioMuteChange: (audioMuted) => this.handleDisplayUpdate({ audioMuted }),
-      onVisibilityChange: (visible) => this.handleDisplayUpdate(visible
-        ? { ...this.narrativeState, playerViewActive: true }
-        : { playerViewActive: false }),
-      onReopenPlayers: () => this.reopenPlayerCanvasesForPlayers(),
-      onShutdown: () => this.toggleCanvasState(false)
-    };
+    return this.directorActions.createCallbacks();
   }
 
-  #addHandoutImageOverlay(image) {
-    const overlays = this.narrativeState.handoutImageOverlays || [];
+  #addHandoutImageOverlay(image, currentOverlays = this.narrativeState.handoutImageOverlays || []) {
+    const overlays = currentOverlays;
     const existingOverlay = overlays.find(overlay => overlay.src === image.src);
     if (existingOverlay) {
       const updatedOverlay = {
@@ -688,17 +353,6 @@ export class NarrativeManager {
     }];
   }
 
-  #refreshSceneHandoutOverlays(sceneData) {
-    return (this.narrativeState.handoutImageOverlays || []).map(overlay => {
-      const image = sceneData?.handoutImages?.find(item => item.path === overlay.src);
-      if (!image) return overlay;
-      return {
-        ...overlay,
-        description: image.description || "",
-        showDescription: image.showDescription === true
-      };
-    });
-  }
 
   /**
    * Shuts down the canvas display if the active GM disconnects.

@@ -10,7 +10,7 @@ export class NarrativeSceneRepository {
 
   /** @returns {object[]} All stored scenes with healed tracks and assets. */
   static getAll() {
-    const raw = NarrativeSettings.getAllScenes() ?? [];
+    const raw = foundry.utils.deepClone(NarrativeSettings.getAllScenes() ?? []);
     return raw.map(scene => this.#healScene(scene));
   }
 

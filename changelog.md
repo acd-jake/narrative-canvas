@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The speaker highlight color is now defined by the theme; the **Active Speaker Highlight Color** setting was removed.
 - Handout image descriptions keep a constant on-screen size when the handout image is resized.
+- Separated active-state persistence and Director action handling from the manager, and isolated Foundry drag-data resolution from the Scene Configurator.
+- Scene repository reads now normalize a copy of stored data instead of mutating the settings value.
 
 ## [0.4] - 2026-11-03
 

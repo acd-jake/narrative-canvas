@@ -55,7 +55,6 @@ export class NarrativeDirector extends NarrativeCanvas {
     this.imageControls?.destroy();
     this.toolbar?.destroy();
     this.sidebar?.destroy();
-    this.sidebar?.destroy();
     this.audioMixer?.destroy();
   }
 

@@ -21,6 +21,16 @@ Narrative Canvas adds a Theatre of the Mind presentation stage to Foundry Virtua
 - Foundry Virtual Tabletop 14 or later within the module's supported version range.
 - No specific game system is required.
 
+## Architecture
+
+Runtime responsibilities are separated by role:
+
+- `scripts/services/manager.js` coordinates presentation state and lifecycle.
+- `scripts/services/active-state-store.js` persists and restores the active presentation state.
+- `scripts/services/director-actions.js` maps Director actions to state and scene operations.
+- `scripts/services/scene-asset-resolver.js` resolves Foundry drag data into scene asset operations.
+- `scripts/services/scene-repository.js` owns scene data access and mutation; reads normalize a copy of the stored data.
+
 ## Installation
 
 ### Install through Foundry
@@ -65,6 +75,16 @@ Narrative Canvas erweitert Foundry Virtual Tabletop um eine Präsentationsfläch
 
 - Foundry Virtual Tabletop 14 oder eine neuere Version innerhalb des vom Modul unterstützten Versionsbereichs.
 - Es ist kein bestimmtes Spielsystem erforderlich.
+
+## Architektur
+
+Die Laufzeitverantwortlichkeiten sind nach Aufgaben getrennt:
+
+- `scripts/services/manager.js` koordiniert Präsentationszustand und Lebenszyklus.
+- `scripts/services/active-state-store.js` speichert und rekonstruiert den aktiven Präsentationszustand.
+- `scripts/services/director-actions.js` ordnet Regieaktionen Zustands- und Szenenoperationen zu.
+- `scripts/services/scene-asset-resolver.js` löst Foundry-Drag-Daten in Szenen-Asset-Aktionen auf.
+- `scripts/services/scene-repository.js` verwaltet den Szenendatenzugriff und Änderungen; beim Lesen wird eine Kopie der gespeicherten Daten normalisiert.
 
 ## Installation
 
