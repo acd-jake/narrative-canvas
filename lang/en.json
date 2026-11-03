@@ -117,6 +117,8 @@
   "NARRATIVE_CANVAS.Director.NavigateToParentFolder": "Go to parent folder",
   "NARRATIVE_CANVAS.Director.NoPages": "This journal has no pages",
   "NARRATIVE_CANVAS.Director.NoJournalSelected": "Select a journal to view its contents",
+  "NARRATIVE_CANVAS.Director.ExpandJournalViewer": "Expand journal viewer",
+  "NARRATIVE_CANVAS.Director.CollapseJournalViewer": "Minimize journal viewer",
   "NARRATIVE_CANVAS.Director.EmptyPage": "This page has no content.",
   "NARRATIVE_CANVAS.Director.ShowImageOverlay": "Show image to players",
   "NARRATIVE_CANVAS.Director.CloseImageOverlay": "Close image overlay",

@@ -52,14 +52,18 @@
     </section>
 
     <!-- Primary Section: Journal Viewer -->
-    <section class="sidebar-journal-section">
+    <section class="sidebar-journal-section {{#if isJournalCollapsed}}is-collapsed{{/if}}">
         <header class="sidebar-section-header">
             <h4><i class="fas fa-book-open"></i> {{localize "NARRATIVE_CANVAS.Director.JournalViewer"}}</h4>
             <button type="button" class="btn-journal-back type-icon" title="{{localize 'NARRATIVE_CANVAS.Director.BackToPreviousDocument'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.BackToPreviousDocument'}}" {{#unless canGoBack}}hidden{{/unless}}>
                 <i class="fas fa-arrow-left" aria-hidden="true"></i>
             </button>
+            <button type="button" class="sidebar-section-toggle" data-section-toggle="journal" aria-expanded="{{#unless isJournalCollapsed}}true{{else}}false{{/unless}}" aria-controls="director-journal-content" title="{{#if isJournalCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandJournalViewer'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseJournalViewer'}}{{/if}}" aria-label="{{#if isJournalCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandJournalViewer'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseJournalViewer'}}{{/if}}">
+                <i class="fas {{#if isJournalCollapsed}}fa-chevron-right{{else}}fa-chevron-down{{/if}}" aria-hidden="true"></i>
+            </button>
         </header>
 
+        <div class="sidebar-section-content" id="director-journal-content" {{#if isJournalCollapsed}}hidden{{/if}}>
         <!-- Journal Text Filter -->
         <div class="sidebar-search-row">
             <i class="fas fa-search search-icon"></i>
@@ -134,6 +138,7 @@
                     <p>{{localize "NARRATIVE_CANVAS.Director.NoJournalSelected"}}</p>
                 </div>
             {{/if}}
+        </div>
         </div>
     </section>
 

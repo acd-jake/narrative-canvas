@@ -1,6 +1,7 @@
 import { JournalBrowser } from "../services/journal-browser.js";
 import { NarrativeSceneRepository } from "../services/scene-repository.js";
 import { NarrativeSettings } from "../services/settings.js";
+import { ResizableSectionController } from "./resizable-section-controller.js";
 
 /**
  * Controller for the Director Left Sidebar, managing filterable scenes,
@@ -16,6 +17,7 @@ export class DirectorSidebar {
   #autoActivateFirstSceneOnJournalChange = true;
   #isCollapsed = false;
   #areScenesCollapsed = true;
+  #isJournalCollapsed = false;
   #isAudioCollapsed = true;
   #rootJournalFolderId = "";
   #currentJournalFolderId = "";
@@ -29,8 +31,10 @@ export class DirectorSidebar {
   #scenesList = [];
   #currentSceneData = null;
   #audioMuted = false;
+  #sceneSectionHeight = null;
+  #journalSectionHeight = null;
   #audioSectionHeight = null;
-  #audioResizeAbortController = null;
+  #resizableSections = [];
   #playlistSoundHook = null;
   #expandedPlaylistIds = new Set();
   #activePlaylistIds = new Set();
@@ -63,8 +67,7 @@ export class DirectorSidebar {
   destroy() {
     if (this.#playlistSoundHook) Hooks.off("updatePlaylistSound", this.#playlistSoundHook);
     this.#playlistSoundHook = null;
-    this.#audioResizeAbortController?.abort();
-    this.#audioResizeAbortController = null;
+    this.#destroyResizableSections();
     this.#element = null;
   }
 
@@ -146,10 +149,10 @@ export class DirectorSidebar {
     const doc = parser.parseFromString(htmlString, "text/html");
     const newElement = doc.body.firstElementChild;
 
+    this.#destroyResizableSections();
     this.#element = newElement;
     this.#bindListeners(this.#element);
     this.#updateCollapseState();
-    this.#applyAudioSectionHeight();
     this.#applySceneFilters();
 
     return newElement;
@@ -180,7 +183,6 @@ export class DirectorSidebar {
     }
 
     this.#updateCollapseState();
-    this.#applyAudioSectionHeight();
     this.#element.querySelector(".sidebar-audio-section")?.classList.toggle("is-muted", this.#audioMuted);
 
     // Refresh audio tracks list for the active scene
@@ -481,6 +483,7 @@ export class DirectorSidebar {
       autoActivateFirstSceneOnJournalChange: this.#autoActivateFirstSceneOnJournalChange,
       isCollapsed: this.#isCollapsed,
       isScenesCollapsed: this.#areScenesCollapsed,
+      isJournalCollapsed: this.#isJournalCollapsed,
       isAudioCollapsed: this.#isAudioCollapsed,
       audioMuted: this.#audioMuted,
       activeSceneId: this.#activeSceneId,
@@ -524,7 +527,7 @@ export class DirectorSidebar {
 
   #bindListeners(root) {
     this.#bindCollapseControls(root);
-    this.#bindSectionToggles(root);
+    this.#bindResizableSections(root);
     this.#bindSceneFilter(root);
     this.#bindSceneSelection(root);
     this.#bindContentLinks(root);
@@ -534,76 +537,98 @@ export class DirectorSidebar {
     this.#bindPageSelection(root);
     this.#addImageOverlayButtons(root);
     this.#bindAudioControls(root);
-    this.#bindAudioSectionResize(root);
   }
 
-  #bindAudioSectionResize(root) {
-    const audioSection = root.querySelector(".sidebar-audio-section");
-    const header = audioSection?.querySelector(":scope > .sidebar-section-header");
-    if (!audioSection || !header) return;
-
-    header.addEventListener("pointerdown", event => {
-      if (event.target instanceof Element && event.target.closest(".sidebar-section-toggle")) return;
-
-      const wasCollapsed = this.#isAudioCollapsed;
-      const startHeight = audioSection.getBoundingClientRect().height;
-      const startY = event.clientY;
-      const sidebarHeight = audioSection.parentElement?.getBoundingClientRect().height ?? window.innerHeight;
-      const pointerId = event.pointerId;
-      this.#audioResizeAbortController?.abort();
-      this.#audioResizeAbortController = new AbortController();
-      const { signal } = this.#audioResizeAbortController;
-
-      const onPointerMove = moveEvent => {
-        if (moveEvent.pointerId !== pointerId) return;
-        if (wasCollapsed && this.#isAudioCollapsed) {
-          this.#isAudioCollapsed = false;
-          audioSection.classList.remove("is-collapsed");
-          this.#updateSectionToggle(
-            audioSection.querySelector(".sidebar-section-toggle"),
-            "audio",
-            false
-          );
-        }
-
-        const minHeight = wasCollapsed ? startHeight : 100;
-        const maxHeight = Math.max(minHeight, sidebarHeight - 180);
-        this.#audioSectionHeight = Math.max(
-          minHeight,
-          Math.min(maxHeight, startHeight + startY - moveEvent.clientY)
-        );
-        this.#applyAudioSectionHeight();
-        moveEvent.preventDefault();
-      };
-      const onPointerEnd = endEvent => {
-        if (endEvent.pointerId === pointerId) this.#audioResizeAbortController?.abort();
-      };
-
-      document.addEventListener("pointermove", onPointerMove, { signal });
-      document.addEventListener("pointerup", onPointerEnd, { signal });
-      document.addEventListener("pointercancel", onPointerEnd, { signal });
-      event.preventDefault();
-    });
+  #destroyResizableSections() {
+    this.#resizableSections.forEach(section => section.destroy());
+    this.#resizableSections = [];
   }
 
-  #applyAudioSectionHeight() {
-    const audioSection = this.#element?.querySelector(".sidebar-audio-section");
-    if (!audioSection) return;
+  #bindResizableSections(root) {
+    const sectionConfigs = [
+      {
+        name: "scenes",
+        sectionSelector: ".sidebar-scenes-section",
+        contentSelector: "#director-scenes-content",
+        isCollapsed: this.#areScenesCollapsed,
+        expandedHeight: this.#sceneSectionHeight,
+        expandLabel: "NARRATIVE_CANVAS.Director.ExpandScenes",
+        collapseLabel: "NARRATIVE_CANVAS.Director.CollapseScenes"
+      },
+      {
+        name: "journal",
+        sectionSelector: ".sidebar-journal-section",
+        contentSelector: "#director-journal-content",
+        isCollapsed: this.#isJournalCollapsed,
+        expandedHeight: this.#journalSectionHeight,
+        expandLabel: "NARRATIVE_CANVAS.Director.ExpandJournalViewer",
+        collapseLabel: "NARRATIVE_CANVAS.Director.CollapseJournalViewer"
+      },
+      {
+        name: "audio",
+        sectionSelector: ".sidebar-audio-section",
+        contentSelector: "#director-audio-content",
+        isCollapsed: this.#isAudioCollapsed,
+        expandedHeight: this.#audioSectionHeight,
+        expandLabel: "NARRATIVE_CANVAS.Director.ExpandAudio",
+        collapseLabel: "NARRATIVE_CANVAS.Director.CollapseAudio"
+      }
+    ];
 
-    if (this.#isAudioCollapsed) {
-      audioSection.style.flex = "0 0 auto";
-      audioSection.style.maxHeight = "none";
+    for (const config of sectionConfigs) {
+      const section = root.querySelector(config.sectionSelector);
+      const header = section?.querySelector(":scope > .sidebar-section-header");
+      const content = section?.querySelector(config.contentSelector);
+      const toggleButton = header?.querySelector(`[data-section-toggle="${config.name}"]`);
+      if (!section || !header || !content || !toggleButton) continue;
+
+      const controller = new ResizableSectionController({
+        section,
+        header,
+        content,
+        toggleButton,
+        isCollapsed: config.isCollapsed,
+        expandedHeight: config.expandedHeight,
+        minHeight: 100,
+        getMaxHeight: () => Math.max(
+          100,
+          (section.parentElement?.clientHeight ?? window.innerHeight) - 180
+        ),
+        applyHeight: state => this.#applySidebarSectionHeight(section, state),
+        onChange: state => {
+          if (config.name === "scenes") {
+            this.#areScenesCollapsed = state.isCollapsed;
+            this.#sceneSectionHeight = state.expandedHeight;
+          } else if (config.name === "journal") {
+            this.#isJournalCollapsed = state.isCollapsed;
+            this.#journalSectionHeight = state.expandedHeight;
+          } else {
+            this.#isAudioCollapsed = state.isCollapsed;
+            this.#audioSectionHeight = state.expandedHeight;
+          }
+        },
+        expandLabel: config.expandLabel,
+        collapseLabel: config.collapseLabel
+      });
+      this.#resizableSections.push(controller);
+    }
+  }
+
+  #applySidebarSectionHeight(section, { isCollapsed, expandedHeight }) {
+    if (isCollapsed) {
+      section.style.flex = "0 0 auto";
+      section.style.maxHeight = "none";
       return;
     }
 
-    if (this.#audioSectionHeight === null) {
-      audioSection.style.removeProperty("flex");
-      audioSection.style.removeProperty("max-height");
+    if (expandedHeight === null) {
+      section.style.removeProperty("flex");
+      section.style.removeProperty("max-height");
       return;
     }
 
-    audioSection.style.flex = `0 0 ${this.#audioSectionHeight}px`;
-    audioSection.style.maxHeight = "none";
+    section.style.flex = `0 0 ${expandedHeight}px`;
+    section.style.maxHeight = "none";
   }
 
   #addImageOverlayButtons(root) {
@@ -631,43 +656,6 @@ export class DirectorSidebar {
       this.toggleCollapse();
     });
 
-  }
-
-  #bindSectionToggles(root) {
-    root.querySelectorAll(".sidebar-section-toggle").forEach(button => {
-      button.addEventListener("click", () => {
-        const section = button.closest(".sidebar-scenes-section, .sidebar-audio-section");
-        const content = section?.querySelector(".sidebar-section-content");
-        if (!section || !content) return;
-
-        const isCollapsed = !section.classList.contains("is-collapsed");
-        const sectionName = button.dataset.sectionToggle;
-        if (sectionName === "audio") {
-          if (isCollapsed) this.#audioSectionHeight = section.getBoundingClientRect().height;
-          this.#isAudioCollapsed = isCollapsed;
-        }
-
-        section.classList.toggle("is-collapsed", isCollapsed);
-        this.#updateSectionToggle(button, sectionName, isCollapsed);
-
-        if (sectionName === "scenes") this.#areScenesCollapsed = isCollapsed;
-        if (sectionName === "audio") this.#applyAudioSectionHeight();
-      });
-    });
-  }
-
-  #updateSectionToggle(button, sectionName, isCollapsed) {
-    if (!button) return;
-
-    const sectionLabel = sectionName === "scenes" ? "Scenes" : "Audio";
-    button.setAttribute("aria-expanded", String(!isCollapsed));
-    button.title = game.i18n.localize(
-      `NARRATIVE_CANVAS.Director.${isCollapsed ? "Expand" : "Collapse"}${sectionLabel}`
-    );
-    button.setAttribute("aria-label", button.title);
-
-    const icon = button.querySelector("i");
-    if (icon) icon.className = `fas ${isCollapsed ? "fa-chevron-right" : "fa-chevron-down"}`;
   }
 
   #bindSceneFilter(root) {

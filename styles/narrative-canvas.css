@@ -639,6 +639,9 @@ body.acd-nc-active {
             align-items: center;
             gap: 8px;
             margin-bottom: 8px;
+            cursor: ns-resize;
+            touch-action: none;
+            user-select: none;
         }
 
         h4 {
@@ -1294,6 +1297,14 @@ body.acd-nc-active {
             }
         }
 
+        > .sidebar-scenes-section > .sidebar-section-header,
+        > .sidebar-journal-section > .sidebar-section-header,
+        > .sidebar-audio-section > .sidebar-section-header {
+            cursor: ns-resize;
+            touch-action: none;
+            user-select: none;
+        }
+
         .sidebar-search-row {
             position: relative;
             display: flex;
@@ -1555,6 +1566,14 @@ body.acd-nc-active {
             min-height: 0;
             overflow: hidden;
 
+            > .sidebar-section-header > .sidebar-section-toggle { margin-left: 0; }
+
+            &.is-collapsed {
+                flex: 0 0 auto;
+
+                .sidebar-section-content { display: none; }
+            }
+
             .journal-viewer-body {
                 flex: 1 1 auto;
                 display: flex;
@@ -1769,10 +1788,6 @@ body.acd-nc-active {
             overflow: hidden;
 
             > .sidebar-section-header {
-                cursor: ns-resize;
-                touch-action: none;
-                user-select: none;
-
                 .sidebar-section-toggle { cursor: pointer; }
             }
 

@@ -1,4 +1,5 @@
 import { NarrativeSettings } from "../services/settings.js";
+import { ResizableSectionController } from "./resizable-section-controller.js";
 
 /**
  * Controls background and handout image selection for the active scene.
@@ -8,6 +9,8 @@ export class DirectorImageControls {
   #element = null;
   #isPanelCollapsed = false;
   #collapsedLists = new Set();
+  #manualListHeights = new Map();
+  #resizableSections = [];
   #resizeObserver = null;
   #layoutFrame = null;
 
@@ -17,6 +20,8 @@ export class DirectorImageControls {
    * @returns {Promise<HTMLElement>}
    */
   async render(context = {}) {
+    this.#destroyResizableSections();
+    this.#resizeObserver?.disconnect();
     const templateContext = this.#createTemplateContext(context);
     const htmlString = await renderTemplate(
       "modules/narrative-canvas/templates/partials/director-image-controls.hbs",
@@ -50,9 +55,11 @@ export class DirectorImageControls {
     const newElement = doc.body.firstElementChild;
 
     if (newElement) {
+      this.#destroyResizableSections();
       this.#element.innerHTML = newElement.innerHTML;
       this.#element.classList.toggle("is-collapsed", this.#isPanelCollapsed);
       this.#element.style.setProperty("--nc-director-image-tile-size", `${templateContext.tileSize}px`);
+      this.#bindResizableSections(this.#element);
       this.#scheduleListLayout();
     }
   }
@@ -93,31 +100,71 @@ export class DirectorImageControls {
         panelToggle.setAttribute("aria-label", panelToggle.title);
         const icon = panelToggle.querySelector("i");
         if (icon) icon.className = `fas ${this.#isPanelCollapsed ? "fa-chevron-left" : "fa-chevron-right"}`;
-        return;
       }
-
-      const listToggle = event.target.closest(".btn-toggle-image-list");
-      if (!listToggle) return;
-
-      event.preventDefault();
-      const listId = listToggle.dataset.imageList;
-      if (!listId) return;
-
-      const isCollapsed = !this.#collapsedLists.has(listId);
-      if (isCollapsed) this.#collapsedLists.add(listId);
-      else this.#collapsedLists.delete(listId);
-
-      const list = this.#element.querySelector(`#${listToggle.getAttribute("aria-controls")}`);
-      if (list) list.hidden = isCollapsed;
-      listToggle.setAttribute("aria-expanded", String(!isCollapsed));
-      listToggle.title = game.i18n.localize(isCollapsed
-        ? "NARRATIVE_CANVAS.Director.ExpandImageList"
-        : "NARRATIVE_CANVAS.Director.CollapseImageList");
-      listToggle.setAttribute("aria-label", listToggle.title);
-      const icon = listToggle.querySelector("i");
-      if (icon) icon.className = `fas ${isCollapsed ? "fa-chevron-right" : "fa-chevron-down"}`;
-      this.#scheduleListLayout();
     });
+
+    this.#bindResizableSections(root);
+  }
+
+  #bindResizableSections(root) {
+    root.querySelectorAll(".director-image-control-group").forEach(section => {
+      const header = section.querySelector(".director-image-list-header");
+      const content = section.querySelector(".director-image-list");
+      const toggleButton = header?.querySelector(".btn-toggle-image-list");
+      const listId = toggleButton?.dataset.imageList;
+      if (!header || !content || !toggleButton || !listId) return;
+
+      const headerHeight = header.getBoundingClientRect().height;
+      const marginBottom = Number.parseFloat(getComputedStyle(header).marginBottom) || 0;
+      const listHeight = this.#manualListHeights.get(listId);
+      const expandedHeight = listHeight === undefined
+        ? null
+        : headerHeight + marginBottom + listHeight;
+      const controller = new ResizableSectionController({
+        section,
+        header,
+        content,
+        toggleButton,
+        isCollapsed: this.#collapsedLists.has(listId),
+        expandedHeight,
+        minHeight: 100,
+        getMaxHeight: () => Math.max(
+          header.getBoundingClientRect().height,
+          this.#element?.querySelector(".director-image-controls-content")?.clientHeight ?? window.innerHeight
+        ),
+        applyHeight: ({ isCollapsed, expandedHeight: sectionHeight }) => {
+          content.hidden = isCollapsed;
+          if (isCollapsed || sectionHeight === null) return;
+          this.#manualListHeights.set(
+            listId,
+            this.#getListHeight(section, sectionHeight)
+          );
+          content.style.maxHeight = `${this.#manualListHeights.get(listId)}px`;
+        },
+        onChange: ({ isCollapsed, expandedHeight: sectionHeight }) => {
+          if (isCollapsed) this.#collapsedLists.add(listId);
+          else this.#collapsedLists.delete(listId);
+          if (sectionHeight !== null) {
+            this.#manualListHeights.set(listId, this.#getListHeight(section, sectionHeight));
+          }
+          this.#scheduleListLayout();
+        },
+        expandLabel: "NARRATIVE_CANVAS.Director.ExpandImageList",
+        collapseLabel: "NARRATIVE_CANVAS.Director.CollapseImageList"
+      });
+      this.#resizableSections.push(controller);
+    });
+  }
+
+  #getListHeight(section, sectionHeight) {
+    const header = section.querySelector(".director-image-list-header");
+    const headerMargin = header ? Number.parseFloat(getComputedStyle(header).marginBottom) || 0 : 0;
+    return Math.max(0, sectionHeight - (header?.getBoundingClientRect().height ?? 0) - headerMargin);
+  }
+
+  #destroyResizableSections() {
+    this.#resizableSections.forEach(section => section.destroy());
+    this.#resizableSections = [];
   }
 
   #scheduleListLayout() {
@@ -153,7 +200,26 @@ export class DirectorImageControls {
     const halfHeight = availableHeight / 2;
     let targetHeights;
 
-    if (requiredHeights.length === 1) {
+    const manualHeights = visibleLists.map(list => {
+      const listId = list.closest(".director-image-control-group")
+        ?.querySelector(".btn-toggle-image-list")?.dataset.imageList;
+      return this.#manualListHeights.get(listId);
+    });
+
+    if (manualHeights.some(height => height !== undefined)) {
+      targetHeights = Array(visibleLists.length).fill(0);
+      let remainingHeight = availableHeight;
+      manualHeights.forEach((height, index) => {
+        if (height === undefined) return;
+        targetHeights[index] = Math.min(height, remainingHeight);
+        remainingHeight -= targetHeights[index];
+      });
+      manualHeights.forEach((height, index) => {
+        if (height !== undefined) return;
+        targetHeights[index] = Math.min(requiredHeights[index], remainingHeight);
+        remainingHeight -= targetHeights[index];
+      });
+    } else if (requiredHeights.length === 1) {
       targetHeights = [Math.min(requiredHeights[0], availableHeight)];
     } else if (requiredHeights[0] > halfHeight && requiredHeights[1] > halfHeight) {
       targetHeights = [halfHeight, halfHeight];
@@ -172,6 +238,7 @@ export class DirectorImageControls {
    * Destroys the panel and releases its DOM reference.
    */
   destroy() {
+    this.#destroyResizableSections();
     this.#resizeObserver?.disconnect();
     this.#resizeObserver = null;
     if (this.#layoutFrame !== null) cancelAnimationFrame(this.#layoutFrame);

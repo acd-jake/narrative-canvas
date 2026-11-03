@@ -14,7 +14,7 @@
     </div>
 
     {{#if currentSceneData}}
-    <section class="director-image-control-group">
+    <section class="director-image-control-group {{#if isBackgroundsCollapsed}}is-collapsed{{/if}}">
         <header class="director-image-list-header">
             <h4 title="{{localize 'NARRATIVE_CANVAS.Labels.SceneBackgrounds'}}"><i class="fas fa-images"></i> {{localize "NARRATIVE_CANVAS.Labels.SceneBackgrounds"}}</h4>
             <button type="button" class="btn-toggle-image-list" data-image-list="backgrounds" aria-expanded="{{#unless isBackgroundsCollapsed}}true{{else}}false{{/unless}}" aria-controls="director-background-image-list" title="{{#if isBackgroundsCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageList'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageList'}}{{/if}}" aria-label="{{#if isBackgroundsCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageList'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageList'}}{{/if}}">
@@ -37,7 +37,7 @@
             {{/each}}
         </div>
     </section>
-    <section class="director-image-control-group">
+    <section class="director-image-control-group {{#if isHandoutsCollapsed}}is-collapsed{{/if}}">
         <header class="director-image-list-header">
             <h4 title="{{localize 'NARRATIVE_CANVAS.Labels.HandoutImages'}}"><i class="fas fa-book-open"></i> {{localize "NARRATIVE_CANVAS.Labels.HandoutImages"}}</h4>
             <button type="button" class="btn-toggle-image-list" data-image-list="handouts" aria-expanded="{{#unless isHandoutsCollapsed}}true{{else}}false{{/unless}}" aria-controls="director-handout-image-list" title="{{#if isHandoutsCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageList'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageList'}}{{/if}}" aria-label="{{#if isHandoutsCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageList'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageList'}}{{/if}}">
