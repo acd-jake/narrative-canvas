@@ -1278,8 +1278,8 @@ body.acd-nc-active {
             position: relative;
             display: flex;
             align-items: center;
-            margin-bottom: 8px;
-            gap: 8px;
+            margin-bottom: 5px;
+            gap: 6px;
 
             .scenes-search-wrapper {
                 position: relative;
@@ -1303,8 +1303,8 @@ body.acd-nc-active {
                 color: #fff;
                 border: 1px solid #555;
                 border-radius: 4px;
-                padding: 6px 8px 6px 28px;
-                font-size: 0.85rem;
+                padding: 4px 8px 4px 28px;
+                font-size: 0.8rem;
                 box-sizing: border-box;
 
                 &:focus {
@@ -1355,15 +1355,15 @@ body.acd-nc-active {
         .scenes-auto-activate-toggle {
             display: flex;
             align-items: center;
-            gap: 6px;
-            margin: 0 0 8px;
-            padding: 4px 6px;
+            gap: 5px;
+            margin: 0 0 6px;
+            padding: 3px 5px;
             border: 1px solid #444;
             border-radius: 4px;
             background: rgba(0, 0, 0, 0.25);
             color: #bbb;
             cursor: pointer;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             user-select: none;
 
             input[type="checkbox"] {
@@ -1375,7 +1375,7 @@ body.acd-nc-active {
         }
 
         .journal-control-row {
-            margin-bottom: 8px;
+            margin-bottom: 6px;
 
             select {
                 width: 100%;
@@ -1383,8 +1383,8 @@ body.acd-nc-active {
                 color: #fff;
                 border: 1px solid #555;
                 border-radius: 4px;
-                padding: 6px 8px;
-                font-size: 0.85rem;
+                padding: 4px 6px;
+                font-size: 0.8rem;
                 box-sizing: border-box;
 
                 &:focus {
@@ -1397,14 +1397,14 @@ body.acd-nc-active {
         .journal-folder-navigation {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
+            gap: 6px;
+            margin-bottom: 6px;
             min-width: 0;
 
             .btn-journal-folder-up {
-                flex: 0 0 28px;
-                width: 28px;
-                height: 28px;
+                flex: 0 0 24px;
+                width: 24px;
+                height: 24px;
                 padding: 0;
                 border: 1px solid #444;
                 border-radius: 4px;
