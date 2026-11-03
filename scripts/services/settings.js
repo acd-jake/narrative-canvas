@@ -269,6 +269,7 @@ export class NarrativeSettings {
     return {
       panelWidthRatios: normalizeRatios(state.panelWidthRatios),
       sidebarSectionHeightRatios: normalizeRatios(state.sidebarSectionHeightRatios),
+      rightPanelSectionHeightRatios: normalizeRatios(state.rightPanelSectionHeightRatios),
       imageListHeightRatios: normalizeRatios(state.imageListHeightRatios)
     };
   }
@@ -281,6 +282,10 @@ export class NarrativeSettings {
         sidebarSectionHeightRatios: {
           ...current.sidebarSectionHeightRatios,
           ...updates.sidebarSectionHeightRatios
+        },
+        rightPanelSectionHeightRatios: {
+          ...current.rightPanelSectionHeightRatios,
+          ...updates.rightPanelSectionHeightRatios
         },
         imageListHeightRatios: { ...current.imageListHeightRatios, ...updates.imageListHeightRatios }
       });

@@ -13,13 +13,13 @@ export class DirectorSidebar {
   #callbacks;
   #audioController = null;
   #element = null;
+  #audioControlsRoot = null;
   #sceneQuery = "";
   #filterByJournal = true;
   #autoActivateFirstSceneOnJournalChange = true;
   #isCollapsed = false;
   #areScenesCollapsed = true;
   #isJournalCollapsed = false;
-  #isAudioCollapsed = true;
   #rootJournalFolderId = "";
   #currentJournalFolderId = "";
   #journalQuery = "";
@@ -34,7 +34,6 @@ export class DirectorSidebar {
   #audioMuted = false;
   #sceneSectionHeight = null;
   #journalSectionHeight = null;
-  #audioSectionHeight = null;
   #panelOverflowOffset = 0;
   #resizableSections = [];
   #panelWidth = 350;
@@ -85,6 +84,7 @@ export class DirectorSidebar {
         sidebarSectionHeightRatios: this.#layoutState.sidebarSectionHeightRatios
       });
     }
+    this.#audioControlsRoot = null;
     this.#element = null;
   }
 
@@ -202,7 +202,7 @@ export class DirectorSidebar {
     }
 
     this.#updateCollapseState();
-    this.#element.querySelector(".sidebar-audio-section")?.classList.toggle("is-muted", this.#audioMuted);
+    this.#audioControlsRoot?.classList.toggle("is-muted", this.#audioMuted);
 
     // Refresh audio tracks list for the active scene
     this.#refreshAudioTracksList();
@@ -248,8 +248,8 @@ export class DirectorSidebar {
    * @private
    */
   #refreshAudioTracksList() {
-    if (!this.#element) return;
-    const tracksContainer = this.#element.querySelector(".director-audio-tracks-list");
+    if (!this.#audioControlsRoot) return;
+    const tracksContainer = this.#audioControlsRoot.querySelector(".director-audio-tracks-list");
     if (!tracksContainer) return;
 
     const scrollTop = tracksContainer.scrollTop;
@@ -268,6 +268,32 @@ export class DirectorSidebar {
   }
 
   refreshAudioPlayback() {
+    this.#refreshAudioTracksList();
+  }
+
+  getAudioControlsContext() {
+    const activeSceneTracks = this.#getAudioTracksWithPlaybackState();
+    const globalVolume = this.#audioController?.globalVolume ?? 0.5;
+    return {
+      activeSceneAudioEntries: this.#getSceneAudioEntries(activeSceneTracks),
+      audioMuted: this.#audioMuted,
+      nowPlayingText: this.#getNowPlayingText(activeSceneTracks),
+      globalVolume,
+      masterVolumePercent: Math.round(globalVolume * 100)
+    };
+  }
+
+  attachAudioControls(root) {
+    const audioSection = root?.matches(".sidebar-audio-section")
+      ? root
+      : root?.querySelector(".sidebar-audio-section");
+    if (!audioSection) return;
+
+    if (this.#audioControlsRoot !== audioSection) {
+      this.#audioControlsRoot = audioSection;
+      this.#bindAudioControls(audioSection);
+    }
+    audioSection.classList.toggle("is-muted", this.#audioMuted);
     this.#refreshAudioTracksList();
   }
 
@@ -429,7 +455,7 @@ export class DirectorSidebar {
   }
 
   #updateNowPlayingDisplay(tracks) {
-    const display = this.#element?.querySelector(".audio-now-playing");
+    const display = this.#audioControlsRoot?.querySelector(".audio-now-playing");
     if (!display) return;
 
     const text = this.#getNowPlayingText(tracks);
@@ -488,10 +514,6 @@ export class DirectorSidebar {
       void this.#saveJournalViewerState();
     }
 
-    const activeSceneTracks = this.#getAudioTracksWithPlaybackState();
-    const activeSceneAudioEntries = this.#getSceneAudioEntries(activeSceneTracks);
-
-    const gVol = this.#audioController?.globalVolume ?? 0.5;
     const currentFolder = JournalBrowser.getFolders().find(folder => folder.id === this.#currentJournalFolderId);
 
     return {
@@ -503,8 +525,6 @@ export class DirectorSidebar {
       isCollapsed: this.#isCollapsed,
       isScenesCollapsed: this.#areScenesCollapsed,
       isJournalCollapsed: this.#isJournalCollapsed,
-      isAudioCollapsed: this.#isAudioCollapsed,
-      audioMuted: this.#audioMuted,
       activeSceneId: this.#activeSceneId,
       currentSceneName: this.#activeSceneId
         ? this.#currentSceneData?.name ?? game.i18n.localize("NARRATIVE_CANVAS.Director.NoActiveScene")
@@ -520,11 +540,6 @@ export class DirectorSidebar {
       activeJournal,
       selectedPageId: this.#selectedPageId,
       activePage,
-      activeSceneTracks,
-      activeSceneAudioEntries,
-      nowPlayingText: this.#getNowPlayingText(activeSceneTracks),
-      globalVolume: gVol,
-      masterVolumePercent: Math.round(gVol * 100)
     };
   }
 
@@ -555,7 +570,6 @@ export class DirectorSidebar {
     this.#bindTocScrolling(root);
     this.#bindPageSelection(root);
     this.#addImageOverlayButtons(root);
-    this.#bindAudioControls(root);
   }
 
   #bindPanelResize(root) {
@@ -627,15 +641,6 @@ export class DirectorSidebar {
         expandLabel: "NARRATIVE_CANVAS.Director.ExpandJournalViewer",
         collapseLabel: "NARRATIVE_CANVAS.Director.CollapseJournalViewer"
       },
-      {
-        name: "audio",
-        sectionSelector: ".sidebar-audio-section",
-        contentSelector: "#director-audio-content",
-        isCollapsed: this.#isAudioCollapsed,
-        expandedHeight: this.#getSavedSectionHeight("audio", this.#audioSectionHeight, availableHeight),
-        expandLabel: "NARRATIVE_CANVAS.Director.ExpandAudio",
-        collapseLabel: "NARRATIVE_CANVAS.Director.CollapseAudio"
-      }
     ];
 
     for (const config of sectionConfigs) {
@@ -669,9 +674,6 @@ export class DirectorSidebar {
           } else if (config.name === "journal") {
             this.#isJournalCollapsed = state.isCollapsed;
             this.#journalSectionHeight = state.expandedHeight;
-          } else {
-            this.#isAudioCollapsed = state.isCollapsed;
-            this.#audioSectionHeight = state.expandedHeight;
           }
           this.#scheduleLayoutStateSave();
         },
@@ -702,8 +704,7 @@ export class DirectorSidebar {
   #createSidebarResizeHandler(section, { startHeight, wasCollapsed }) {
     const previousSection = section.previousElementSibling;
     if (!previousSection?.classList.contains("sidebar-scenes-section")
-      && !previousSection?.classList.contains("sidebar-journal-section")
-      && !previousSection?.classList.contains("sidebar-audio-section")) return null;
+      && !previousSection?.classList.contains("sidebar-journal-section")) return null;
 
     const previousHeight = previousSection.getBoundingClientRect().height;
     const previousIsCollapsed = previousSection.classList.contains("is-collapsed");
@@ -732,7 +733,6 @@ export class DirectorSidebar {
     if (section.classList.contains("is-collapsed")) return;
     if (section.classList.contains("sidebar-scenes-section")) this.#sceneSectionHeight = height;
     else if (section.classList.contains("sidebar-journal-section")) this.#journalSectionHeight = height;
-    else if (section.classList.contains("sidebar-audio-section")) this.#audioSectionHeight = height;
     this.#scheduleLayoutStateSave();
   }
 
@@ -749,8 +749,7 @@ export class DirectorSidebar {
     const sidebarSectionHeightRatios = { ...this.#layoutState.sidebarSectionHeightRatios };
     for (const [sectionName, height] of Object.entries({
       scenes: this.#sceneSectionHeight,
-      journal: this.#journalSectionHeight,
-      audio: this.#audioSectionHeight
+      journal: this.#journalSectionHeight
     })) {
       if (height !== null) sidebarSectionHeightRatios[sectionName] = height / availableHeight;
     }
@@ -777,7 +776,7 @@ export class DirectorSidebar {
   #captureSidebarSectionHeights() {
     return [...this.#element.children]
       .filter(section => section.matches(
-        ".sidebar-scenes-section, .sidebar-journal-section, .sidebar-audio-section"
+        ".sidebar-scenes-section, .sidebar-journal-section"
       ))
       .map(section => ({
         section,
@@ -1408,8 +1407,7 @@ export class DirectorSidebar {
     }
   }
 
-  #bindAudioControls(root) {
-    const audioSection = root.querySelector(".sidebar-audio-section");
+  #bindAudioControls(audioSection) {
     if (!audioSection) return;
 
     // Track play/pause and stop clicks
@@ -1490,8 +1488,8 @@ export class DirectorSidebar {
    * @param {string} trackId
    */
   updateAudioTrackItem(trackId) {
-    if (!this.#element) return;
-    const item = this.#element.querySelector(`.director-audio-track-item[data-track-id="${trackId}"]`);
+    if (!this.#audioControlsRoot) return;
+    const item = this.#audioControlsRoot.querySelector(`.director-audio-track-item[data-track-id="${trackId}"]`);
     const track = this.#currentSceneData?.tracks?.find(candidate => candidate.id === trackId);
     const activeSceneTracks = this.#getAudioTracksWithPlaybackState();
     this.#updateNowPlayingDisplay(activeSceneTracks);

@@ -87,7 +87,7 @@ Select **Hide from Players** to return from Live to Preparation: player views cl
 
 ### Director sidebars
 
-Resize the left Scene List/Journal Viewer/Audio sidebar and the right Background Images/Handout Images sidebar by dragging their edge handles. Click a handle to collapse or restore its sidebar. The default widths are 350px on the left and 175px on the right. When narrowing a sidebar, its content retains a minimum width of 150px; dragging below 50px collapses it.
+Resize the left Scene List/Journal Viewer sidebar and the right Media & Audio sidebar by dragging their edge handles. The right sidebar contains the Background Images, Handout Images, and Audio sections. Click a handle to collapse or restore its sidebar. The default widths are 350px on the left and 175px on the right. When narrowing a sidebar, its content retains a minimum width of 150px; dragging below 50px collapses it.
 
 Section headers also provide collapse controls. Dragging a resizable section changes its height together with the adjacent section. Sidebar widths and section/list heights are saved locally as percentages of the available space and restored for the current user.
 
@@ -110,7 +110,7 @@ Select a handout tile to display that image as a foreground overlay. Selecting a
 
 ### Audio
 
-The Audio section in the Director Controls lists the active scene's audio. Playlist tracks are grouped under their playlist name; expand a playlist to see each track and its status. The full audio list scrolls as one area. Drag the Audio section header vertically to resize it with its adjacent section. The **Now Playing** line above the master-volume slider identifies the current track or playlist and track. Use playlist-level or track-level play/pause and stop controls as needed. The master volume slider changes the overall audio level. **Stop All Audio** stops scene tracks and playlists. **Mute Audio** silences playback without stopping tracks.
+The Audio section below the image lists in the right Media & Audio sidebar shows the active scene's audio. Playlist tracks are grouped under their playlist name; expand a playlist to see each track and its status. The full audio list scrolls as one area. Drag its header vertically to resize it with the adjacent image list. The **Now Playing** line above the master-volume slider identifies the current track or playlist and track. Use playlist-level or track-level play/pause and stop controls as needed. The master volume slider changes the overall audio level. **Stop All Audio** stops scene tracks and playlists. **Mute Audio** silences playback without stopping tracks.
 
 ### Visual Novel overlay
 

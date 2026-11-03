@@ -9,6 +9,7 @@ export class DirectorImageControls {
   /** @type {HTMLElement|null} */
   #element = null;
   #isPanelCollapsed = false;
+  #isAudioCollapsed = false;
   #panelWidth = 175;
   #panelOverflowOffset = 0;
   #panelResizeController = null;
@@ -16,6 +17,8 @@ export class DirectorImageControls {
   #layoutState = null;
   #collapsedLists = new Set();
   #manualListHeights = new Map();
+  #audioSectionHeight = null;
+  #audioSectionHeightRatio = null;
   #lastAvailableListHeight = null;
   #resizableSections = [];
   #resizeObserver = null;
@@ -25,6 +28,7 @@ export class DirectorImageControls {
     this.#layoutState = NarrativeSettings.getDirectorLayoutState();
     const savedPanelWidthRatio = this.#layoutState.panelWidthRatios.imageControls;
     if (savedPanelWidthRatio) this.#panelWidth = savedPanelWidthRatio * window.innerWidth;
+    this.#audioSectionHeightRatio = this.#layoutState.rightPanelSectionHeightRatios.audio ?? null;
   }
 
   /**
@@ -36,14 +40,7 @@ export class DirectorImageControls {
     this.#destroyResizableSections();
     this.#destroyPanelResizeController();
     this.#resizeObserver?.disconnect();
-    const templateContext = this.#createTemplateContext(context);
-    const htmlString = await renderTemplate(
-      "modules/narrative-canvas/templates/partials/director-image-controls.hbs",
-      templateContext
-    );
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlString, "text/html");
-    const newElement = doc.body.firstElementChild;
+    const { element: newElement, templateContext } = await this.#renderPanel(context);
     this.#element = newElement;
     this.#bindListeners(this.#element);
     this.#resizeObserver = new ResizeObserver(() => this.#scheduleListLayout());
@@ -59,14 +56,7 @@ export class DirectorImageControls {
   async updateInPlace(context = {}) {
     if (!this.#element) return;
 
-    const templateContext = this.#createTemplateContext(context);
-    const htmlString = await renderTemplate(
-      "modules/narrative-canvas/templates/partials/director-image-controls.hbs",
-      templateContext
-    );
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlString, "text/html");
-    const newElement = doc.body.firstElementChild;
+    const { element: newElement, templateContext } = await this.#renderPanel(context);
 
     if (newElement) {
       this.#destroyResizableSections();
@@ -78,6 +68,32 @@ export class DirectorImageControls {
       this.#bindResizableSections(this.#element);
       this.#scheduleListLayout();
     }
+    return this.#element;
+  }
+
+  async #renderPanel(context) {
+    const templateContext = this.#createTemplateContext(context);
+    const [panelMarkup, audioMarkup] = await Promise.all([
+      renderTemplate(
+        "modules/narrative-canvas/templates/partials/director-image-controls.hbs",
+        templateContext
+      ),
+      renderTemplate(
+        "modules/narrative-canvas/templates/partials/director-audio-controls.hbs",
+        templateContext
+      )
+    ]);
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(panelMarkup, "text/html");
+    const element = doc.body.firstElementChild;
+    const audioMount = element?.querySelector(".director-audio-controls-mount");
+    if (audioMount) {
+      const audioDoc = parser.parseFromString(audioMarkup, "text/html");
+      const audioSection = audioDoc.body.firstElementChild;
+      if (audioSection) audioMount.replaceWith(audioSection);
+    }
+
+    return { element, templateContext };
   }
 
   #createTemplateContext(context) {
@@ -85,6 +101,7 @@ export class DirectorImageControls {
       ...context,
       tileSize: NarrativeSettings.getTileSize(),
       isPanelCollapsed: this.#isPanelCollapsed,
+      isAudioCollapsed: this.#isAudioCollapsed,
       isBackgroundsCollapsed: this.#collapsedLists.has("backgrounds"),
       isHandoutsCollapsed: this.#collapsedLists.has("handouts")
     };
@@ -217,6 +234,119 @@ export class DirectorImageControls {
       });
       this.#resizableSections.push(controller);
     });
+
+    this.#bindAudioSection(root);
+  }
+
+  #bindAudioSection(root) {
+    const section = root.querySelector(".sidebar-audio-section");
+    const header = section?.querySelector(":scope > .sidebar-section-header");
+    const content = section?.querySelector(".sidebar-section-content");
+    const toggleButton = header?.querySelector('[data-section-toggle="audio"]');
+    if (!section || !header || !content || !toggleButton) return;
+
+    const expandedHeight = this.#audioSectionHeight
+      ?? (this.#audioSectionHeightRatio === null
+        ? null
+        : this.#audioSectionHeightRatio * this.#getRightPanelContentHeight());
+    const controller = new ResizableSectionController({
+      section,
+      header,
+      content,
+      toggleButton,
+      isCollapsed: this.#isAudioCollapsed,
+      expandedHeight,
+      minHeight: 100,
+      getMaxHeight: () => this.#getRightPanelContentHeight(),
+      createResizeHandler: resizeContext => this.#createAudioSectionResizeHandler(section, resizeContext),
+      onBeforeToggle: () => this.#captureAudioSectionLayout(section),
+      onToggle: toggleState => this.#resizeAdjacentAudioList(toggleState),
+      applyHeight: ({ isCollapsed, expandedHeight: sectionHeight }) => {
+        if (isCollapsed) {
+          section.style.flex = "0 0 auto";
+          section.style.maxHeight = "none";
+        } else if (sectionHeight === null) {
+          section.style.removeProperty("flex");
+          section.style.removeProperty("max-height");
+        } else {
+          section.style.flex = `1 1 ${sectionHeight}px`;
+          section.style.maxHeight = "none";
+        }
+      },
+      onChange: ({ isCollapsed, expandedHeight: sectionHeight }) => {
+        this.#isAudioCollapsed = isCollapsed;
+        this.#audioSectionHeight = sectionHeight;
+        this.#scheduleLayoutStateSave();
+        this.#scheduleListLayout();
+      },
+      expandLabel: "NARRATIVE_CANVAS.Director.ExpandAudio",
+      collapseLabel: "NARRATIVE_CANVAS.Director.CollapseAudio"
+    });
+    this.#resizableSections.push(controller);
+  }
+
+  #captureAudioSectionLayout(section) {
+    const previousSection = section.previousElementSibling;
+    const previousList = previousSection?.querySelector(".director-image-list");
+    const listId = previousSection?.querySelector(".btn-toggle-image-list")?.dataset.imageList;
+    const isCollapsed = previousList?.hidden ?? true;
+    return {
+      previousSection,
+      previousList,
+      listId,
+      isCollapsed,
+      listHeight: previousList
+        ? isCollapsed
+          ? this.#manualListHeights.get(listId) ?? 0
+          : previousList.getBoundingClientRect().height
+        : 0
+    };
+  }
+
+  #resizeAdjacentAudioList({ previousHeight, currentHeight, snapshot }) {
+    const { previousList, listId, isCollapsed, listHeight } = snapshot ?? {};
+    if (!previousList || isCollapsed || !listId) return;
+
+    const nextHeight = Math.max(0, listHeight + previousHeight - currentHeight);
+    previousList.style.height = `${nextHeight}px`;
+    previousList.style.maxHeight = `${nextHeight}px`;
+    this.#manualListHeights.set(listId, nextHeight);
+    this.#scheduleLayoutStateSave();
+    this.#scheduleListLayout();
+  }
+
+  #createAudioSectionResizeHandler(section, { startHeight, wasCollapsed }) {
+    const snapshot = this.#captureAudioSectionLayout(section);
+    const previousSection = snapshot.previousSection;
+    const previousList = snapshot.previousList;
+    if (!previousSection || !previousList) return null;
+
+    const content = section.querySelector(".sidebar-section-content");
+    const audioChromeHeight = startHeight - (content?.getBoundingClientRect().height ?? 0);
+    const previousChromeHeight = previousSection.getBoundingClientRect().height - snapshot.listHeight;
+    const pairHeight = startHeight + previousSection.getBoundingClientRect().height;
+    const minAudioHeight = wasCollapsed ? startHeight : 100;
+    const minPreviousHeight = snapshot.isCollapsed
+      ? previousSection.getBoundingClientRect().height
+      : Math.max(100, previousChromeHeight);
+
+    return ({ requestedHeight }) => {
+      const maxAudioHeight = Math.max(minAudioHeight, pairHeight - minPreviousHeight);
+      const audioHeight = Math.max(minAudioHeight, Math.min(maxAudioHeight, requestedHeight));
+      if (!snapshot.isCollapsed) {
+        const nextListHeight = Math.max(0, pairHeight - audioHeight - previousChromeHeight);
+        previousList.style.height = `${nextListHeight}px`;
+        previousList.style.maxHeight = `${nextListHeight}px`;
+        this.#manualListHeights.set(snapshot.listId, nextListHeight);
+      }
+      this.#scheduleListLayout();
+      return audioHeight;
+    };
+  }
+
+  #getRightPanelContentHeight() {
+    return this.#element?.querySelector(".director-image-controls-content")?.clientHeight
+      || Math.max(1, window.innerHeight - 200);
   }
 
   #captureImageListHeights(root) {
@@ -350,8 +480,14 @@ export class DirectorImageControls {
       const margin = Number.parseFloat(getComputedStyle(group).marginBottom) || 0;
       return total + (header?.getBoundingClientRect().height ?? 0) + headerMargin + margin;
     }, 0);
+    const audioSectionHeight = content.querySelector(".sidebar-audio-section")
+      ?.getBoundingClientRect().height ?? 0;
     const availableHeight = Math.max(0,
-      content.clientHeight - scaleController.getBoundingClientRect().height - scaleMargin - groupSpace
+      content.clientHeight
+        - scaleController.getBoundingClientRect().height
+        - scaleMargin
+        - groupSpace
+        - audioSectionHeight
     );
     if (availableHeight !== this.#lastAvailableListHeight) {
       this.#lastAvailableListHeight = availableHeight;
@@ -404,11 +540,18 @@ export class DirectorImageControls {
 
   #scheduleLayoutStateSave() {
     const availableWidth = Math.max(1, window.innerWidth);
+    const availablePanelHeight = Math.max(1, this.#getRightPanelContentHeight());
     const imageListHeightRatios = { ...this.#layoutState.imageListHeightRatios };
     if (this.#lastAvailableListHeight > 0) {
       for (const [listId, height] of this.#manualListHeights) {
         imageListHeightRatios[listId] = height / this.#lastAvailableListHeight;
       }
+    }
+
+    const rightPanelSectionHeightRatios = { ...this.#layoutState.rightPanelSectionHeightRatios };
+    if (this.#audioSectionHeight !== null) {
+      rightPanelSectionHeightRatios.audio = this.#audioSectionHeight / availablePanelHeight;
+      this.#audioSectionHeightRatio = rightPanelSectionHeightRatios.audio;
     }
 
     this.#layoutState = {
@@ -417,6 +560,7 @@ export class DirectorImageControls {
         ...this.#layoutState.panelWidthRatios,
         imageControls: Math.max(0, this.#panelWidth - this.#panelOverflowOffset) / availableWidth
       },
+      rightPanelSectionHeightRatios,
       imageListHeightRatios
     };
 
@@ -425,6 +569,7 @@ export class DirectorImageControls {
       this.#layoutStateSaveTimeout = null;
       void NarrativeSettings.saveDirectorLayoutState({
         panelWidthRatios: { imageControls: this.#layoutState.panelWidthRatios.imageControls },
+        rightPanelSectionHeightRatios: this.#layoutState.rightPanelSectionHeightRatios,
         imageListHeightRatios: this.#layoutState.imageListHeightRatios
       });
     }, 250);
@@ -440,6 +585,7 @@ export class DirectorImageControls {
       clearTimeout(this.#layoutStateSaveTimeout);
       void NarrativeSettings.saveDirectorLayoutState({
         panelWidthRatios: { imageControls: this.#layoutState.panelWidthRatios.imageControls },
+        rightPanelSectionHeightRatios: this.#layoutState.rightPanelSectionHeightRatios,
         imageListHeightRatios: this.#layoutState.imageListHeightRatios
       });
     }

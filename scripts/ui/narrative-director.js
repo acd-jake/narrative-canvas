@@ -114,15 +114,18 @@ export class NarrativeDirector extends NarrativeCanvas {
     const uiLayer = document.createElement("div");
     uiLayer.className = "narrative-director-ui-layer";
 
-    // 1. Right-side image controls
-    const imageControlsElement = await this.imageControls.render(context);
+    const sidebarElement = await this.sidebar.render(context);
+    const imageControlsContext = {
+      ...context,
+      ...this.sidebar.getAudioControlsContext()
+    };
+    const imageControlsElement = await this.imageControls.render(imageControlsContext);
+    this.sidebar.attachAudioControls(imageControlsElement);
     uiLayer.appendChild(imageControlsElement);
 
     const toolbarElement = await this.toolbar.render(context);
     uiLayer.appendChild(toolbarElement);
 
-    // 2. Left-side scenes & journal sidebar
-    const sidebarElement = await this.sidebar.render(context);
     uiLayer.appendChild(sidebarElement);
 
     // 3. Bottom actor carousel (if actors exist in scene)
@@ -137,9 +140,14 @@ export class NarrativeDirector extends NarrativeCanvas {
   /** @override */
   async _onUpdateElements(context) {
     await this.setAudioMuted(Boolean(context.audioMuted));
-    await this.imageControls?.updateInPlace(context);
-    await this.toolbar?.updateInPlace(context, this.stageElement);
     this.sidebar?.update(context);
+    const imageControlsContext = {
+      ...context,
+      ...this.sidebar?.getAudioControlsContext()
+    };
+    const imageControlsElement = await this.imageControls?.updateInPlace(imageControlsContext);
+    if (imageControlsElement) this.sidebar?.attachAudioControls(imageControlsElement);
+    await this.toolbar?.updateInPlace(context, this.stageElement);
     const uiLayer = this.stageElement?.querySelector(".narrative-director-ui-layer");
     await this.carousel?.update(uiLayer ?? this.stageElement, context);
   }

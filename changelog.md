@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Director sidebar widths default to 350px on the left and 175px on the right. Panels keep at least 150px of content while narrowing and collapse when dragged below 50px.
 - Background and handout image tiles wrap into rows when space allows; their list headers share the Director section styling.
+- The Audio section now appears below the image lists in the right Media & Audio sidebar.
 - The Audio section is more compact: individual track-volume sliders and the duplicate active-playback list were removed; the master-volume slider remains.
 
 ## [0.3] - 2026-11-03

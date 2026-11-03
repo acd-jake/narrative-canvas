@@ -1742,6 +1742,9 @@ body.acd-nc-active {
             }
         }
 
+    }
+
+    :is(.narrative-director-sidebar, .narrative-director-image-controls) {
         /* Compact Section: Scene Audio & Volume */
         .sidebar-audio-section {
             flex: 1 1 auto;
@@ -1754,6 +1757,12 @@ body.acd-nc-active {
 
             > .sidebar-section-header {
                 .sidebar-section-toggle { cursor: pointer; }
+
+                &.is-resizable {
+                    cursor: ns-resize;
+                    touch-action: none;
+                    user-select: none;
+                }
             }
 
             &.is-collapsed {
@@ -1767,6 +1776,14 @@ body.acd-nc-active {
                 opacity: 0.3;
                 filter: grayscale(0.65);
                 transition: opacity 0.15s ease, filter 0.15s ease;
+            }
+
+            .sidebar-section-content {
+                display: flex;
+                flex: 1 1 0;
+                flex-direction: column;
+                min-height: 0;
+                overflow: hidden;
             }
 
             .director-audio-tracks-list {
