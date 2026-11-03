@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6] - 2026-11-03
+
+### Added
+
+- Regression coverage for automatic audio activation when reopening the Canvas with a restored active scene.
+
+### Fixed
+
+- Automatically start a scene's configured audio selection when reopening the Canvas with a restored active scene.
+
 ## [0.5.1] - 2026-11-03
 
 ### Fixed
@@ -107,7 +117,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Dragging handout images no longer changes their size unintentionally.
 
-[Unreleased]: https://github.com/acd-jake/narrative-canvas/compare/0.5.1...HEAD
+[Unreleased]: https://github.com/acd-jake/narrative-canvas/compare/0.6...HEAD
+[0.6]: https://github.com/acd-jake/narrative-canvas/compare/0.5.1...0.6
 [0.5.1]: https://github.com/acd-jake/narrative-canvas/compare/0.5...0.5.1
 [0.5]: https://github.com/acd-jake/narrative-canvas/compare/0.4...0.5
 [0.4]: https://github.com/acd-jake/narrative-canvas/compare/0.3...0.4

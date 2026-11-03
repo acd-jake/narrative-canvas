@@ -187,6 +187,9 @@ export class NarrativeManager {
 
       NarrativeSocket.emit("UPDATE_DISPLAY", this.narrativeState);
       await this.refreshView();
+      if (active && this.narrativeState.activeSceneId && this.narrativeState.currentSceneData) {
+        await this.view?.activateSceneAudio?.(this.narrativeState.currentSceneData);
+      }
     } else {
       if (active) await this.openPlayerCanvas();
     }
