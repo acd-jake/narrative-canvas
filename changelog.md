@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Themes that define colors, fonts, styles and frame images for subtitles, handout image captions, handout image frames, actor name plates and the speaker highlight. A theme is a directory under `themes/` containing a `theme.json` and its images, registered in `module.json`.
+- Predefined themes: Fantasy, Dark Fantasy, Science Fiction and Noir (silent-film intertitle style for Call of Cthulhu).
+- A **Visual Theme** module setting to choose the default theme.
+- A theme dropdown in the Director toolbar, left of the reset button, that temporarily switches the theme for the GM and all players.
+
+### Changed
+
+- The speaker highlight color is now defined by the theme; the **Active Speaker Highlight Color** setting was removed.
+- Handout image descriptions keep a constant on-screen size when the handout image is resized.
+
 ## [0.4] - 2026-11-03
 
 ### Added
