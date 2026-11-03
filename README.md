@@ -13,6 +13,9 @@ Narrative Canvas adds a Theatre of the Mind presentation stage to Foundry Virtua
 - Journal browsing and the ability to show journal images on the presentation stage.
 - Automatic background and audio playback when a scene is activated.
 - Scene audio uses existing Foundry Playlist and PlaylistSound documents. Foundry synchronizes playlist and individual-track playback with connected players.
+- Players can adjust or mute scene audio locally without changing other clients' volume.
+- Journal Viewer controls let each user adjust journal page text size for readability.
+- Configurable logging levels help GMs diagnose module issues.
 - Player controls to dismiss the Canvas locally and reopen it while the GM's presentation remains published.
 - English and German interface translations.
 
@@ -79,6 +82,9 @@ Narrative Canvas erweitert Foundry Virtual Tabletop um eine Präsentationsfläch
 - Journal-Navigation und die Möglichkeit, Journal-Bilder direkt auf der Präsentationsfläche anzuzeigen.
 - Automatische Wiedergabe von Hintergründen und Audio beim Aktivieren einer Szene.
 - Synchronisierte Wiedergabe einzelner Audiospuren einschließlich Lautstärke, Stummschaltung, Pause und Stopp. Auch Spielende, die während einer laufenden Spur beitreten, erhalten deren Wiedergabe. Foundry-Playlists verwenden die native Synchronisierung von Foundry.
+- Spielende können die Szenenlautstärke lokal anpassen oder stummschalten, ohne die Lautstärke anderer Clients zu verändern.
+- Die Schriftgröße der Journal-Seitenansicht lässt sich für bessere Lesbarkeit individuell einstellen.
+- Konfigurierbare Log-Level helfen der Spielleitung bei der Fehlersuche im Modul.
 - Spielende können die Canvas-Ansicht lokal schließen und wieder öffnen, solange die Präsentation der Spielleitung veröffentlicht ist.
 - Englische und deutsche Oberflächenübersetzungen.
 

@@ -7,20 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5] - 2026-11-03
+
 ### Added
 
-- Themes that define colors, fonts, styles and frame images for subtitles, handout image captions, handout image frames, actor name plates and the speaker highlight. A theme is a directory under `themes/` containing a `theme.json` and its images, registered in `module.json`.
-- Predefined themes: Fantasy, Dark Fantasy, Science Fiction and Noir (silent-film intertitle style for Call of Cthulhu).
-- A **Visual Theme** module setting to choose the default theme.
-- A theme dropdown in the Director toolbar, left of the reset button, that temporarily switches the theme for the GM and all players.
-- Vitest service tests for active-state persistence, Director actions, scene asset resolution, and non-mutating scene reads, run on pushes and pull requests.
+- Selectable Fantasy, Dark Fantasy, Science Fiction and Noir themes for subtitles, handout image captions and frames, actor name plates, and speaker highlights.
+- A **Visual Theme** setting for the default theme and a Director toolbar control to switch themes for the current presentation.
+- Player-local scene audio volume and mute controls.
+- Journal Viewer controls to adjust page text size.
+- Configurable logging levels for module diagnostics.
+- Automated service tests for active-state restoration, scene changes, drag-and-drop asset processing, and scene repository behavior; tests run on pushes and pull requests.
 
 ### Changed
 
-- The speaker highlight color is now defined by the theme; the **Active Speaker Highlight Color** setting was removed.
-- Handout image descriptions keep a constant on-screen size when the handout image is resized.
-- Separated active-state persistence and Director action handling from the manager, and isolated Foundry drag-data resolution from the Scene Configurator.
-- Scene repository reads now normalize a copy of stored data instead of mutating the settings value.
+- Speaker highlight styling is now controlled by the active theme; the **Active Speaker Highlight Color** setting was removed.
+- Handout image descriptions retain a constant on-screen size while their image is resized.
+- Scene audio mixing now applies to Foundry PlaylistSound playback, preserving Foundry's client synchronization.
+- Separated active-state persistence and Director actions from the manager, and isolated Foundry drag-data resolution from the Scene Configurator.
+- Scene repository reads normalize a copy rather than mutating the stored settings value.
 
 ## [0.4] - 2026-11-03
 
@@ -97,7 +101,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Dragging handout images no longer changes their size unintentionally.
 
-[Unreleased]: https://github.com/acd-jake/narrative-canvas/compare/0.4...HEAD
+[Unreleased]: https://github.com/acd-jake/narrative-canvas/compare/0.5...HEAD
+[0.5]: https://github.com/acd-jake/narrative-canvas/compare/0.4...0.5
 [0.4]: https://github.com/acd-jake/narrative-canvas/compare/0.3...0.4
 [0.3]: https://github.com/acd-jake/narrative-canvas/compare/0.2...0.3
 [0.2]: https://github.com/acd-jake/narrative-canvas/compare/0.1...0.2
