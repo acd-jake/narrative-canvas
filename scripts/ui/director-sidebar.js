@@ -3,6 +3,7 @@ import { NarrativeSceneRepository } from "../services/scene-repository.js";
 import { NarrativeSettings } from "../services/settings.js";
 import { ResizableSectionController } from "./resizable-section-controller.js";
 import { ResizablePanelController } from "./resizable-panel-controller.js";
+import { NarrativeLogger } from "../services/logger.js";
 
 /**
  * Controller for the Director Left Sidebar, managing filterable scenes,
@@ -67,6 +68,12 @@ export class DirectorSidebar {
     this.#selectedPageId = journalViewerState.pageId;
     this.#playlistSoundHook = Hooks.on("updatePlaylistSound", sound => {
       if (this.#currentSceneData?.tracks?.some(track => track.id === sound.id)) {
+        NarrativeLogger.debug("Foundry Playlist track state changed", {
+          trackId: sound.id,
+          trackName: sound.name,
+          isPlaying: sound.playing,
+          pausedTime: sound.pausedTime
+        });
         this.#refreshAudioTracksList();
       }
     });
@@ -1513,6 +1520,12 @@ export class DirectorSidebar {
 
   async #toggleTrackPlayback(track) {
     const managedState = this.#audioController?.getTrackState(track.id) ?? "stopped";
+    NarrativeLogger.debug("Director toggled scene audio track", {
+      trackId: track.id,
+      trackName: track.name,
+      sourcePlaylistId: track.sourcePlaylistId || null,
+      currentState: managedState
+    });
     if (managedState !== "stopped" || !track.sourcePlaylistId) {
       await this.#audioController?.playOrPause(track);
       return;
@@ -1521,7 +1534,13 @@ export class DirectorSidebar {
     const playlist = game.playlists?.get(track.sourcePlaylistId)
       ?? game.collections?.get("Playlist")?.get(track.sourcePlaylistId);
     const sound = playlist?.sounds?.get(track.id);
-    if (!playlist || !sound) return;
+    if (!playlist || !sound) {
+      NarrativeLogger.warn("Cannot toggle Foundry Playlist track; playlist or sound was not found", {
+        trackId: track.id,
+        playlistId: track.sourcePlaylistId
+      });
+      return;
+    }
     this.#activePlaylistIds.add(playlist.id);
 
     if (sound.playing || sound.sound?.playing) {
@@ -1562,13 +1581,22 @@ export class DirectorSidebar {
   async #togglePlaylistPlayback(playlistId) {
     const playlist = game.playlists?.get(playlistId)
       ?? game.collections?.get("Playlist")?.get(playlistId);
-    if (!playlist) return;
+    if (!playlist) {
+      NarrativeLogger.warn("Cannot toggle playlist playback; playlist was not found", { playlistId });
+      return;
+    }
 
     const sceneTracks = (this.#currentSceneData?.tracks ?? [])
       .filter(track => track.sourcePlaylistId === playlistId)
       .map(track => playlist.sounds?.get(track.id))
       .filter(Boolean);
     const playingSounds = sceneTracks.filter(sound => sound.playing || sound.sound?.playing);
+    NarrativeLogger.info("Toggling scene playlist playback", {
+      playlistId,
+      playlistName: playlist.name,
+      trackCount: sceneTracks.length,
+      action: playingSounds.length > 0 ? "pause" : "play"
+    });
 
     if (playingSounds.length > 0) {
       this.#activePlaylistIds.add(playlistId);
@@ -1597,8 +1625,12 @@ export class DirectorSidebar {
   async #stopPlaylistPlayback(playlistId) {
     const playlist = game.playlists?.get(playlistId)
       ?? game.collections?.get("Playlist")?.get(playlistId);
-    if (!playlist) return;
+    if (!playlist) {
+      NarrativeLogger.warn("Cannot stop playlist playback; playlist was not found", { playlistId });
+      return;
+    }
 
+    NarrativeLogger.info("Stopping scene playlist", { playlistId, playlistName: playlist.name });
     await playlist.stopAll();
     await Promise.all(Array.from(playlist.sounds ?? [])
       .filter(sound => !sound.playing && Number(sound.pausedTime) > 0)

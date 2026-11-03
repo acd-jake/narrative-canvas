@@ -1,4 +1,5 @@
 import { NarrativeSocket } from "./socket.js";
+import { NarrativeLogger } from "./logger.js";
 
 /**
  * GM side: publishes standalone track playback changes so players can mirror them.
@@ -13,11 +14,25 @@ export class TrackAudioPublisher {
    * @param {"playing"|"paused"|"stopped"} state
    */
   static publishStateChange(controller, trackId, state) {
-    if (!game.user.isGM) return;
+    if (!game.user.isGM) {
+      NarrativeLogger.warn("Non-GM attempted to publish standalone audio state", { trackId, state });
+      return;
+    }
 
     const track = controller.getTrack(trackId);
-    if (!track) return;
+    if (!track) {
+      NarrativeLogger.warn("Cannot publish standalone audio state because the track is unknown", {
+        trackId,
+        state
+      });
+      return;
+    }
 
+    NarrativeLogger.info("Publishing standalone audio state", {
+      trackId,
+      trackName: track.name,
+      state
+    });
     NarrativeSocket.emit(this.EVENT_TYPE, { state, track: this.#toPayload(track) });
   }
 
@@ -27,7 +42,14 @@ export class TrackAudioPublisher {
    * @param {string} targetUserId
    */
   static publishPlayingTracksTo(controller, targetUserId) {
-    for (const track of controller.getPlayingTracks()) {
+    const tracks = controller.getPlayingTracks();
+    NarrativeLogger.info("Synchronizing active standalone tracks to joining client", {
+      targetUserId,
+      trackCount: tracks.length,
+      trackIds: tracks.map(track => track.id)
+    });
+
+    for (const track of tracks) {
       NarrativeSocket.emit(this.EVENT_TYPE, { state: "playing", track: this.#toPayload(track) }, targetUserId);
     }
   }

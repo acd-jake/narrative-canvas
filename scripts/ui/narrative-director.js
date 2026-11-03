@@ -5,6 +5,7 @@ import { DirectorImageControls } from "./director-image-controls.js";
 import { DirectorCanvasToolbar } from "./director-canvas-toolbar.js";
 import { SceneAudioController } from "../services/audio-controller.js";
 import { TrackAudioPublisher } from "../services/track-audio-publisher.js";
+import { NarrativeLogger } from "../services/logger.js";
 
 /**
  * Interactive master control interface layout for Gamemasters.
@@ -68,12 +69,28 @@ export class NarrativeDirector extends NarrativeCanvas {
     await this.stopAllAudio();
 
     const automaticTrack = sceneData?.tracks?.find(track => track.playAutomatically === true);
-    if (!automaticTrack) return;
+    if (!automaticTrack) {
+      NarrativeLogger.debug("Scene has no automatic audio selection", { sceneId: sceneData?.id });
+      return;
+    }
+
+    NarrativeLogger.info("Starting automatic scene audio", {
+      sceneId: sceneData.id,
+      trackId: automaticTrack.id,
+      trackName: automaticTrack.name,
+      playlistId: automaticTrack.sourcePlaylistId || null
+    });
 
     if (automaticTrack.sourcePlaylistId) {
       const playlist = game.playlists?.get(automaticTrack.sourcePlaylistId)
         ?? game.collections?.get("Playlist")?.get(automaticTrack.sourcePlaylistId);
-      if (!playlist) return;
+      if (!playlist) {
+        NarrativeLogger.warn("Automatic scene playlist was not found", {
+          sceneId: sceneData.id,
+          playlistId: automaticTrack.sourcePlaylistId
+        });
+        return;
+      }
 
       this.automaticPlaylist = playlist;
       if (this.audioController.muted) {

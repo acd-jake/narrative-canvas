@@ -13,6 +13,7 @@ export class NarrativeSettings {
   static SETTING_SPEAKER_HIGHLIGHT_COLOR = "speakerHighlightColor";
   static SETTING_TOASTS = "enableToastNotifications";
   static SETTING_FADE_DURATION = "fadeDuration";
+  static SETTING_LOG_LEVEL = "logLevel";
   static SETTING_SCENES_DATA = "configuredScenesDataset";
   static SETTING_TILE_SIZE = "editorTileSize";
   static SETTING_ACTIVE_STATE = "activeNarrativeState";
@@ -118,6 +119,23 @@ export class NarrativeSettings {
       }
     });
 
+    game.settings.register("narrative-canvas", this.SETTING_LOG_LEVEL, {
+      name: "NARRATIVE_CANVAS.Settings.LogLevelLabel",
+      hint: "NARRATIVE_CANVAS.Settings.LogLevelHint",
+      scope: "world",
+      config: true,
+      type: String,
+      default: "warn",
+      choices: {
+        off: "NARRATIVE_CANVAS.Settings.LogLevels.Off",
+        error: "NARRATIVE_CANVAS.Settings.LogLevels.Error",
+        warn: "NARRATIVE_CANVAS.Settings.LogLevels.Warn",
+        info: "NARRATIVE_CANVAS.Settings.LogLevels.Info",
+        debug: "NARRATIVE_CANVAS.Settings.LogLevels.Debug",
+        trace: "NARRATIVE_CANVAS.Settings.LogLevels.Trace"
+      }
+    });
+
     game.settings.register("narrative-canvas", this.SETTING_SCENES_DATA, {
       scope: "world",
       config: false,
@@ -206,6 +224,14 @@ export class NarrativeSettings {
 
   static getBackgroundColor() {
     return game.settings.get("narrative-canvas", this.SETTING_BG_COLOR);
+  }
+
+  static getLogLevel() {
+    try {
+      return game.settings.get("narrative-canvas", this.SETTING_LOG_LEVEL) || "warn";
+    } catch (error) {
+      return "warn";
+    }
   }
 
   /**

@@ -1,3 +1,5 @@
+import { NarrativeLogger } from "./logger.js";
+
 /**
  * Manages playback state for narrative scene audio tracks.
  * Handles playing, pausing, stopping, and volume adjustment across multiple active tracks.
@@ -110,10 +112,21 @@ export class SceneAudioController {
    */
   async play(track) {
     if (!track?.id || !track.path) {
-      console.warn("Narrative Canvas | Cannot play track without path:", track);
+      NarrativeLogger.warn("Cannot play audio track with incomplete data", {
+        trackId: track?.id,
+        trackName: track?.name,
+        hasPath: Boolean(track?.path)
+      });
       return;
     }
 
+    NarrativeLogger.debug("Starting audio track playback", {
+      trackId: track.id,
+      trackName: track.name,
+      path: track.path,
+      volume: this.#calcEffectiveVolume(track.id),
+      isMuted: this.#muted
+    });
     this.#tracks.set(track.id, track);
     let sound = this.#sounds.get(track.id);
 
@@ -125,10 +138,15 @@ export class SceneAudioController {
           loop: true
         });
         this.#states.set(track.id, "playing");
+        NarrativeLogger.info("Resumed audio track", { trackId: track.id, trackName: track.name });
         this.#onStateChange?.(track.id, "playing");
         return;
       } catch (err) {
-        console.warn(`Narrative Canvas | Resume failed for track ${track.id}, restarting:`, err);
+        NarrativeLogger.warn("Audio track resume failed; attempting to restart it", {
+          trackId: track.id,
+          trackName: track.name,
+          error: err
+        });
       }
     }
 
@@ -162,9 +180,19 @@ export class SceneAudioController {
         loop: true
       });
 
+      NarrativeLogger.info("Audio track playback started", {
+        trackId: track.id,
+        trackName: track.name,
+        volume: effectiveVol
+      });
       this.#onStateChange?.(track.id, "playing");
     } catch (err) {
-      console.error(`Narrative Canvas | Failed to play audio track "${track.name}":`, err);
+      NarrativeLogger.error("Audio track playback failed", {
+        trackId: track.id,
+        trackName: track.name,
+        path: track.path,
+        error: err
+      });
       this.#states.set(track.id, "stopped");
       this.#onStateChange?.(track.id, "stopped");
     }
@@ -176,16 +204,18 @@ export class SceneAudioController {
    */
   async pause(trackId) {
     const sound = this.#sounds.get(trackId);
+    const wasPlaying = Boolean(sound?.playing);
     if (sound) {
       try {
         if (sound.playing) {
           sound.pause();
         }
       } catch (err) {
-        console.warn(`Narrative Canvas | Pause failed for track ${trackId}:`, err);
+        NarrativeLogger.warn("Pausing audio track failed", { trackId, error: err });
       }
     }
     this.#states.set(trackId, "paused");
+    NarrativeLogger.info("Audio track paused", { trackId, wasPlaying });
     this.#onStateChange?.(trackId, "paused");
   }
 
@@ -199,11 +229,12 @@ export class SceneAudioController {
       try {
         await sound.stop();
       } catch (err) {
-        console.warn(`Narrative Canvas | Stop failed for track ${trackId}:`, err);
+        NarrativeLogger.warn("Stopping audio track failed", { trackId, error: err });
       }
       this.#sounds.delete(trackId);
     }
     this.#states.set(trackId, "stopped");
+    NarrativeLogger.info("Audio track stopped", { trackId, hadSound: Boolean(sound) });
     this.#onStateChange?.(trackId, "stopped");
   }
 
