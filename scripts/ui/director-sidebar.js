@@ -5,6 +5,7 @@ import { ResizableSectionController } from "./resizable-section-controller.js";
 import { ResizablePanelController } from "./resizable-panel-controller.js";
 import { JournalViewerFontSizeController } from "./journal-viewer-font-size-controller.js";
 import { NarrativeLogger } from "../services/logger.js";
+import { stopOtherSceneAudio } from "../services/scene-audio-exclusivity.js";
 
 /**
  * Controller for the Director Left Sidebar, managing filterable scenes,
@@ -1515,9 +1516,8 @@ export class DirectorSidebar {
       });
       return;
     }
-    this.#activePlaylistIds.add(playlist.id);
-
     if (sound.playing || sound.sound?.playing) {
+      this.#activePlaylistIds.add(playlist.id);
       const currentTime = Number(sound.sound?.currentTime);
       const pausedTime = Number(sound.pausedTime);
       await sound.update({
@@ -1525,8 +1525,24 @@ export class DirectorSidebar {
         pausedTime: Number.isFinite(currentTime) ? currentTime : Number.isFinite(pausedTime) ? pausedTime : 0
       });
     } else {
+      await this.#stopOtherSceneAudio({
+        playlistId: playlist.id,
+        trackId: sound.id,
+        isPlaylistGroup: false
+      });
       await playlist.playSound(sound);
     }
+  }
+
+  async #stopOtherSceneAudio(target) {
+    await stopOtherSceneAudio(
+      this.#currentSceneData?.tracks,
+      target,
+      playlistId => game.playlists?.get(playlistId)
+        ?? game.collections?.get("Playlist")?.get(playlistId)
+    );
+    this.#activePlaylistIds.clear();
+    this.#activePlaylistIds.add(target.playlistId);
   }
 
   async #stopTrackPlayback(track) {
@@ -1587,7 +1603,7 @@ export class DirectorSidebar {
     }
 
     const pausedSounds = sceneTracks.filter(sound => Number(sound.pausedTime) > 0);
-    this.#activePlaylistIds.add(playlistId);
+    await this.#stopOtherSceneAudio({ playlistId, isPlaylistGroup: true });
     if (pausedSounds.length === 0) {
       await playlist.playAll();
     } else if (playlist.mode === CONST.PLAYLIST_MODES.SIMULTANEOUS) {
