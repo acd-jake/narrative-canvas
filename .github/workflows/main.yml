@@ -122,6 +122,7 @@ jobs:
             templates                            \
             scripts/                             \
             styles/                              \
+            themes/                              \
             packs/                               \
             language/                            \
             lang/

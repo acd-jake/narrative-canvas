@@ -57,7 +57,7 @@ After installation, open your world, go to **Manage Modules**, enable **Narrativ
 
 ### Manual installation
 
-Download `module.zip` from the [latest GitHub release](https://github.com/acd-jake/narrative-canvas/releases) and extract it into Foundry's `Data/modules` directory. Make sure the `narrative-canvas` folder contains `module.json` at its root. Then enable the module in **Manage Modules** and reload your world.
+Download `module.zip` from the [latest GitHub release](https://github.com/acd-jake/narrative-canvas/releases) and extract it into Foundry's `Data/modules` directory. Make sure the `narrative-canvas` folder contains `module.json` at its root. The release archive includes the built-in theme definitions and frame artwork. Then enable the module in **Manage Modules** and reload your world.
 
 ## Learn More
 
@@ -126,7 +126,7 @@ Während der Testentwicklung kann `npm run test:watch` verwendet werden.
 
 ### Manuelle Installation
 
-Lade `module.zip` aus dem [neuesten GitHub-Release](https://github.com/acd-jake/narrative-canvas/releases) herunter und entpacke die Datei in Foundrys Verzeichnis `Data/modules`. Der Ordner `narrative-canvas` muss die Datei `module.json` direkt im Stammverzeichnis enthalten. Aktiviere danach das Modul unter **Manage Modules** und lade die Welt neu.
+Lade `module.zip` aus dem [neuesten GitHub-Release](https://github.com/acd-jake/narrative-canvas/releases) herunter und entpacke die Datei in Foundrys Verzeichnis `Data/modules`. Der Ordner `narrative-canvas` muss die Datei `module.json` direkt im Stammverzeichnis enthalten. Das Release-Archiv enthält auch die mitgelieferten Theme-Definitionen und Rahmenbilder. Aktiviere danach das Modul unter **Manage Modules** und lade die Welt neu.
 
 ## Weitere Informationen
 

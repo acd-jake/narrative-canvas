@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-03
+
+### Fixed
+
+- Included the `themes/` directory in the release archive so built-in theme definitions and frame artwork are available after installation.
+
 ## [0.5] - 2026-11-03
 
 ### Added
@@ -101,7 +107,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Dragging handout images no longer changes their size unintentionally.
 
-[Unreleased]: https://github.com/acd-jake/narrative-canvas/compare/0.5...HEAD
+[Unreleased]: https://github.com/acd-jake/narrative-canvas/compare/0.5.1...HEAD
+[0.5.1]: https://github.com/acd-jake/narrative-canvas/compare/0.5...0.5.1
 [0.5]: https://github.com/acd-jake/narrative-canvas/compare/0.4...0.5
 [0.4]: https://github.com/acd-jake/narrative-canvas/compare/0.3...0.4
 [0.3]: https://github.com/acd-jake/narrative-canvas/compare/0.2...0.3
