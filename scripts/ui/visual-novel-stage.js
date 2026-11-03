@@ -1,3 +1,5 @@
+import { getSortableDropTarget } from "./sortable-list-controller.js";
+
 /**
  * Controller responsible for the Visual Novel character overlay layer.
  * Manages character DOM elements, smooth entry/exit animations,
@@ -307,21 +309,46 @@ export class VisualNovelStage {
     event.preventDefault();
     this.#updateDragGhost(event);
 
-    const elementUnderPointer = document.elementFromPoint(event.clientX, event.clientY);
-    const target = elementUnderPointer instanceof Element
-      ? elementUnderPointer.closest(".narrative-vn-character.is-reorderable")
-      : null;
+    const actorElements = Array.from(
+      this.#vnStage.querySelectorAll(".narrative-vn-character.is-reorderable:not(.is-exiting)")
+    );
+    const sortableItems = actorElements
+      .filter(element => element.dataset.actorId !== this.#pointerDownActorId)
+      .map((element, index) => ({
+        id: element.dataset.actorId,
+        index,
+        rect: element.getBoundingClientRect()
+      }));
+    const targetSlot = getSortableDropTarget(
+      sortableItems,
+      { x: event.clientX, y: event.clientY },
+      "horizontal",
+      this.#vnStage.getBoundingClientRect()
+    );
+    let targetActorId = targetSlot?.id ?? null;
+    let targetSide = targetSlot?.position ?? null;
+
+    if (!targetActorId) {
+      const elementUnderPointer = document.elementFromPoint(event.clientX, event.clientY);
+      const target = elementUnderPointer instanceof Element
+        ? elementUnderPointer.closest(".narrative-vn-character.is-reorderable")
+        : null;
+      if (target && this.#vnStage.contains(target) && target.dataset.actorId !== this.#pointerDownActorId) {
+        const targetRect = target.getBoundingClientRect();
+        targetActorId = target.dataset.actorId;
+        targetSide = event.clientX < targetRect.left + targetRect.width / 2 ? "before" : "after";
+      }
+    }
+
     this.#vnStage?.querySelectorAll(".is-drop-target").forEach(element => {
       element.classList.remove("is-drop-target", "is-drop-before", "is-drop-after");
     });
-    this.#dropTargetActorId = target && this.#vnStage?.contains(target) ? target.dataset.actorId : null;
-    if (this.#dropTargetActorId && this.#dropTargetActorId !== this.#pointerDownActorId) {
-      const targetRect = target.getBoundingClientRect();
-      this.#dropTargetSide = event.clientX < targetRect.left + targetRect.width / 2 ? "before" : "after";
-      target.classList.add("is-drop-target");
-      target.classList.add(`is-drop-${this.#dropTargetSide}`);
+    this.#dropTargetActorId = targetActorId;
+    this.#dropTargetSide = targetSide;
+    if (targetActorId) {
+      const target = actorElements.find(element => element.dataset.actorId === targetActorId);
+      target?.classList.add("is-drop-target", `is-drop-${targetSide}`);
     } else {
-      this.#dropTargetActorId = null;
       this.#dropTargetSide = null;
     }
   };
@@ -338,7 +365,8 @@ export class VisualNovelStage {
       const targetIndex = actorIds.indexOf(this.#dropTargetActorId);
       if (sourceIndex >= 0 && targetIndex >= 0) {
         actorIds.splice(sourceIndex, 1);
-        const insertionIndex = targetIndex + (this.#dropTargetSide === "after" ? 1 : 0);
+        const adjustedTargetIndex = targetIndex - (sourceIndex < targetIndex ? 1 : 0);
+        const insertionIndex = adjustedTargetIndex + (this.#dropTargetSide === "after" ? 1 : 0);
         actorIds.splice(insertionIndex, 0, this.#pointerDownActorId);
         this.#onActorOrderChange?.(actorIds);
       }

@@ -5,9 +5,10 @@ export function getSortableDropTarget(items, { x, y }, axis, listRect) {
   for (let index = 0; index < items.length - 1; index++) {
     const previous = items[index];
     const next = items[index + 1];
-    const sameRow = axis === "grid"
-      && Math.abs((previous.rect.top + previous.rect.bottom) / 2
-        - (next.rect.top + next.rect.bottom) / 2) <= Math.max(previous.rect.height, next.rect.height) / 2;
+    const sameRow = axis === "horizontal"
+      || (axis === "grid"
+        && Math.abs((previous.rect.top + previous.rect.bottom) / 2
+          - (next.rect.top + next.rect.bottom) / 2) <= Math.max(previous.rect.height, next.rect.height) / 2);
 
     if (sameRow) {
       const startX = previous.rect.right - previous.rect.width / 3;

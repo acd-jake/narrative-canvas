@@ -34,6 +34,15 @@ describe("getSortableDropTarget", () => {
     )).toEqual({ id: "next", index: 1, position: "before" });
   });
 
+  it.each([65, 96, 125])("uses the same insertion zone for horizontal overlays at x=%i", x => {
+    expect(getSortableDropTarget(
+      [previousItem, nextItem],
+      { x, y: 45 },
+      "horizontal",
+      listRect
+    )).toEqual({ id: "next", index: 1, position: "before" });
+  });
+
   it.each([55, 140])("does not extend the insertion zone to pointer x=%i", x => {
     expect(getSortableDropTarget(
       [previousItem, nextItem],
