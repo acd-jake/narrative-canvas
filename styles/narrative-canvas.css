@@ -2543,6 +2543,38 @@ body.acd-nc-active {
         padding: 8px 0;
     }
 
+    .sortable-list [data-sortable-id] {
+        transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), margin 160ms ease, opacity 120ms ease;
+        cursor: grab;
+    }
+
+    .sortable-list [data-sortable-id].is-sorting {
+        opacity: 0.48;
+        cursor: grabbing;
+    }
+
+    .sortable-list [data-sortable-id].sort-target-before,
+    .sortable-list [data-sortable-id].sort-target-after {
+        outline: 2px solid rgba(224, 184, 76, 0.8);
+        outline-offset: 2px;
+    }
+
+    .sortable-list[data-sortable-axis="vertical"] > [data-sortable-id].sort-target-before {
+        margin-top: 10px;
+    }
+
+    .sortable-list[data-sortable-axis="vertical"] > [data-sortable-id].sort-target-after {
+        margin-bottom: 10px;
+    }
+
+    .sortable-list[data-sortable-axis="grid"] > [data-sortable-id].sort-target-before {
+        margin-left: 10px;
+    }
+
+    .sortable-list[data-sortable-axis="grid"] > [data-sortable-id].sort-target-after {
+        margin-right: 10px;
+    }
+
     .scene-navigation-item {
         display: flex;
         justify-content: space-between;

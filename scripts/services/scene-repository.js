@@ -157,6 +157,39 @@ export class NarrativeSceneRepository {
     return this.#queueMutation(() => NarrativeSettings.saveAllScenes(this.getAll().filter(scene => scene.id !== sceneId)));
   }
 
+  static async reorderScenes(sourceSceneId, targetSceneId, position) {
+    if (!sourceSceneId || !targetSceneId || sourceSceneId === targetSceneId) return;
+
+    return this.#queueMutation(async () => {
+      const scenes = this.getAll();
+      if (!this.#moveItems(scenes, sourceSceneId, targetSceneId, position, scene => scene.id)) return;
+      await NarrativeSettings.saveAllScenes(scenes);
+    });
+  }
+
+  static async reorderSceneItems(sceneId, collectionName, sourceId, targetId, position) {
+    if (!sceneId || sourceId === null || targetId === null || sourceId === targetId) return;
+
+    if (!["backgrounds", "handoutImages", "actors", "audioEntries"].includes(collectionName)) return;
+
+    await this.#update(sceneId, scene => {
+      if (collectionName === "audioEntries") {
+        const entries = this.#audioEntryGroups(scene.tracks);
+        if (!this.#moveItems(entries, sourceId, targetId, position, entry => entry.id)) return;
+        scene.tracks = entries.flatMap(entry => entry.tracks);
+        return;
+      }
+
+      const items = scene[collectionName];
+      if (collectionName === "backgrounds" || collectionName === "handoutImages") {
+        this.#moveItems(items, Number(sourceId), Number(targetId), position, (item, index) => index);
+        return;
+      }
+
+      this.#moveItems(items, sourceId, targetId, position, actor => actor.id);
+    });
+  }
+
   static async rename(sceneId, name) {
     await this.#update(sceneId, (scene, scenes) => {
       scene.name = this.#toUniqueName(name, scenes, sceneId);
@@ -318,6 +351,36 @@ export class NarrativeSceneRepository {
       mutate(scene, scenes);
       await NarrativeSettings.saveAllScenes(scenes);
     });
+  }
+
+  static #audioEntryGroups(tracks = []) {
+    const groups = [];
+    const groupsById = new Map();
+    for (const track of tracks) {
+      const id = track.sourcePlaylistId && track.isPlaylistGroup !== false
+        ? `playlist:${track.sourcePlaylistId}`
+        : `sound:${track.id}`;
+      let group = groupsById.get(id);
+      if (!group) {
+        group = { id, tracks: [] };
+        groupsById.set(id, group);
+        groups.push(group);
+      }
+      group.tracks.push(track);
+    }
+    return groups;
+  }
+
+  static #moveItems(items, sourceId, targetId, position, getId) {
+    const sourceIndex = items.findIndex((item, index) => getId(item, index) === sourceId);
+    const targetIndex = items.findIndex((item, index) => getId(item, index) === targetId);
+    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return false;
+
+    const [item] = items.splice(sourceIndex, 1);
+    const adjustedTargetIndex = targetIndex - (sourceIndex < targetIndex ? 1 : 0);
+    const insertionIndex = adjustedTargetIndex + (position === "after" ? 1 : 0);
+    items.splice(insertionIndex, 0, item);
+    return true;
   }
 
   static #queueMutation(mutation) {

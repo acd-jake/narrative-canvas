@@ -6,6 +6,7 @@ import { JournalDockController } from "../services/journal-dock.js";
 import { SceneAudioPreview } from "../services/scene-audio-preview.js";
 import { SceneAssetResolver } from "../services/scene-asset-resolver.js";
 import { NarrativeLogger } from "../services/logger.js";
+import { SortableListController } from "./sortable-list-controller.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 const ANY_ASSET_TYPE = "*";
@@ -18,6 +19,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   #journalAssetsJournalId = null;
   #imageDescriptionEditors;
   #dock;
+  #sortableListController;
   #playlistSoundDragHandler = event => {
     if (!(event.target instanceof Element)) return;
     const soundRow = event.target.closest(".sound[data-playlist-id][data-sound-id]");
@@ -50,6 +52,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     super(options);
     this.selectedSceneId = null;
     this.sceneAssetResolver = new SceneAssetResolver();
+    this.#sortableListController = new SortableListController(payload => this.#reorderItems(payload));
     this.audioPreview = new SceneAudioPreview((entryId, isPlaying) => {
       for (const button of this.element?.querySelectorAll(".btn-audio-preview") ?? []) {
         if (button.dataset.audioEntryId !== entryId) continue;
@@ -114,8 +117,14 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       journalName: scene.journalId
         ? this.#journalNameOf(scene.journalId) ?? scene.journalName
         : scene.journalName,
-      backgrounds: (scene.backgrounds ?? []).map(image => this.#imageContext(image)),
-      handoutImages: (scene.handoutImages ?? []).map(image => this.#imageContext(image)),
+      backgrounds: (scene.backgrounds ?? []).map(image => ({
+        ...this.#imageContext(image),
+        sortableId: this.#imageSortableId(image)
+      })),
+      handoutImages: (scene.handoutImages ?? []).map(image => ({
+        ...this.#imageContext(image),
+        sortableId: this.#imageSortableId(image)
+      })),
       audioEntries: this.#audioEntries(scene)
     }));
 
@@ -158,6 +167,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   /** @override */
   async _onClose(options) {
     document.removeEventListener("dragstart", this.#playlistSoundDragHandler, true);
+    this.#sortableListController.destroy();
     await this.#imageDescriptionEditors.destroy();
     await this.audioPreview.stop();
     super._onClose(options);
@@ -171,6 +181,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     document.addEventListener("dragstart", this.#playlistSoundDragHandler, true);
     this._dragDrop = this._dragDrop || this.#createDragDrop();
     this._dragDrop.bind(this.element);
+    this.#sortableListController.bind(this.element);
     this.#bindListeners();
     await this.#imageDescriptionEditors.mount(this.element);
   }
@@ -180,9 +191,18 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       dropSelector: ".editor-dropzone",
       permissions: { drop: () => game.user.isGM },
       callbacks: {
-        dragover: (event) => event.currentTarget.classList.add("drag-over"),
-        dragleave: (event) => event.currentTarget.classList.remove("drag-over"),
-        drop: (event) => this.#onAssetDrop(event)
+        dragover: event => {
+          if (this.#sortableListController.isInternalDrag(event)) return;
+          event.currentTarget.classList.add("drag-over");
+        },
+        dragleave: event => {
+          if (this.#sortableListController.isInternalDrag(event)) return;
+          event.currentTarget.classList.remove("drag-over");
+        },
+        drop: event => {
+          if (this.#sortableListController.isInternalDrag(event)) return;
+          return this.#onAssetDrop(event);
+        }
       }
     });
   }
@@ -455,6 +475,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
         entries.push({
           id: track.sourcePlaylistId,
           entryId: `playlist:${track.sourcePlaylistId}`,
+          sortableId: `playlist:${track.sourcePlaylistId}`,
           type: "playlist",
           isPlayable: true,
           playlistId: track.sourcePlaylistId,
@@ -468,6 +489,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
         entries.push({
           id: track.id,
           entryId: `sound:${track.id}`,
+          sortableId: `sound:${track.id}`,
           type: "sound",
           repositoryType: "PlaylistSound",
           name: track.name,
@@ -547,10 +569,37 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   }
 
   async #refreshViews() {
+    const sortablePositions = this.#sortableListController.capturePositions(this.element);
     const scrollPositions = this.#captureScrollPositions();
     await this.render();
+    this.#sortableListController.animateReorder(this.element, sortablePositions);
     this.#restoreScrollPositions(scrollPositions);
     await this.#refreshDirector();
+  }
+
+  #imageSortableId(image) {
+    return `image:${encodeURIComponent(JSON.stringify([
+      image.path,
+      image.name,
+      image.description,
+      image.showDescription,
+      image.viewAutomatically
+    ]))}`;
+  }
+
+  async #reorderItems({ list, sceneId, sourceId, sourceIndex, targetId, targetIndex, position }) {
+    if (list === "scenes") {
+      await this.#persistAndRefresh(() =>
+        NarrativeSceneRepository.reorderScenes(sourceId, targetId, position)
+      );
+      return;
+    }
+
+    const sourceKey = list === "backgrounds" || list === "handoutImages" ? sourceIndex : sourceId;
+    const targetKey = list === "backgrounds" || list === "handoutImages" ? targetIndex : targetId;
+    await this.#persistAndRefresh(() =>
+      NarrativeSceneRepository.reorderSceneItems(sceneId, list, sourceKey, targetKey, position)
+    );
   }
 
   #captureScrollPositions() {

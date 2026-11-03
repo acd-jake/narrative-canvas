@@ -15,9 +15,9 @@
             <input type="range" class="slider-tile-scale" min="50" max="300" step="5" value="{{tileSize}}" />
         </div>
 
-        <div class="scenes-navigation-list" data-scroll-region="scene-list">
+        <div class="scenes-navigation-list sortable-list" data-scroll-region="scene-list" data-sortable-list="scenes" data-sortable-axis="vertical">
             {{#each allScenes}}
-                <div class="scene-navigation-item {{#if (eq ../selectedSceneId this.id)}}is-selected{{/if}}" data-scene-id="{{this.id}}">
+            <div class="scene-navigation-item {{#if (eq ../selectedSceneId this.id)}}is-selected{{/if}}" data-scene-id="{{this.id}}" data-sortable-id="{{this.id}}" draggable="true">
                     <div class="scene-nav-text">
                         <span class="scene-nav-name" title="{{this.name}}">{{this.name}}</span>
                         {{#if this.journalName}}
@@ -55,11 +55,11 @@
                             <i class="fas fa-plus"></i> {{localize "NARRATIVE_CANVAS.Editor.AddImage"}}
                         </button>
                     </header>
-                    <div class="tiles-wrapping-grid image-collection-grid">
+                    <div class="tiles-wrapping-grid image-collection-grid sortable-list" data-sortable-list="backgrounds" data-sortable-scene-id="{{activeScene.id}}" data-sortable-axis="grid">
                         {{#each activeScene.backgrounds}}
-                            <div class="tile-thumbnail-card background-tile-card" data-index="{{@index}}" data-type="SceneImage" data-image-collection="backgrounds" draggable="true">
+                            <div class="tile-thumbnail-card background-tile-card" data-index="{{@index}}" data-type="SceneImage" data-image-collection="backgrounds" data-sortable-id="{{this.sortableId}}" data-sortable-index="{{@index}}" draggable="true">
                                 <div class="tile-image-wrapper">
-                                    <img src="{{this.path}}" alt="{{this.name}}" />
+                                    <img src="{{this.path}}" alt="{{this.name}}" draggable="false" />
                                     <button type="button" class="btn-edit-background-description tile-overlay-toggle-name {{#if this.hasDescription}}is-active{{/if}}" aria-expanded="false" title="{{#if this.descriptionTooltip}}{{localize 'NARRATIVE_CANVAS.Editor.EditBackgroundDescription'}}: {{this.descriptionTooltip}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.AddBackgroundDescription'}}{{/if}}">
                                         <i class="fas {{#if this.hasDescription}}fa-comment-dots{{else}}fa-comment{{/if}}"></i>
                                     </button>
@@ -93,11 +93,11 @@
                             <i class="fas fa-plus"></i> {{localize "NARRATIVE_CANVAS.Editor.AddImage"}}
                         </button>
                     </header>
-                    <div class="tiles-wrapping-grid image-collection-grid">
+                    <div class="tiles-wrapping-grid image-collection-grid sortable-list" data-sortable-list="handoutImages" data-sortable-scene-id="{{activeScene.id}}" data-sortable-axis="grid">
                         {{#each activeScene.handoutImages}}
-                            <div class="tile-thumbnail-card background-tile-card" data-index="{{@index}}" data-type="SceneImage" data-image-collection="handoutImages" draggable="true">
+                            <div class="tile-thumbnail-card background-tile-card" data-index="{{@index}}" data-type="SceneImage" data-image-collection="handoutImages" data-sortable-id="{{this.sortableId}}" data-sortable-index="{{@index}}" draggable="true">
                                 <div class="tile-image-wrapper">
-                                    <img src="{{this.path}}" alt="{{this.name}}" />
+                                    <img src="{{this.path}}" alt="{{this.name}}" draggable="false" />
                                     <button type="button" class="btn-edit-background-description tile-overlay-toggle-name {{#if this.hasDescription}}is-active{{/if}}" aria-expanded="false" title="{{#if this.descriptionTooltip}}{{localize 'NARRATIVE_CANVAS.Editor.EditBackgroundDescription'}}: {{this.descriptionTooltip}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.AddBackgroundDescription'}}{{/if}}">
                                         <i class="fas {{#if this.hasDescription}}fa-comment-dots{{else}}fa-comment{{/if}}"></i>
                                     </button>
@@ -122,11 +122,11 @@
                 <!-- Section 2: Actors -->
                 <section class="workspace-section editor-dropzone" data-type="Actor" data-scene-id="{{activeScene.id}}">
                     <h4><i class="fas fa-users"></i> {{localize "NARRATIVE_CANVAS.Director.Actors"}}</h4>
-                    <div class="tiles-wrapping-grid">
+                    <div class="tiles-wrapping-grid sortable-list" data-sortable-list="actors" data-sortable-scene-id="{{activeScene.id}}" data-sortable-axis="grid">
                         {{#each activeScene.actors}}
-                            <div class="tile-thumbnail-card" data-id="{{this.id}}" data-type="Actor">
+                            <div class="tile-thumbnail-card" data-id="{{this.id}}" data-type="Actor" data-sortable-id="{{this.id}}" draggable="true">
                                 <div class="tile-image-wrapper">
-                                    <img src="{{this.img}}" alt="{{this.name}}" />
+                                    <img src="{{this.img}}" alt="{{this.name}}" draggable="false" />
                                     <button type="button" class="btn-toggle-actor-name tile-overlay-toggle-name {{#if (ne this.showName false)}}is-active{{/if}}" title="{{#if (ne this.showName false)}}{{localize 'NARRATIVE_CANVAS.Editor.HideActorName'}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.ShowActorName'}}{{/if}}">
                                         <i class="fas {{#if (ne this.showName false)}}fa-id-badge{{else}}fa-eye-slash{{/if}}"></i>
                                     </button>
@@ -144,9 +144,9 @@
                     <header class="section-component-header">
                         <h4><i class="fas fa-music"></i> {{localize "NARRATIVE_CANVAS.Director.Audio"}}</h4>
                     </header>
-                    <div class="audio-entry-list">
+                    <div class="audio-entry-list sortable-list" data-sortable-list="audioEntries" data-sortable-scene-id="{{activeScene.id}}" data-sortable-axis="grid">
                         {{#each activeScene.audioEntries}}
-                            <div class="tile-thumbnail-card audio-entry-badge audio-entry-badge--{{this.type}} {{#if this.isPreviewing}}is-previewing{{/if}}" data-id="{{this.id}}" data-type="{{this.repositoryType}}" data-audio-entry-id="{{this.entryId}}" data-audio-type="{{this.type}}" data-playlist-id="{{this.playlistId}}" data-audio-path="{{this.path}}">
+                            <div class="tile-thumbnail-card audio-entry-badge audio-entry-badge--{{this.type}} {{#if this.isPreviewing}}is-previewing{{/if}}" data-id="{{this.id}}" data-type="{{this.repositoryType}}" data-audio-entry-id="{{this.entryId}}" data-audio-type="{{this.type}}" data-playlist-id="{{this.playlistId}}" data-audio-path="{{this.path}}" data-sortable-id="{{this.sortableId}}" draggable="true">
                                 <i class="fas {{#if (eq this.type 'playlist')}}fa-list-ul{{else}}fa-music{{/if}} audio-entry-type-icon" title="{{#if (eq this.type 'playlist')}}{{localize 'NARRATIVE_CANVAS.Editor.AudioPlaylist'}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.AudioItem'}}{{/if}}" aria-label="{{#if (eq this.type 'playlist')}}{{localize 'NARRATIVE_CANVAS.Editor.AudioPlaylist'}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.AudioItem'}}{{/if}}"></i>
                                 <span class="audio-entry-name" title="{{this.name}}">{{this.name}}</span>
                                 <button type="button" class="btn-toggle-track-autoplay {{#if this.playAutomatically}}is-active{{/if}}" title="{{#if this.playAutomatically}}{{localize 'NARRATIVE_CANVAS.Editor.DisableAutomaticAudio'}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.PlayAudioAutomatically'}}{{/if}}" aria-label="{{#if this.playAutomatically}}{{localize 'NARRATIVE_CANVAS.Editor.DisableAutomaticAudio'}}{{else}}{{localize 'NARRATIVE_CANVAS.Editor.PlayAudioAutomatically'}}{{/if}}"><i class="fas fa-bolt" aria-hidden="true"></i></button>
