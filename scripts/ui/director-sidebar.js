@@ -12,7 +12,7 @@ import { NarrativeLogger } from "../services/logger.js";
  */
 export class DirectorSidebar {
   #callbacks;
-  #audioController = null;
+  #audioMixer = null;
   #element = null;
   #audioControlsRoot = null;
   #sceneQuery = "";
@@ -47,14 +47,14 @@ export class DirectorSidebar {
 
   /**
    * @param {object} options
-   * @param {SceneAudioController} options.audioController
+  * @param {PlaylistAudioMixer} options.audioMixer
   * @param {(sceneId: string|null) => void} options.onSceneSelect
   * @param {(journalId: string) => void} options.onJournalSelect
    * @param {(volume: number) => void} [options.onVolumeChange]
    * @param {(image: {src: string, title: string}) => void} [options.onJournalImageShow]
    */
-  constructor({ audioController, onSceneSelect, onJournalSelect, onVolumeChange, onJournalImageShow }) {
-    this.#audioController = audioController;
+  constructor({ audioMixer, onSceneSelect, onJournalSelect, onVolumeChange, onJournalImageShow }) {
+    this.#audioMixer = audioMixer;
     this.#callbacks = { onSceneSelect, onJournalSelect, onVolumeChange, onJournalImageShow };
     this.#layoutState = NarrativeSettings.getDirectorLayoutState() || {};
     const savedPanelWidthRatio = this.#layoutState.panelWidthRatios.sidebar;
@@ -163,8 +163,8 @@ export class DirectorSidebar {
     this.#scenesList = context.scenesList ?? NarrativeSceneRepository.getAll();
     this.#currentSceneData = context.currentSceneData ?? (this.#activeSceneId ? this.#scenesList.find(s => s.id === this.#activeSceneId) : null);
 
-    if (context.globalVolume !== undefined && this.#audioController) {
-      this.#audioController.globalVolume = context.globalVolume;
+    if (context.globalVolume !== undefined && this.#audioMixer) {
+      this.#audioMixer.globalVolume = context.globalVolume;
     }
 
     const templateData = await this.#prepareTemplateData();
@@ -280,7 +280,7 @@ export class DirectorSidebar {
 
   getAudioControlsContext() {
     const activeSceneTracks = this.#getAudioTracksWithPlaybackState();
-    const globalVolume = this.#audioController?.globalVolume ?? 0.5;
+    const globalVolume = this.#audioMixer?.globalVolume ?? 0.5;
     return {
       activeSceneAudioEntries: this.#getSceneAudioEntries(activeSceneTracks),
       audioMuted: this.#audioMuted,
@@ -309,7 +309,7 @@ export class DirectorSidebar {
     const playlists = new Map();
 
     for (const track of tracks) {
-      if (!track.sourcePlaylistId) {
+      if (!track.sourcePlaylistId || track.isPlaylistGroup === false) {
         entries.push({ type: "track", track });
         continue;
       }
@@ -410,7 +410,6 @@ export class DirectorSidebar {
 
   #getAudioTracksWithPlaybackState() {
     return (this.#currentSceneData?.tracks ?? []).map(track => {
-      const managedState = this.#audioController?.getTrackState(track.id) ?? "stopped";
       const playlists = game.playlists ?? game.collections?.get("Playlist");
       let playlist = track.sourcePlaylistId
         ? game.playlists?.get(track.sourcePlaylistId)
@@ -427,13 +426,11 @@ export class DirectorSidebar {
         playlist = Array.from(playlists).find(candidate => candidate.sounds?.has(track.id)) ?? null;
         playlistSound = playlist?.sounds?.get(track.id);
       }
-      const playState = managedState !== "stopped"
-        ? managedState
-        : playlistSound?.playing || playlistSound?.sound?.playing
-          ? "playing"
-          : Number(playlistSound?.pausedTime) > 0
-            ? "paused"
-            : "stopped";
+      const playState = playlistSound?.playing || playlistSound?.sound?.playing
+        ? "playing"
+        : Number(playlistSound?.pausedTime) > 0
+          ? "paused"
+          : "stopped";
 
       return {
         ...track,
@@ -1476,8 +1473,8 @@ export class DirectorSidebar {
     const masterSlider = audioSection.querySelector(".slider-master-volume");
     masterSlider?.addEventListener("input", (event) => {
       const val = parseFloat(event.target.value);
-      if (this.#audioController) {
-        this.#audioController.globalVolume = val;
+      if (this.#audioMixer) {
+        this.#audioMixer.globalVolume = val;
       }
       this.#callbacks.onVolumeChange?.(val);
 
@@ -1488,46 +1485,17 @@ export class DirectorSidebar {
     });
   }
 
-  /**
-   * Updates the UI state of a single track row without a full re-render.
-   * @param {string} trackId
-   */
-  updateAudioTrackItem(trackId) {
-    if (!this.#audioControlsRoot) return;
-    const item = this.#audioControlsRoot.querySelector(`.director-audio-track-item[data-track-id="${trackId}"]`);
-    const track = this.#currentSceneData?.tracks?.find(candidate => candidate.id === trackId);
-    const activeSceneTracks = this.#getAudioTracksWithPlaybackState();
-    this.#updateNowPlayingDisplay(activeSceneTracks);
-    const state = track
-      ? activeSceneTracks.find(candidate => candidate.id === trackId)?.playState ?? "stopped"
-      : "stopped";
-    if (!item) return;
-
-    item.classList.toggle("is-playing", state === "playing");
-    item.classList.toggle("is-paused", state === "paused");
-
-    const toggleBtn = item.querySelector(".btn-track-toggle");
-    if (toggleBtn) {
-      if (state === "playing") {
-        toggleBtn.innerHTML = `<i class="fas fa-pause"></i>`;
-        toggleBtn.title = game.i18n.localize("NARRATIVE_CANVAS.Director.Pause");
-      } else {
-        toggleBtn.innerHTML = `<i class="fas fa-play"></i>`;
-        toggleBtn.title = game.i18n.localize("NARRATIVE_CANVAS.Director.Play");
-      }
-    }
-  }
-
   async #toggleTrackPlayback(track) {
-    const managedState = this.#audioController?.getTrackState(track.id) ?? "stopped";
     NarrativeLogger.debug("Director toggled scene audio track", {
       trackId: track.id,
       trackName: track.name,
-      sourcePlaylistId: track.sourcePlaylistId || null,
-      currentState: managedState
+      sourcePlaylistId: track.sourcePlaylistId || null
     });
-    if (managedState !== "stopped" || !track.sourcePlaylistId) {
-      await this.#audioController?.playOrPause(track);
+    if (!track.sourcePlaylistId) {
+      NarrativeLogger.warn("Cannot play scene audio that is not linked to a Foundry PlaylistSound", {
+        trackId: track.id,
+        trackName: track.name
+      });
       return;
     }
 
@@ -1556,9 +1524,11 @@ export class DirectorSidebar {
   }
 
   async #stopTrackPlayback(track) {
-    const managedState = this.#audioController?.getTrackState(track.id) ?? "stopped";
-    if (managedState !== "stopped" || !track.sourcePlaylistId) {
-      await this.#audioController?.stop(track.id);
+    if (!track.sourcePlaylistId) {
+      NarrativeLogger.warn("Cannot stop scene audio that is not linked to a Foundry PlaylistSound", {
+        trackId: track.id,
+        trackName: track.name
+      });
       return;
     }
 
@@ -1567,8 +1537,7 @@ export class DirectorSidebar {
     const sound = playlist?.sounds?.get(track.id);
     if (!sound) return;
 
-    if (sound.playing || sound.sound?.playing) await playlist.stopSound(sound);
-    else if (Number(sound.pausedTime) > 0) await sound.update({ playing: false, pausedTime: 0 });
+    await playlist.stopSound(sound);
     const hasRemainingPlayback = (this.#currentSceneData?.tracks ?? [])
       .filter(item => item.sourcePlaylistId === track.sourcePlaylistId)
       .some(item => {

@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A persistent **Now Playing** line above the master-volume control that identifies the active track or playlist track.
 - Shared resize handles for both Director sidebars, with click-to-collapse/restore and drag resizing.
 - Client-local percentage persistence for Director sidebar widths and resizable section/list heights.
-- Standalone audio tracks played by the GM are now also played on player clients, including pause, resume, stop, master volume, mute and late-joining players.
+- Scene audio playback is delegated to Foundry Playlist and PlaylistSound documents for native client synchronization.
 
 ### Changed
 
@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Standalone tracks that also exist in a Foundry playlist are no longer shown grouped under that playlist in the Director audio list.
+- Dragging a PlaylistSound into a scene preserves its Foundry Playlist and track references.
 
 ## [0.3] - 2026-11-03
 

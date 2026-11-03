@@ -4,9 +4,11 @@ import { SceneImageDescriptionEditors } from "../services/background-description
 import { JournalAssetBrowser } from "../services/journal-asset-browser.js";
 import { JournalDockController } from "../services/journal-dock.js";
 import { SceneAudioPreview } from "../services/scene-audio-preview.js";
+import { NarrativeLogger } from "../services/logger.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 const ANY_ASSET_TYPE = "*";
+const PLAYLIST_SOUND_DRAG_TYPE = "application/x-narrative-canvas-playlistsound";
 
 /** Window for editing narrative scenes and forwarding their asset actions. */
 export class NarrativeSceneEditor extends HandlebarsApplicationMixin(ApplicationV2) {
@@ -15,6 +17,33 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   #journalAssetsJournalId = null;
   #imageDescriptionEditors;
   #dock;
+  #playlistSoundDragHandler = event => {
+    if (!(event.target instanceof Element)) return;
+    const soundRow = event.target.closest(".sound[data-playlist-id][data-sound-id]");
+    if (!soundRow) return;
+
+    const playlist = game.playlists?.get(soundRow.dataset.playlistId);
+    const sound = playlist?.sounds?.get(soundRow.dataset.soundId);
+    if (!sound) {
+      NarrativeLogger.warn("Could not resolve dragged PlaylistSound", {
+        playlistId: soundRow.dataset.playlistId,
+        soundId: soundRow.dataset.soundId
+      });
+      event.stopPropagation();
+      return;
+    }
+
+    const soundDragData = JSON.stringify(sound.toDragData());
+    event.dataTransfer?.setData(PLAYLIST_SOUND_DRAG_TYPE, soundDragData);
+    event.dataTransfer?.setData("text/plain", soundDragData);
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = "copy";
+    event.stopPropagation();
+    NarrativeLogger.debug("Prepared individual PlaylistSound drag", {
+      playlistId: playlist.id,
+      soundId: sound.id,
+      soundName: sound.name
+    });
+  };
 
   constructor(options = {}) {
     super(options);
@@ -126,6 +155,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
 
   /** @override */
   async _onClose(options) {
+    document.removeEventListener("dragstart", this.#playlistSoundDragHandler, true);
     await this.#imageDescriptionEditors.destroy();
     await this.audioPreview.stop();
     super._onClose(options);
@@ -136,6 +166,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   async _onRender(context, options) {
     super._onRender(context, options);
     if (!this.element) return;
+    document.addEventListener("dragstart", this.#playlistSoundDragHandler, true);
     this._dragDrop = this._dragDrop || this.#createDragDrop();
     this._dragDrop.bind(this.element);
     this.#bindListeners();
@@ -161,7 +192,6 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     this.#bindSceneHeader(html);
     this.#bindImagePickers(html);
     this.#bindSceneImageDrags(html);
-    this.#bindAudioPicker(html);
     this.#bindTileDeletion(html);
     this.#bindActorNameToggle(html);
     this.#bindImageDescriptionEditor(html);
@@ -246,25 +276,6 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
         }));
         event.dataTransfer.effectAllowed = "move";
       });
-    });
-  }
-
-  #bindAudioPicker(html) {
-    html.querySelector(".btn-editor-add-audio")?.addEventListener("click", (event) => {
-      const sceneId = event.currentTarget.dataset.sceneId;
-      new FilePicker({
-        type: "audio",
-        classes: ["filepicker", "acd-nc-elevation"],
-        callback: (path) => {
-          const filename = path.split("/").pop() || "";
-          const name = decodeURIComponent(filename.replace(/\.[^/.]+$/, "")) || "Track";
-          this.#persistAndRefresh(() => NarrativeSceneRepository.addTrack(sceneId, {
-            id: foundry.utils.randomID(),
-            name,
-            path
-          }));
-        }
-      }).browse();
     });
   }
 
@@ -433,14 +444,17 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     const entries = [];
     const seenPlaylists = new Set();
     for (const track of scene.tracks ?? []) {
-      if (track.sourcePlaylistId) {
+      if (track.sourcePlaylistId && track.isPlaylistGroup !== false) {
         if (seenPlaylists.has(track.sourcePlaylistId)) continue;
         seenPlaylists.add(track.sourcePlaylistId);
-        const playlistTracks = (scene.tracks ?? []).filter(item => item.sourcePlaylistId === track.sourcePlaylistId);
+        const playlistTracks = (scene.tracks ?? []).filter(item =>
+          item.sourcePlaylistId === track.sourcePlaylistId && item.isPlaylistGroup !== false
+        );
         entries.push({
           id: track.sourcePlaylistId,
           entryId: `playlist:${track.sourcePlaylistId}`,
           type: "playlist",
+          isPlayable: true,
           playlistId: track.sourcePlaylistId,
           repositoryType: "PlaylistGroup",
           name: track.sourcePlaylistName || track.name,
@@ -456,6 +470,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
           repositoryType: "PlaylistSound",
           name: track.name,
           path: track.path,
+          isPlayable: Boolean(track.sourcePlaylistId),
           playAutomatically: track.playAutomatically === true,
           isPreviewing: this.audioPreview.activeEntryId === `sound:${track.id}`
         });
@@ -471,7 +486,13 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     const { type: dropzoneType, sceneId, imageCollection } = dropzone.dataset;
 
     try {
-      const raw = JSON.parse(event.dataTransfer.getData("text/plain"));
+      const soundDragData = event.dataTransfer.getData(PLAYLIST_SOUND_DRAG_TYPE);
+      const raw = JSON.parse(soundDragData || event.dataTransfer.getData("text/plain"));
+      NarrativeLogger.debug("Scene editor received dropped asset", {
+        type: raw.type,
+        uuid: raw.uuid,
+        usedPlaylistSoundPayload: Boolean(soundDragData)
+      });
       if (raw.type === "SceneImage") {
         if (raw.sceneId !== sceneId || raw.collectionName === imageCollection || !imageCollection) return;
         await this.#persistAndRefresh(() => NarrativeSceneRepository.moveImage(sceneId, raw.collectionName, raw.index));
@@ -541,14 +562,43 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
     }
 
     if (dropped.type === "PlaylistSound" || doc?.documentName === "PlaylistSound") {
-      const soundDoc = doc;
-      const name = soundDoc?.name || dropped.name || "Track";
-      const path = soundDoc?.path || dropped.path || "";
+      const playlists = game.playlists ?? game.collections?.get("Playlist");
+      let soundDoc = doc?.documentName === "PlaylistSound" ? doc : null;
+      let playlist = soundDoc?.parent?.sounds?.has(soundDoc.id) ? soundDoc.parent : null;
+      if (!playlist && dropped.playlistId) playlist = playlists?.get(dropped.playlistId) ?? null;
+      if (!playlist && playlists) {
+        const soundId = soundDoc?.id ?? dropped.id;
+        const soundPath = soundDoc?.path ?? dropped.path;
+        playlist = Array.from(playlists).find(candidate =>
+          candidate.sounds?.has(soundId)
+          || Array.from(candidate.sounds ?? []).some(sound => sound.path === soundPath)
+        ) ?? null;
+      }
+      if (!soundDoc) {
+        soundDoc = playlist?.sounds?.get(dropped.id)
+          ?? Array.from(playlist?.sounds ?? []).find(sound => sound.path === dropped.path)
+          ?? null;
+      }
+      if (!soundDoc || !playlist) {
+        NarrativeLogger.warn("Ignoring dropped audio that is not an existing Foundry PlaylistSound", {
+          droppedId: dropped.id,
+          droppedName: dropped.name,
+          droppedPath: dropped.path
+        });
+        return null;
+      }
+
+      const name = soundDoc.name || dropped.name || "Track";
+      const path = soundDoc.path;
       if (!path) return null;
       const track = {
-        id: foundry.utils.randomID(),
+        id: soundDoc.id,
         name,
-        path
+        path,
+          isPlaylistGroup: false,
+        sourcePlaylistId: playlist.id,
+        sourcePlaylistName: playlist.name,
+        uuid: soundDoc.uuid
       };
       return {
         type: "PlaylistSound",
@@ -571,6 +621,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
                 id: sound.id,
                 name: sound.name,
                 path: sound.path,
+                isPlaylistGroup: true,
                 uuid: sound.uuid,
                 sourcePlaylistId: playlist.id,
                 sourcePlaylistName: playlist.name

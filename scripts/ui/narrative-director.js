@@ -3,8 +3,7 @@ import { DirectorSidebar } from "./director-sidebar.js";
 import { DirectorActorCarousel } from "./director-carousel.js";
 import { DirectorImageControls } from "./director-image-controls.js";
 import { DirectorCanvasToolbar } from "./director-canvas-toolbar.js";
-import { SceneAudioController } from "../services/audio-controller.js";
-import { TrackAudioPublisher } from "../services/track-audio-publisher.js";
+import { PlaylistAudioMixer } from "../services/playlist-audio-mixer.js";
 import { NarrativeLogger } from "../services/logger.js";
 
 /**
@@ -19,14 +18,7 @@ export class NarrativeDirector extends NarrativeCanvas {
     this.callbacks = callbacks;
     this.imageControls = new DirectorImageControls();
     this.automaticPlaylist = null;
-    this.automaticPlaylistMuted = false;
-    this.audioController = new SceneAudioController({
-      globalVolume: 0.5,
-      onStateChange: (trackId, state) => {
-        this.sidebar?.updateAudioTrackItem(trackId);
-        TrackAudioPublisher.publishStateChange(this.audioController, trackId, state);
-      }
-    });
+    this.audioMixer = new PlaylistAudioMixer({ globalVolume: 0.5 });
     this.toolbar = new DirectorCanvasToolbar({
       onVisibilityChange: (visible) => this.callbacks.onVisibilityChange(visible),
       onReopenPlayers: () => this.callbacks.onReopenPlayers?.(),
@@ -37,7 +29,7 @@ export class NarrativeDirector extends NarrativeCanvas {
       onStopAllAudio: () => this.stopAllAudio()
     });
     this.sidebar = new DirectorSidebar({
-      audioController: this.audioController,
+      audioMixer: this.audioMixer,
       onSceneSelect: (sceneId) => {
         this.callbacks.onSceneSelect?.(sceneId);
       },
@@ -63,10 +55,12 @@ export class NarrativeDirector extends NarrativeCanvas {
     this.toolbar?.destroy();
     this.sidebar?.destroy();
     this.sidebar?.destroy();
+    this.audioMixer?.destroy();
   }
 
   async activateSceneAudio(sceneData) {
     await this.stopAllAudio();
+    this.audioMixer.setSceneTracks(sceneData?.tracks ?? []);
 
     const automaticTrack = sceneData?.tracks?.find(track => track.playAutomatically === true);
     if (!automaticTrack) {
@@ -93,44 +87,33 @@ export class NarrativeDirector extends NarrativeCanvas {
       }
 
       this.automaticPlaylist = playlist;
-      if (this.audioController.muted) {
-        this.automaticPlaylistMuted = true;
-        return;
-      }
-
       await playlist.playAll();
       this.sidebar?.refreshAudioPlayback();
       return;
     }
 
-    await this.audioController.play(automaticTrack);
+    NarrativeLogger.warn("Cannot start automatic scene audio without a Foundry PlaylistSound reference", {
+      sceneId: sceneData.id,
+      trackId: automaticTrack.id,
+      trackName: automaticTrack.name
+    });
   }
 
   async setAudioMuted(muted) {
-    this.audioController.muted = muted;
-    if (!this.automaticPlaylist) return;
-
-    if (muted && !this.automaticPlaylistMuted) {
-      await this.automaticPlaylist.stopAll();
-      this.automaticPlaylistMuted = true;
-    } else if (!muted && this.automaticPlaylistMuted) {
-      await this.automaticPlaylist.playAll();
-      this.automaticPlaylistMuted = false;
-    }
+    this.audioMixer.muted = muted;
     this.sidebar?.refreshAudioPlayback();
   }
 
   async stopAllAudio() {
-    await this.audioController?.stopAll();
     await this.sidebar?.stopAllPlaylists();
     await this.automaticPlaylist?.stopAll();
     this.automaticPlaylist = null;
-    this.automaticPlaylistMuted = false;
     this.sidebar?.refreshAudioPlayback();
   }
 
   /** @override */
   async _onPrepareElements(stageElement, context) {
+    this.audioMixer.setSceneTracks(context.currentSceneData?.tracks ?? []);
     await this.setAudioMuted(Boolean(context.audioMuted));
     const uiLayer = document.createElement("div");
     uiLayer.className = "narrative-director-ui-layer";
@@ -160,6 +143,7 @@ export class NarrativeDirector extends NarrativeCanvas {
 
   /** @override */
   async _onUpdateElements(context) {
+    this.audioMixer.setSceneTracks(context.currentSceneData?.tracks ?? []);
     await this.setAudioMuted(Boolean(context.audioMuted));
     this.sidebar?.update(context);
     const imageControlsContext = {

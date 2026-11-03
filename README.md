@@ -11,7 +11,7 @@ Narrative Canvas adds a Theatre of the Mind presentation stage to Foundry Virtua
 - Multiple handout image overlays that the GM can move, resize, and close independently.
 - Journal browsing and the ability to show journal images on the presentation stage.
 - Automatic background and audio playback when a scene is activated.
-- Synchronized standalone audio playback, volume, mute, pause, and stop controls for players, including players who join while a track is already playing. Foundry Playlists use Foundry's native synchronization.
+- Scene audio uses existing Foundry Playlist and PlaylistSound documents. Foundry synchronizes playlist and individual-track playback with connected players.
 - Player controls to dismiss the Canvas locally and reopen it while the GM's presentation remains published.
 - English and German interface translations.
 

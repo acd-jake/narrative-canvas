@@ -84,23 +84,6 @@ export class NarrativeSocket {
           }
           break;
 
-        case "TRACK_AUDIO":
-          if (game.users.get(userId)?.isGM || game.user.id === userId) {
-            NarrativeLogger.info("Accepted standalone audio event", {
-              senderOrTargetId: userId,
-              state: data?.state,
-              trackId: data?.track?.id,
-              trackName: data?.track?.name
-            });
-            manager.handleTrackAudio(data);
-          } else {
-            NarrativeLogger.trace("Ignoring standalone audio event not intended for this client", {
-              targetUserId: userId,
-              currentUserId: game.user.id
-            });
-          }
-          break;
-
         default:
           NarrativeLogger.debug("Ignoring unhandled socket event", { type, senderOrTargetId: userId });
       }

@@ -1,4 +1,5 @@
 import { NarrativeSettings } from "./settings.js";
+import { NarrativeLogger } from "./logger.js";
 
 /**
  * Persistence gateway for narrative scenes.
@@ -53,33 +54,28 @@ export class NarrativeSceneRepository {
     if (!track) return track;
     track.playAutomatically ??= false;
 
-    // 1. Look up track in game.playlists if name or path is missing
-    if ((!track.name || !track.path) && track.id) {
-      const playlists = game.playlists ?? game.collections?.get("Playlist");
-      if (playlists) {
-        for (const pl of playlists) {
-          const sound = pl.sounds?.get(track.id);
-          if (sound) {
-            track.name ||= sound.name;
-            track.path ||= sound.path;
-            break;
-          }
-        }
+    const playlistSound = this.#findPlaylistSound(track);
+    if (playlistSound) {
+      const { playlist, sound } = playlistSound;
+      const hadPlaylistReference = Boolean(track.sourcePlaylistId);
+      track.id = sound.id;
+      track.name = sound.name;
+      track.path = sound.path;
+      track.uuid = sound.uuid;
+      track.sourcePlaylistId = playlist.id;
+      track.sourcePlaylistName = playlist.name;
+
+      if (!hadPlaylistReference) {
+        NarrativeLogger.info("Linked scene audio to its Foundry PlaylistSound", {
+          trackId: track.id,
+          trackName: track.name,
+          playlistId: playlist.id,
+          playlistName: playlist.name
+        });
       }
     }
 
-    // 2. Check by track.uuid if available
-    if ((!track.name || !track.path) && track.uuid) {
-      try {
-        const sound = foundry.utils.fromUuidSync(track.uuid);
-        if (sound) {
-          track.name ||= sound.name;
-          track.path ||= sound.path;
-        }
-      } catch (e) {}
-    }
-
-    // 3. Fallback to filename if path exists
+    // Keep unresolved legacy entries visible so the GM can identify and replace them.
     if (!track.name && track.path) {
       const filename = track.path.split("/").pop() || "";
       const baseName = filename.replace(/\.[^/.]+$/, "");
@@ -92,6 +88,35 @@ export class NarrativeSceneRepository {
     }
 
     return track;
+  }
+
+  static #findPlaylistSound(track) {
+    const playlists = game.playlists ?? game.collections?.get("Playlist");
+    if (!playlists) return null;
+
+    if (track.uuid) {
+      try {
+        const sound = foundry.utils.fromUuidSync(track.uuid);
+        const playlist = sound?.parent?.documentName === "Playlist" ? sound.parent : null;
+        if (playlist && sound.documentName === "PlaylistSound") return { playlist, sound };
+      } catch {}
+    }
+
+    const preferredPlaylist = track.sourcePlaylistId ? playlists.get(track.sourcePlaylistId) : null;
+    const orderedPlaylists = [
+      ...(preferredPlaylist ? [preferredPlaylist] : []),
+      ...Array.from(playlists).filter(playlist => playlist !== preferredPlaylist)
+    ];
+
+    for (const playlist of orderedPlaylists) {
+      const soundById = track.id ? playlist.sounds?.get(track.id) : null;
+      const soundByPath = !soundById && track.path
+        ? Array.from(playlist.sounds ?? []).find(sound => sound.path === track.path)
+        : null;
+      const sound = soundById ?? soundByPath;
+      if (sound) return { playlist, sound };
+    }
+    return null;
   }
 
   /**
@@ -186,7 +211,7 @@ export class NarrativeSceneRepository {
   static async toggleTrackAutoplay(sceneId, { trackId, playlistId }) {
     await this.#update(sceneId, scene => {
       const matchingTracks = scene.tracks.filter(track => playlistId
-        ? track.sourcePlaylistId === playlistId
+        ? track.sourcePlaylistId === playlistId && track.isPlaylistGroup !== false
         : track.id === trackId);
       if (matchingTracks.length === 0) return;
 
@@ -268,7 +293,9 @@ export class NarrativeSceneRepository {
 
   static async removePlaylistTracks(sceneId, playlistId) {
     await this.#update(sceneId, scene => {
-      scene.tracks = scene.tracks.filter(track => track.sourcePlaylistId !== playlistId);
+      scene.tracks = scene.tracks.filter(track =>
+        track.sourcePlaylistId !== playlistId || track.isPlaylistGroup === false
+      );
     });
   }
 

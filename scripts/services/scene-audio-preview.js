@@ -65,16 +65,21 @@ export class SceneAudioPreview {
       return;
     }
 
-    const sound = new foundry.audio.Sound(soundData.path, { context: game.audio.interface });
+    const sound = foundry.audio.AudioHelper.play({
+      src: soundData.path,
+      autoplay: true,
+      channel: "interface",
+      volume: 0.5,
+      loop: false
+    }, false);
+    if (!sound) throw new Error("Foundry did not create an audio preview sound.");
     preview.sound = sound;
-    await sound.load();
     if (this.#activePreview !== preview) return;
 
     sound.addEventListener("end", () => {
       if (this.#activePreview !== preview) return;
       this.#playNext(preview).catch(error => this.#fail(preview, error));
     }, { once: true });
-    await sound.play({ volume: 0.5, loop: false });
   }
 
   async #fail(preview, error) {

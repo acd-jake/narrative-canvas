@@ -6,13 +6,12 @@ import { JournalAssetBrowser } from "./journal-asset-browser.js";
 import { NarrativePlayer } from "../ui/narrative-player.js";
 import { NarrativeDirector } from "../ui/narrative-director.js";
 import { NarrativeSceneEditor } from "../ui/scene-editor.js";
-import { TrackAudioPublisher } from "./track-audio-publisher.js";
-import { TrackAudioReceiver } from "./track-audio-receiver.js";
 import { NarrativeLogger } from "./logger.js";
+import { PlaylistAudioMixer } from "./playlist-audio-mixer.js";
 
 export class NarrativeManager {
   #journalAssetRequestId = 0;
-  #trackAudioReceiver = new TrackAudioReceiver();
+  #playerAudioMixer = new PlaylistAudioMixer();
 
   constructor() {
     this.narrativeState = {
@@ -48,6 +47,12 @@ export class NarrativeManager {
       this.narrativeState.currentSceneData = this.narrativeState.scenesList.find(s => s.id === this.narrativeState.activeSceneId) || null;
     } else {
       await this.#refreshJournalSceneData();
+    }
+
+    if (!game.user.isGM) {
+      this.#playerAudioMixer.setSceneTracks(this.narrativeState.currentSceneData?.tracks ?? []);
+      this.#playerAudioMixer.globalVolume = this.narrativeState.globalVolume;
+      this.#playerAudioMixer.muted = this.narrativeState.audioMuted;
     }
 
     // Synchronize active actors and current scene actor statuses
@@ -197,24 +202,6 @@ export class NarrativeManager {
       playerViewActive: this.narrativeState.playerViewActive
     });
     NarrativeSocket.emit("SYNC_STATE", this.narrativeState, targetUserId);
-    if (this.view?.audioController) {
-      TrackAudioPublisher.publishPlayingTracksTo(this.view.audioController, targetUserId);
-    } else {
-      NarrativeLogger.debug("No active Director audio controller; no standalone tracks to synchronize", {
-        targetUserId
-      });
-    }
-  }
-
-  /**
-   * Mirrors a standalone track playback change published by the GM. Players only.
-   * @param {{state: "playing"|"paused"|"stopped", track: object}} command
-   */
-  async handleTrackAudio(command) {
-    if (game.user.isGM) return;
-
-    this.#trackAudioReceiver.applyMix(this.narrativeState);
-    await this.#trackAudioReceiver.apply(command);
   }
 
   /**
@@ -228,15 +215,6 @@ export class NarrativeManager {
     }
 
     this.narrativeState = { ...this.narrativeState, ...data };
-    if (!game.user.isGM) {
-      if (data.globalVolume !== undefined || data.audioMuted !== undefined) {
-        NarrativeLogger.debug("Received player audio mix update", {
-          globalVolume: data.globalVolume,
-          audioMuted: data.audioMuted
-        });
-      }
-      this.#trackAudioReceiver.applyMix(data);
-    }
     if (game.user.isGM && !isRemote) {
       NarrativeSocket.emit("UPDATE_DISPLAY", data);
       await this.persistActiveState();
@@ -696,7 +674,8 @@ export class NarrativeManager {
    * Shuts down the canvas display if the active GM disconnects.
    */
   async forceShutdownDueToGMDisconnect() {
-    await this.#trackAudioReceiver.stopAll();
+    await this.#playerAudioMixer.stopLocalAll();
+    this.#playerAudioMixer.destroy();
     this.narrativeState.active = false;
     this.narrativeState.playerViewActive = false;
     if (this.view) {
