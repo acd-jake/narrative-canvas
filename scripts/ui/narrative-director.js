@@ -18,6 +18,7 @@ export class NarrativeDirector extends NarrativeCanvas {
     this.callbacks = callbacks;
     this.imageControls = new DirectorImageControls();
     this.automaticPlaylist = null;
+    this.automaticPlaylistSound = null;
     this.audioMixer = new PlaylistAudioMixer({ globalVolume: 0.5 });
     this.toolbar = new DirectorCanvasToolbar({
       onVisibilityChange: (visible) => this.callbacks.onVisibilityChange(visible),
@@ -87,7 +88,24 @@ export class NarrativeDirector extends NarrativeCanvas {
       }
 
       this.automaticPlaylist = playlist;
-      await playlist.playAll();
+      if (automaticTrack.isPlaylistGroup === false) {
+        const sound = playlist.sounds?.get(automaticTrack.id);
+        if (!sound) {
+          NarrativeLogger.warn("Automatic scene PlaylistSound was not found", {
+            sceneId: sceneData.id,
+            playlistId: playlist.id,
+            trackId: automaticTrack.id
+          });
+          this.automaticPlaylist = null;
+          return;
+        }
+
+        this.automaticPlaylistSound = sound;
+        await playlist.playSound(sound);
+      } else {
+        this.automaticPlaylistSound = null;
+        await playlist.playAll();
+      }
       this.sidebar?.refreshAudioPlayback();
       return;
     }
@@ -106,8 +124,13 @@ export class NarrativeDirector extends NarrativeCanvas {
 
   async stopAllAudio() {
     await this.sidebar?.stopAllPlaylists();
-    await this.automaticPlaylist?.stopAll();
+    if (this.automaticPlaylistSound) {
+      await this.automaticPlaylist?.stopSound(this.automaticPlaylistSound);
+    } else {
+      await this.automaticPlaylist?.stopAll();
+    }
     this.automaticPlaylist = null;
+    this.automaticPlaylistSound = null;
     this.sidebar?.refreshAudioPlayback();
   }
 
