@@ -168,11 +168,11 @@
                             </div>
                         </div>
 
-                        <div class="audio-track-volume-row">
+                        {{!-- <div class="audio-track-volume-row">
                             <i class="fas fa-volume-down volume-icon"></i>
                             <input type="range" class="slider-track-volume" min="0" max="1" step="0.05" value="{{this.volume}}" title="{{localize 'NARRATIVE_CANVAS.Director.TrackVolume'}}" />
                             <span class="volume-val-display">{{this.volumePercent}}%</span>
-                        </div>
+                        </div> --}}
                     </div>
                 {{else}}
                     <div class="sidebar-empty-hint">{{localize "NARRATIVE_CANVAS.Director.NoAudioTracks"}}</div>
@@ -190,6 +190,23 @@
                     <span class="master-volume-percent">{{masterVolumePercent}}%</span>
                 </div>
             </div>
+
+            <section class="active-audio-playback" {{#unless activeAudioTracks.length}}hidden{{/unless}} aria-live="polite">
+                <h5>{{localize "NARRATIVE_CANVAS.Director.NowPlaying"}}</h5>
+                <div class="active-audio-list">
+                    {{#each activeAudioTracks}}
+                        <div class="active-audio-item {{#if (eq this.playState 'playing')}}is-playing{{else}}is-paused{{/if}}" data-track-id="{{this.id}}">
+                            <span class="active-audio-name" title="{{this.name}}">
+                                <i class="fas {{#if (eq this.playState 'playing')}}fa-volume-up{{else}}fa-volume-off{{/if}}" aria-hidden="true"></i>
+                                {{this.name}}
+                            </span>
+                            <button type="button" class="btn-active-audio-toggle type-icon" data-track-id="{{this.id}}" title="{{#if (eq this.playState 'playing')}}{{localize 'NARRATIVE_CANVAS.Director.Pause'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.Play'}}{{/if}}" aria-label="{{#if (eq this.playState 'playing')}}{{localize 'NARRATIVE_CANVAS.Director.Pause'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.Play'}}{{/if}}">
+                                <i class="fas {{#if (eq this.playState 'playing')}}fa-pause{{else}}fa-play{{/if}}" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    {{/each}}
+                </div>
+            </section>
         </div>
     </section>
 </aside>

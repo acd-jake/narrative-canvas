@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Playlist audio appears as a single expandable entry in Director Controls, with per-track playback status and playlist-level controls.
+- An active playback list below the master-volume control with pause/resume controls and accurate PlaylistSound status.
+
 ## [0.3] - 2026-11-03
 
 ### Added

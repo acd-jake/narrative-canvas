@@ -1948,6 +1948,64 @@ body.acd-nc-active {
                     }
                 }
             }
+
+            .active-audio-playback {
+                flex: 0 0 auto;
+                min-height: 0;
+                max-height: 86px;
+                overflow-y: auto;
+                margin-top: 6px;
+                padding: 6px 8px;
+                border-top: 1px solid #444;
+                background: rgba(0, 0, 0, 0.22);
+
+                h5 {
+                    margin: 0 0 4px;
+                    color: #b49a62;
+                    font-size: 0.72rem;
+                    font-weight: 600;
+                }
+            }
+
+            .active-audio-list {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+
+            .active-audio-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                min-width: 0;
+                padding: 2px 4px;
+                border-radius: 3px;
+                background: rgba(122, 104, 66, 0.12);
+
+                &.is-playing .active-audio-name i { color: #55ff77; }
+                &.is-paused .active-audio-name i { color: #ffaa33; }
+            }
+
+            .active-audio-name {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                min-width: 0;
+                overflow: hidden;
+                color: #eee;
+                font-size: 0.75rem;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+
+                i { flex: 0 0 auto; }
+            }
+
+            .btn-active-audio-toggle {
+                flex: 0 0 24px;
+                width: 24px;
+                height: 24px;
+            }
         }
     }
 

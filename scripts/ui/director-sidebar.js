@@ -29,6 +29,7 @@ export class DirectorSidebar {
   #scenesList = [];
   #currentSceneData = null;
   #audioMuted = false;
+  #playlistSoundHook = null;
 
   /**
    * @param {object} options
@@ -48,6 +49,17 @@ export class DirectorSidebar {
     this.#journalQuery = journalViewerState.query;
     this.#selectedJournalId = journalViewerState.journalId;
     this.#selectedPageId = journalViewerState.pageId;
+    this.#playlistSoundHook = Hooks.on("updatePlaylistSound", sound => {
+      if (this.#currentSceneData?.tracks?.some(track => track.id === sound.id)) {
+        this.#refreshAudioTracksList();
+      }
+    });
+  }
+
+  destroy() {
+    if (this.#playlistSoundHook) Hooks.off("updatePlaylistSound", this.#playlistSoundHook);
+    this.#playlistSoundHook = null;
+    this.#element = null;
   }
 
   /**
@@ -195,24 +207,18 @@ export class DirectorSidebar {
     const tracksContainer = this.#element.querySelector(".director-audio-tracks-list");
     if (!tracksContainer) return;
 
-    const rawTracks = this.#currentSceneData?.tracks ?? [];
-    if (rawTracks.length === 0) {
+    const activeSceneTracks = this.#getAudioTracksWithPlaybackState();
+    if (activeSceneTracks.length === 0) {
       tracksContainer.innerHTML = `<div class="sidebar-empty-hint">${game.i18n.localize("NARRATIVE_CANVAS.Director.NoAudioTracks")}</div>`;
+      this.#refreshActiveAudioList(activeSceneTracks);
       return;
     }
 
-    const activeSceneTracks = rawTracks.map(track => {
-      const state = this.#audioController?.getTrackState(track.id) ?? "stopped";
+    tracksContainer.innerHTML = activeSceneTracks.map(track => {
+      const state = track.playState;
       const vol = this.#audioController?.getTrackVolume(track.id) ?? 1.0;
-      return {
-        ...track,
-        playState: state,
-        volume: vol,
-        volumePercent: Math.round(vol * 100)
-      };
-    });
-
-    tracksContainer.innerHTML = activeSceneTracks.map(track => `
+      return { ...track, playState: state, volume: vol, volumePercent: Math.round(vol * 100) };
+    }).map(track => `
       <div class="director-audio-track-item ${track.playState === 'playing' ? 'is-playing' : ''} ${track.playState === 'paused' ? 'is-paused' : ''}" data-track-id="${track.id}" data-track-path="${track.path}" data-track-name="${track.name}">
         <div class="audio-track-info">
           <span class="audio-track-name" title="${Handlebars.escapeExpression(track.name)}">
@@ -234,6 +240,57 @@ export class DirectorSidebar {
         </div>
       </div>
     `).join("");
+    this.#refreshActiveAudioList(activeSceneTracks);
+  }
+
+  refreshAudioPlayback() {
+    this.#refreshAudioTracksList();
+  }
+
+  #refreshActiveAudioList(tracks) {
+    const panel = this.#element?.querySelector(".active-audio-playback");
+    const list = panel?.querySelector(".active-audio-list");
+    if (!panel || !list) return;
+
+    const activeTracks = tracks.filter(track => track.playState !== "stopped");
+    panel.hidden = activeTracks.length === 0;
+    list.innerHTML = activeTracks.map(track => {
+      const isPlaying = track.playState === "playing";
+      const actionLabel = game.i18n.localize(
+        isPlaying ? "NARRATIVE_CANVAS.Director.Pause" : "NARRATIVE_CANVAS.Director.Play"
+      );
+      return `
+        <div class="active-audio-item ${isPlaying ? "is-playing" : "is-paused"}" data-track-id="${Handlebars.escapeExpression(track.id)}">
+          <span class="active-audio-name" title="${Handlebars.escapeExpression(track.name)}">
+            <i class="fas ${isPlaying ? "fa-volume-up" : "fa-volume-off"}" aria-hidden="true"></i>
+            ${Handlebars.escapeExpression(track.name)}
+          </span>
+          <button type="button" class="btn-active-audio-toggle type-icon" data-track-id="${Handlebars.escapeExpression(track.id)}" title="${actionLabel}" aria-label="${actionLabel}">
+            <i class="fas ${isPlaying ? "fa-pause" : "fa-play"}" aria-hidden="true"></i>
+          </button>
+        </div>
+      `;
+    }).join("");
+  }
+
+  #getAudioTracksWithPlaybackState() {
+    return (this.#currentSceneData?.tracks ?? []).map(track => {
+      const managedState = this.#audioController?.getTrackState(track.id) ?? "stopped";
+      const playlist = track.sourcePlaylistId
+        ? game.playlists?.get(track.sourcePlaylistId)
+          ?? game.collections?.get("Playlist")?.get(track.sourcePlaylistId)
+        : null;
+      const playlistSound = playlist?.sounds?.get(track.id);
+      const playState = managedState !== "stopped"
+        ? managedState
+        : playlistSound?.playing || playlistSound?.sound?.playing
+          ? "playing"
+          : Number(playlistSound?.pausedTime) > 0
+            ? "paused"
+            : "stopped";
+
+      return { ...track, playState };
+    });
   }
 
   async #prepareTemplateData() {
@@ -287,17 +344,15 @@ export class DirectorSidebar {
       void this.#saveJournalViewerState();
     }
 
-    const rawTracks = this.#currentSceneData?.tracks ?? [];
-    const activeSceneTracks = rawTracks.map(track => {
-      const state = this.#audioController?.getTrackState(track.id) ?? "stopped";
+    const activeSceneTracks = this.#getAudioTracksWithPlaybackState().map(track => {
       const vol = this.#audioController?.getTrackVolume(track.id) ?? 1.0;
       return {
         ...track,
-        playState: state,
         volume: vol,
         volumePercent: Math.round(vol * 100)
       };
     });
+    const activeAudioTracks = activeSceneTracks.filter(track => track.playState !== "stopped");
 
     const gVol = this.#audioController?.globalVolume ?? 0.5;
     const currentFolder = JournalBrowser.getFolders().find(folder => folder.id === this.#currentJournalFolderId);
@@ -328,6 +383,7 @@ export class DirectorSidebar {
       selectedPageId: this.#selectedPageId,
       activePage,
       activeSceneTracks,
+      activeAudioTracks,
       globalVolume: gVol,
       masterVolumePercent: Math.round(gVol * 100)
     };
@@ -999,6 +1055,15 @@ export class DirectorSidebar {
 
     // Track play/pause and stop clicks
     audioSection.addEventListener("click", async (event) => {
+      const activeToggleBtn = event.target.closest(".btn-active-audio-toggle");
+      if (activeToggleBtn) {
+        event.preventDefault();
+        const track = this.#currentSceneData?.tracks?.find(item => item.id === activeToggleBtn.dataset.trackId);
+        if (track) await this.#toggleTrackPlayback(track);
+        this.#refreshAudioTracksList();
+        return;
+      }
+
       const toggleBtn = event.target.closest(".btn-track-toggle");
       const stopBtn = event.target.closest(".btn-track-stop");
       const item = event.target.closest(".director-audio-track-item");
@@ -1015,15 +1080,15 @@ export class DirectorSidebar {
 
       if (toggleBtn) {
         event.preventDefault();
-        await this.#audioController?.playOrPause(track);
-        this.updateAudioTrackItem(trackId);
+        await this.#toggleTrackPlayback(track);
+        this.#refreshAudioTracksList();
         return;
       }
 
       if (stopBtn) {
         event.preventDefault();
-        await this.#audioController?.stop(trackId);
-        this.updateAudioTrackItem(trackId);
+        await this.#stopTrackPlayback(track);
+        this.#refreshAudioTracksList();
         return;
       }
     });
@@ -1069,9 +1134,15 @@ export class DirectorSidebar {
   updateAudioTrackItem(trackId) {
     if (!this.#element) return;
     const item = this.#element.querySelector(`.director-audio-track-item[data-track-id="${trackId}"]`);
-    if (!item) return;
+    const track = this.#currentSceneData?.tracks?.find(candidate => candidate.id === trackId);
+    const state = track
+      ? this.#getAudioTracksWithPlaybackState().find(candidate => candidate.id === trackId)?.playState ?? "stopped"
+      : "stopped";
+    if (!item) {
+      this.#refreshActiveAudioList(this.#getAudioTracksWithPlaybackState());
+      return;
+    }
 
-    const state = this.#audioController?.getTrackState(trackId) ?? "stopped";
     item.classList.toggle("is-playing", state === "playing");
     item.classList.toggle("is-paused", state === "paused");
 
@@ -1085,5 +1156,46 @@ export class DirectorSidebar {
         toggleBtn.title = game.i18n.localize("NARRATIVE_CANVAS.Director.Play");
       }
     }
+    this.#refreshActiveAudioList(this.#getAudioTracksWithPlaybackState());
+  }
+
+  async #toggleTrackPlayback(track) {
+    const managedState = this.#audioController?.getTrackState(track.id) ?? "stopped";
+    if (managedState !== "stopped" || !track.sourcePlaylistId) {
+      await this.#audioController?.playOrPause(track);
+      return;
+    }
+
+    const playlist = game.playlists?.get(track.sourcePlaylistId)
+      ?? game.collections?.get("Playlist")?.get(track.sourcePlaylistId);
+    const sound = playlist?.sounds?.get(track.id);
+    if (!playlist || !sound) return;
+
+    if (sound.playing || sound.sound?.playing) {
+      const currentTime = Number(sound.sound?.currentTime);
+      const pausedTime = Number(sound.pausedTime);
+      await sound.update({
+        playing: false,
+        pausedTime: Number.isFinite(currentTime) ? currentTime : Number.isFinite(pausedTime) ? pausedTime : 0
+      });
+    } else {
+      await playlist.playSound(sound);
+    }
+  }
+
+  async #stopTrackPlayback(track) {
+    const managedState = this.#audioController?.getTrackState(track.id) ?? "stopped";
+    if (managedState !== "stopped" || !track.sourcePlaylistId) {
+      await this.#audioController?.stop(track.id);
+      return;
+    }
+
+    const playlist = game.playlists?.get(track.sourcePlaylistId)
+      ?? game.collections?.get("Playlist")?.get(track.sourcePlaylistId);
+    const sound = playlist?.sounds?.get(track.id);
+    if (!sound) return;
+
+    if (sound.playing || sound.sound?.playing) await playlist.stopSound(sound);
+    else if (Number(sound.pausedTime) > 0) await sound.update({ playing: false, pausedTime: 0 });
   }
 }

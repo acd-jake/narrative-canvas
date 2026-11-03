@@ -56,6 +56,8 @@ export class NarrativeDirector extends NarrativeCanvas {
     await super.close();
     this.imageControls?.destroy();
     this.toolbar?.destroy();
+    this.sidebar?.destroy();
+    this.sidebar?.destroy();
   }
 
   async activateSceneAudio(sceneData) {
@@ -76,6 +78,7 @@ export class NarrativeDirector extends NarrativeCanvas {
       }
 
       await playlist.playAll();
+      this.sidebar?.refreshAudioPlayback();
       return;
     }
 
@@ -93,6 +96,7 @@ export class NarrativeDirector extends NarrativeCanvas {
       await this.automaticPlaylist.playAll();
       this.automaticPlaylistMuted = false;
     }
+    this.sidebar?.refreshAudioPlayback();
   }
 
   async stopAllAudio() {
@@ -100,6 +104,7 @@ export class NarrativeDirector extends NarrativeCanvas {
     await this.automaticPlaylist?.stopAll();
     this.automaticPlaylist = null;
     this.automaticPlaylistMuted = false;
+    this.sidebar?.refreshAudioPlayback();
   }
 
   /** @override */
