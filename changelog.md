@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Director controls to remove all staged actors and hide the Visual Novel overlay from players while keeping a dimmed preview visible to the GM.
 - Drag-and-drop actor reordering directly on the Visual Novel stage, with a floating actor preview and an animated insertion gap.
+- Drag-to-reorder scenes, background and handout images, actors, and audio entries in the Scene Configurator; playlist tracks move together as a group.
+- Expanded insertion zones across neighboring items make drop placement easier and animate items smoothly into their new order.
 
 ## [0.6.1] - 2026-11-03
 
