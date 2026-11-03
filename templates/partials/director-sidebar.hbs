@@ -211,6 +211,8 @@
             </div>
 
             <div class="audio-master-volume-box">
+                <div class="audio-now-playing" aria-live="polite" title="{{nowPlayingText}}">{{nowPlayingText}}</div>
+                
                 <label class="master-volume-label">
                     <i class="fas fa-sliders-h"></i> {{localize "NARRATIVE_CANVAS.Director.MasterVolume"}}
                 </label>
@@ -222,44 +224,6 @@
                 </div>
             </div>
 
-            <section class="active-audio-playback" {{#unless activeAudioEntries.length}}hidden{{/unless}} aria-live="polite">
-                <h5>{{localize "NARRATIVE_CANVAS.Director.NowPlaying"}}</h5>
-                <div class="active-audio-list">
-                    {{#each activeAudioEntries}}
-                        {{#if (eq this.type 'playlist')}}
-                            <div class="active-audio-playlist-group {{#if (eq this.playState 'playing')}}is-playing{{else}}is-paused{{/if}}" data-playlist-id="{{this.playlistId}}">
-                                <div class="active-audio-item active-audio-playlist-item {{#if (eq this.playState 'playing')}}is-playing{{else}}is-paused{{/if}}">
-                                    <button type="button" class="btn-active-playlist-expand type-icon" data-playlist-id="{{this.playlistId}}" aria-expanded="{{#if this.isExpanded}}true{{else}}false{{/if}}" title="{{#if this.isExpanded}}{{localize 'NARRATIVE_CANVAS.Director.CollapsePlaylist'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ExpandPlaylist'}}{{/if}}" aria-label="{{#if this.isExpanded}}{{localize 'NARRATIVE_CANVAS.Director.CollapsePlaylist'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ExpandPlaylist'}}{{/if}}">
-                                        <i class="fas {{#if this.isExpanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}}" aria-hidden="true"></i>
-                                    </button>
-                                    <span class="active-audio-name" title="{{this.name}}"><i class="fas fa-list-ul" aria-hidden="true"></i>{{this.name}}</span>
-                                    <button type="button" class="btn-active-playlist-toggle type-icon" data-playlist-id="{{this.playlistId}}" title="{{#if (eq this.playState 'playing')}}{{localize 'NARRATIVE_CANVAS.Director.Pause'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.Play'}}{{/if}}" aria-label="{{#if (eq this.playState 'playing')}}{{localize 'NARRATIVE_CANVAS.Director.Pause'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.Play'}}{{/if}}">
-                                        <i class="fas {{#if (eq this.playState 'playing')}}fa-pause{{else}}fa-play{{/if}}" aria-hidden="true"></i>
-                                    </button>
-                                </div>
-                                <div class="active-audio-playlist-tracks" {{#unless this.isExpanded}}hidden{{/unless}}>
-                                    {{#each this.tracks}}
-                                        <div class="active-audio-playlist-track {{#if (eq this.playState 'playing')}}is-playing{{else if (eq this.playState 'paused')}}is-paused{{/if}}">
-                                            <i class="fas {{#if (eq this.playState 'playing')}}fa-volume-up{{else if (eq this.playState 'paused')}}fa-pause{{else}}fa-circle{{/if}}" aria-hidden="true"></i>
-                                            <span title="{{this.name}}">{{this.name}}</span>
-                                        </div>
-                                    {{/each}}
-                                </div>
-                            </div>
-                        {{else}}
-                            <div class="active-audio-item {{#if (eq this.track.playState 'playing')}}is-playing{{else}}is-paused{{/if}}" data-track-id="{{this.track.id}}">
-                                <span class="active-audio-name" title="{{this.track.name}}">
-                                    <i class="fas {{#if (eq this.track.playState 'playing')}}fa-volume-up{{else}}fa-volume-off{{/if}}" aria-hidden="true"></i>
-                                    {{this.track.name}}
-                                </span>
-                                <button type="button" class="btn-active-audio-toggle type-icon" data-track-id="{{this.track.id}}" title="{{#if (eq this.track.playState 'playing')}}{{localize 'NARRATIVE_CANVAS.Director.Pause'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.Play'}}{{/if}}" aria-label="{{#if (eq this.track.playState 'playing')}}{{localize 'NARRATIVE_CANVAS.Director.Pause'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.Play'}}{{/if}}">
-                                    <i class="fas {{#if (eq this.track.playState 'playing')}}fa-pause{{else}}fa-play{{/if}}" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        {{/if}}
-                    {{/each}}
-                </div>
-            </section>
         </div>
     </section>
 </aside>

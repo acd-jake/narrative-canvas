@@ -233,10 +233,10 @@ export class DirectorSidebar {
 
     const scrollTop = tracksContainer.scrollTop;
     const activeSceneTracks = this.#getAudioTracksWithPlaybackState();
+    this.#updateNowPlayingDisplay(activeSceneTracks);
     if (activeSceneTracks.length === 0) {
       tracksContainer.innerHTML = `<div class="sidebar-empty-hint">${game.i18n.localize("NARRATIVE_CANVAS.Director.NoAudioTracks")}</div>`;
       tracksContainer.scrollTop = scrollTop;
-      this.#refreshActiveAudioList(activeSceneTracks);
       return;
     }
 
@@ -244,7 +244,6 @@ export class DirectorSidebar {
       .map(entry => this.#renderSceneAudioEntry(entry))
       .join("");
     tracksContainer.scrollTop = scrollTop;
-    this.#refreshActiveAudioList(activeSceneTracks);
   }
 
   refreshAudioPlayback() {
@@ -329,15 +328,12 @@ export class DirectorSidebar {
   }
 
   #renderSceneAudioTrack(track, isPlaylistTrack = false) {
-    const volume = this.#audioController?.getTrackVolume(track.id) ?? 1.0;
-    const volumePercent = Math.round(volume * 100);
     const isPlaying = track.playState === "playing";
     const isPaused = track.playState === "paused";
     const playLabel = game.i18n.localize(isPlaying
       ? "NARRATIVE_CANVAS.Director.Pause"
       : "NARRATIVE_CANVAS.Director.Play");
     const stopLabel = game.i18n.localize("NARRATIVE_CANVAS.Director.Stop");
-    const volumeLabel = game.i18n.localize("NARRATIVE_CANVAS.Director.TrackVolume");
 
     return `
       <div class="director-audio-track-item ${isPlaylistTrack ? "is-playlist-track" : ""} ${isPlaying ? "is-playing" : ""} ${isPaused ? "is-paused" : ""}" data-track-id="${Handlebars.escapeExpression(track.id)}" data-track-path="${Handlebars.escapeExpression(track.path)}" data-track-name="${Handlebars.escapeExpression(track.name)}">
@@ -354,116 +350,8 @@ export class DirectorSidebar {
             </button>
           </div>
         </div>
-        <div class="audio-track-volume-row">
-          <i class="fas fa-volume-down volume-icon"></i>
-          <input type="range" class="slider-track-volume" min="0" max="1" step="0.05" value="${volume}" title="${volumeLabel}" />
-          <span class="volume-val-display">${volumePercent}%</span>
-        </div>
       </div>
     `;
-  }
-
-  #refreshActiveAudioList(tracks) {
-    const panel = this.#element?.querySelector(".active-audio-playback");
-    const list = panel?.querySelector(".active-audio-list");
-    if (!panel || !list) return;
-
-    const activeEntries = this.#getActiveAudioEntries(tracks);
-    panel.hidden = activeEntries.length === 0;
-    list.innerHTML = activeEntries.map(entry => {
-      if (entry.type === "playlist") {
-        const isPlaying = entry.playState === "playing";
-        const actionLabel = game.i18n.localize(
-          isPlaying ? "NARRATIVE_CANVAS.Director.Pause" : "NARRATIVE_CANVAS.Director.Play"
-        );
-        const expandLabel = game.i18n.localize(entry.isExpanded
-          ? "NARRATIVE_CANVAS.Director.CollapsePlaylist"
-          : "NARRATIVE_CANVAS.Director.ExpandPlaylist");
-        const playlistTracks = entry.tracks.map(track => {
-          const isTrackPlaying = track.playState === "playing";
-          const isTrackPaused = track.playState === "paused";
-          return `
-            <div class="active-audio-playlist-track ${isTrackPlaying ? "is-playing" : ""} ${isTrackPaused ? "is-paused" : ""}" title="${Handlebars.escapeExpression(track.name)}">
-              <i class="fas ${isTrackPlaying ? "fa-volume-up" : isTrackPaused ? "fa-pause" : "fa-circle"}" aria-hidden="true"></i>
-              <span>${Handlebars.escapeExpression(track.name)}</span>
-            </div>
-          `;
-        }).join("");
-
-        return `
-          <div class="active-audio-playlist-group ${isPlaying ? "is-playing" : "is-paused"}" data-playlist-id="${Handlebars.escapeExpression(entry.playlistId)}">
-            <div class="active-audio-item active-audio-playlist-item ${isPlaying ? "is-playing" : "is-paused"}">
-              <button type="button" class="btn-active-playlist-expand type-icon" data-playlist-id="${Handlebars.escapeExpression(entry.playlistId)}" aria-expanded="${entry.isExpanded}" title="${expandLabel}" aria-label="${expandLabel}">
-                <i class="fas ${entry.isExpanded ? "fa-chevron-down" : "fa-chevron-right"}" aria-hidden="true"></i>
-              </button>
-              <span class="active-audio-name" title="${Handlebars.escapeExpression(entry.name)}">
-                <i class="fas fa-list-ul" aria-hidden="true"></i>
-                ${Handlebars.escapeExpression(entry.name)}
-              </span>
-              <button type="button" class="btn-active-playlist-toggle type-icon" data-playlist-id="${Handlebars.escapeExpression(entry.playlistId)}" title="${actionLabel}" aria-label="${actionLabel}">
-                <i class="fas ${isPlaying ? "fa-pause" : "fa-play"}" aria-hidden="true"></i>
-              </button>
-            </div>
-            <div class="active-audio-playlist-tracks" ${entry.isExpanded ? "" : "hidden"}>${playlistTracks}</div>
-          </div>
-        `;
-      }
-
-      const track = entry.track;
-      const isPlaying = track.playState === "playing";
-      const actionLabel = game.i18n.localize(
-        isPlaying ? "NARRATIVE_CANVAS.Director.Pause" : "NARRATIVE_CANVAS.Director.Play"
-      );
-      return `
-        <div class="active-audio-item ${isPlaying ? "is-playing" : "is-paused"}" data-track-id="${Handlebars.escapeExpression(track.id)}">
-          <span class="active-audio-name" title="${Handlebars.escapeExpression(track.name)}">
-            <i class="fas ${isPlaying ? "fa-volume-up" : "fa-volume-off"}" aria-hidden="true"></i>
-            ${Handlebars.escapeExpression(track.name)}
-          </span>
-          <button type="button" class="btn-active-audio-toggle type-icon" data-track-id="${Handlebars.escapeExpression(track.id)}" title="${actionLabel}" aria-label="${actionLabel}">
-            <i class="fas ${isPlaying ? "fa-pause" : "fa-play"}" aria-hidden="true"></i>
-          </button>
-        </div>
-      `;
-    }).join("");
-  }
-
-  #getActiveAudioEntries(tracks) {
-    const entries = [];
-    const playlists = new Map();
-
-    for (const track of tracks) {
-      if (!track.sourcePlaylistId) {
-        if (track.playState !== "stopped") entries.push({ type: "track", track });
-        continue;
-      }
-
-      let playlist = playlists.get(track.sourcePlaylistId);
-      if (!playlist) {
-        playlist = {
-          playlistId: track.sourcePlaylistId,
-          name: track.sourcePlaylistName
-            || game.playlists?.get(track.sourcePlaylistId)?.name
-            || game.collections?.get("Playlist")?.get(track.sourcePlaylistId)?.name
-            || game.i18n.localize("NARRATIVE_CANVAS.Editor.AudioPlaylist"),
-          tracks: []
-        };
-        playlists.set(track.sourcePlaylistId, playlist);
-      }
-      playlist.tracks.push(track);
-    }
-
-    for (const playlist of playlists.values()) {
-      if (!playlist.tracks.some(track => track.playState !== "stopped")) continue;
-      entries.push({
-        ...playlist,
-        type: "playlist",
-        playState: playlist.tracks.some(track => track.playState === "playing") ? "playing" : "paused",
-        isExpanded: this.#expandedPlaylistIds.has(playlist.playlistId)
-      });
-    }
-
-    return entries;
   }
 
   #getAudioTracksWithPlaybackState() {
@@ -500,6 +388,32 @@ export class DirectorSidebar {
         playState
       };
     });
+  }
+
+  #getNowPlayingText(tracks) {
+    const playingTrack = tracks.find(track => track.playState === "playing");
+    if (!playingTrack) return "Now Playing: —";
+
+    const playlistName = playingTrack.sourcePlaylistId
+      ? playingTrack.sourcePlaylistName
+        || game.playlists?.get(playingTrack.sourcePlaylistId)?.name
+        || game.collections?.get("Playlist")?.get(playingTrack.sourcePlaylistId)?.name
+        || game.i18n.localize("NARRATIVE_CANVAS.Editor.AudioPlaylist")
+      : null;
+    const trackName = playlistName
+      ? `${playlistName} / ${playingTrack.name}`
+      : playingTrack.name;
+
+    return `Now Playing: ${trackName}`;
+  }
+
+  #updateNowPlayingDisplay(tracks) {
+    const display = this.#element?.querySelector(".audio-now-playing");
+    if (!display) return;
+
+    const text = this.#getNowPlayingText(tracks);
+    display.textContent = text;
+    display.title = text;
   }
 
   async #prepareTemplateData() {
@@ -553,16 +467,8 @@ export class DirectorSidebar {
       void this.#saveJournalViewerState();
     }
 
-    const activeSceneTracks = this.#getAudioTracksWithPlaybackState().map(track => {
-      const vol = this.#audioController?.getTrackVolume(track.id) ?? 1.0;
-      return {
-        ...track,
-        volume: vol,
-        volumePercent: Math.round(vol * 100)
-      };
-    });
+    const activeSceneTracks = this.#getAudioTracksWithPlaybackState();
     const activeSceneAudioEntries = this.#getSceneAudioEntries(activeSceneTracks);
-    const activeAudioEntries = this.#getActiveAudioEntries(activeSceneTracks);
 
     const gVol = this.#audioController?.globalVolume ?? 0.5;
     const currentFolder = JournalBrowser.getFolders().find(folder => folder.id === this.#currentJournalFolderId);
@@ -594,7 +500,7 @@ export class DirectorSidebar {
       activePage,
       activeSceneTracks,
       activeSceneAudioEntries,
-      activeAudioEntries,
+      nowPlayingText: this.#getNowPlayingText(activeSceneTracks),
       globalVolume: gVol,
       masterVolumePercent: Math.round(gVol * 100)
     };
@@ -639,6 +545,7 @@ export class DirectorSidebar {
     header.addEventListener("pointerdown", event => {
       if (event.target instanceof Element && event.target.closest(".sidebar-section-toggle")) return;
 
+      const wasCollapsed = this.#isAudioCollapsed;
       const startHeight = audioSection.getBoundingClientRect().height;
       const startY = event.clientY;
       const sidebarHeight = audioSection.parentElement?.getBoundingClientRect().height ?? window.innerHeight;
@@ -649,7 +556,17 @@ export class DirectorSidebar {
 
       const onPointerMove = moveEvent => {
         if (moveEvent.pointerId !== pointerId) return;
-        const minHeight = 100;
+        if (wasCollapsed && this.#isAudioCollapsed) {
+          this.#isAudioCollapsed = false;
+          audioSection.classList.remove("is-collapsed");
+          this.#updateSectionToggle(
+            audioSection.querySelector(".sidebar-section-toggle"),
+            "audio",
+            false
+          );
+        }
+
+        const minHeight = wasCollapsed ? startHeight : 100;
         const maxHeight = Math.max(minHeight, sidebarHeight - 180);
         this.#audioSectionHeight = Math.max(
           minHeight,
@@ -672,7 +589,18 @@ export class DirectorSidebar {
   #applyAudioSectionHeight() {
     const audioSection = this.#element?.querySelector(".sidebar-audio-section");
     if (!audioSection) return;
-    if (this.#audioSectionHeight === null) return;
+
+    if (this.#isAudioCollapsed) {
+      audioSection.style.flex = "0 0 auto";
+      audioSection.style.maxHeight = "none";
+      return;
+    }
+
+    if (this.#audioSectionHeight === null) {
+      audioSection.style.removeProperty("flex");
+      audioSection.style.removeProperty("max-height");
+      return;
+    }
 
     audioSection.style.flex = `0 0 ${this.#audioSectionHeight}px`;
     audioSection.style.maxHeight = "none";
@@ -714,17 +642,32 @@ export class DirectorSidebar {
 
         const isCollapsed = !section.classList.contains("is-collapsed");
         const sectionName = button.dataset.sectionToggle;
+        if (sectionName === "audio") {
+          if (isCollapsed) this.#audioSectionHeight = section.getBoundingClientRect().height;
+          this.#isAudioCollapsed = isCollapsed;
+        }
+
         section.classList.toggle("is-collapsed", isCollapsed);
-        button.setAttribute("aria-expanded", String(!isCollapsed));
-        button.title = game.i18n.localize(`NARRATIVE_CANVAS.Director.${isCollapsed ? "Expand" : "Collapse"}${sectionName === "scenes" ? "Scenes" : "Audio"}`);
-        button.setAttribute("aria-label", button.title);
-        const icon = button.querySelector("i");
-        if (icon) icon.className = `fas ${isCollapsed ? "fa-chevron-right" : "fa-chevron-down"}`;
+        this.#updateSectionToggle(button, sectionName, isCollapsed);
 
         if (sectionName === "scenes") this.#areScenesCollapsed = isCollapsed;
-        if (sectionName === "audio") this.#isAudioCollapsed = isCollapsed;
+        if (sectionName === "audio") this.#applyAudioSectionHeight();
       });
     });
+  }
+
+  #updateSectionToggle(button, sectionName, isCollapsed) {
+    if (!button) return;
+
+    const sectionLabel = sectionName === "scenes" ? "Scenes" : "Audio";
+    button.setAttribute("aria-expanded", String(!isCollapsed));
+    button.title = game.i18n.localize(
+      `NARRATIVE_CANVAS.Director.${isCollapsed ? "Expand" : "Collapse"}${sectionLabel}`
+    );
+    button.setAttribute("aria-label", button.title);
+
+    const icon = button.querySelector("i");
+    if (icon) icon.className = `fas ${isCollapsed ? "fa-chevron-right" : "fa-chevron-down"}`;
   }
 
   #bindSceneFilter(root) {
@@ -1340,33 +1283,6 @@ export class DirectorSidebar {
         return;
       }
 
-      const playlistExpandButton = event.target.closest(".btn-active-playlist-expand");
-      if (playlistExpandButton) {
-        event.preventDefault();
-        const playlistId = playlistExpandButton.dataset.playlistId;
-        if (this.#expandedPlaylistIds.has(playlistId)) this.#expandedPlaylistIds.delete(playlistId);
-        else this.#expandedPlaylistIds.add(playlistId);
-        this.#refreshAudioTracksList();
-        return;
-      }
-
-      const playlistToggleButton = event.target.closest(".btn-active-playlist-toggle");
-      if (playlistToggleButton) {
-        event.preventDefault();
-        await this.#togglePlaylistPlayback(playlistToggleButton.dataset.playlistId);
-        this.#refreshAudioTracksList();
-        return;
-      }
-
-      const activeToggleBtn = event.target.closest(".btn-active-audio-toggle");
-      if (activeToggleBtn) {
-        event.preventDefault();
-        const track = this.#currentSceneData?.tracks?.find(item => item.id === activeToggleBtn.dataset.trackId);
-        if (track) await this.#toggleTrackPlayback(track);
-        this.#refreshAudioTracksList();
-        return;
-      }
-
       const toggleBtn = event.target.closest(".btn-track-toggle");
       const stopBtn = event.target.closest(".btn-track-stop");
       const item = event.target.closest(".director-audio-track-item");
@@ -1396,24 +1312,6 @@ export class DirectorSidebar {
       }
     });
 
-    // Individual Track Volume Slider
-    audioSection.addEventListener("input", (event) => {
-      const slider = event.target.closest(".slider-track-volume");
-      if (!slider) return;
-
-      const item = slider.closest(".director-audio-track-item");
-      const trackId = item?.dataset.trackId;
-      if (!trackId) return;
-
-      const val = parseFloat(slider.value);
-      this.#audioController?.setTrackVolume(trackId, val);
-
-      const valDisplay = item.querySelector(".volume-val-display");
-      if (valDisplay) {
-        valDisplay.textContent = `${Math.round(val * 100)}%`;
-      }
-    });
-
     // Master / Global Volume Slider
     const masterSlider = audioSection.querySelector(".slider-master-volume");
     masterSlider?.addEventListener("input", (event) => {
@@ -1438,13 +1336,12 @@ export class DirectorSidebar {
     if (!this.#element) return;
     const item = this.#element.querySelector(`.director-audio-track-item[data-track-id="${trackId}"]`);
     const track = this.#currentSceneData?.tracks?.find(candidate => candidate.id === trackId);
+    const activeSceneTracks = this.#getAudioTracksWithPlaybackState();
+    this.#updateNowPlayingDisplay(activeSceneTracks);
     const state = track
-      ? this.#getAudioTracksWithPlaybackState().find(candidate => candidate.id === trackId)?.playState ?? "stopped"
+      ? activeSceneTracks.find(candidate => candidate.id === trackId)?.playState ?? "stopped"
       : "stopped";
-    if (!item) {
-      this.#refreshActiveAudioList(this.#getAudioTracksWithPlaybackState());
-      return;
-    }
+    if (!item) return;
 
     item.classList.toggle("is-playing", state === "playing");
     item.classList.toggle("is-paused", state === "paused");
@@ -1459,7 +1356,6 @@ export class DirectorSidebar {
         toggleBtn.title = game.i18n.localize("NARRATIVE_CANVAS.Director.Play");
       }
     }
-    this.#refreshActiveAudioList(this.#getAudioTracksWithPlaybackState());
   }
 
   async #toggleTrackPlayback(track) {
