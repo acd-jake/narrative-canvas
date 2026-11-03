@@ -3,6 +3,7 @@ import { NarrativeSceneRepository } from "../services/scene-repository.js";
 import { NarrativeSettings } from "../services/settings.js";
 import { ResizableSectionController } from "./resizable-section-controller.js";
 import { ResizablePanelController } from "./resizable-panel-controller.js";
+import { JournalViewerFontSizeController } from "./journal-viewer-font-size-controller.js";
 import { NarrativeLogger } from "../services/logger.js";
 
 /**
@@ -39,6 +40,7 @@ export class DirectorSidebar {
   #resizableSections = [];
   #panelWidth = 350;
   #panelResizeController = null;
+  #journalViewerFontSizeController = new JournalViewerFontSizeController();
   #layoutStateSaveTimeout = null;
   #layoutState = null;
   #playlistSoundHook = null;
@@ -180,6 +182,7 @@ export class DirectorSidebar {
     this.#destroyResizableSections();
     this.#destroyPanelResizeController();
     this.#element = newElement;
+    this.#journalViewerFontSizeController.mount(this.#element);
     this.#bindListeners(this.#element);
     this.#updateCollapseState();
     this.#applySceneFilters();

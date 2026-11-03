@@ -118,6 +118,8 @@
   "NARRATIVE_CANVAS.Director.ExpandAudio": "Expand audio controls",
   "NARRATIVE_CANVAS.Director.NoScenes": "No matching scenes",
   "NARRATIVE_CANVAS.Director.JournalViewer": "Journal Viewer",
+  "NARRATIVE_CANVAS.Director.DecreaseJournalFontSize": "Decrease journal text size",
+  "NARRATIVE_CANVAS.Director.IncreaseJournalFontSize": "Increase journal text size",
   "NARRATIVE_CANVAS.Director.BackToPreviousDocument": "Back to previous journal page",
   "NARRATIVE_CANVAS.Director.AllFolders": "-- All Folders --",
   "NARRATIVE_CANVAS.Director.FilterJournals": "Filter journals...",

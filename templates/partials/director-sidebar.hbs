@@ -123,6 +123,14 @@
                     </div>
 
                     <div class="journal-viewer-content">
+                        <div class="journal-font-size-controls">
+                            <button type="button" data-font-size-change="-1" title="{{localize 'NARRATIVE_CANVAS.Director.DecreaseJournalFontSize'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.DecreaseJournalFontSize'}}">
+                                <i class="fas fa-minus" aria-hidden="true"></i>
+                            </button>
+                            <button type="button" data-font-size-change="1" title="{{localize 'NARRATIVE_CANVAS.Director.IncreaseJournalFontSize'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.IncreaseJournalFontSize'}}">
+                                <i class="fas fa-plus" aria-hidden="true"></i>
+                            </button>
+                        </div>
                         {{#if activePage}}
                             <h3 class="journal-page-title">{{activePage.name}}</h3>
                             <div class="journal-page-body">{{{activePage.content}}}</div>

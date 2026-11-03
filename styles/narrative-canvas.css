@@ -1721,6 +1721,7 @@ body.acd-nc-active {
 
             /* Content Area */
             .journal-viewer-content {
+                position: relative;
                 flex: 1 1 auto;
                 min-height: 0;
                 overflow-y: auto;
@@ -1732,11 +1733,53 @@ body.acd-nc-active {
                 font-size: 0.85rem;
                 line-height: 1.5;
 
+                .journal-font-size-controls {
+                    position: sticky;
+                    top: 0px;
+                    z-index: 2;
+                    display: flex;
+                    width: max-content;
+                    height: 26px;
+                    gap: 3px;
+                    margin-left: auto;
+                    margin-bottom: -26px;
+                    overflow: visible;
+
+                    button {
+                        display: grid;
+                        width: 26px;
+                        height: 26px;
+                        flex: 0 0 26px;
+                        place-items: center;
+                        padding: 0;
+                        border: 1px solid #444;
+                        border-radius: 4px;
+                        background: rgba(10, 10, 14, 0.8);
+                        color: #aaa;
+                        cursor: pointer;
+                        opacity: 0.3;
+                        transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+                        &:hover:not(:disabled),
+                        &:focus-visible {
+                            border-color: #7a6842;
+                            color: #fff;
+                            opacity: 1;
+                        }
+
+                        &:disabled {
+                            color: #555;
+                            cursor: default;
+                        }
+                    }
+                }
+
                 .journal-page-title {
                     font-size: 1rem;
                     color: #7a6842;
                     border-bottom: 1px solid #444;
                     padding-bottom: 4px;
+                    padding-right: 60px;
                     margin: 0 0 8px 0;
                 }
 
