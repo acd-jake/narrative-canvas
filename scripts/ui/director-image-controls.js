@@ -92,15 +92,6 @@ export class DirectorImageControls {
       this.#scheduleListLayout();
     });
 
-    root.addEventListener("click", event => {
-      if (!(event.target instanceof Element)) return;
-      const panelToggle = event.target.closest(".btn-toggle-image-controls-panel");
-      if (panelToggle) {
-        event.preventDefault();
-        this.#togglePanelCollapse(panelToggle);
-      }
-    });
-
     this.#bindResizableSections(root);
     this.#bindPanelResize(root);
   }
@@ -126,18 +117,20 @@ export class DirectorImageControls {
     });
   }
 
-  #togglePanelCollapse(toggleButton = this.#element?.querySelector(".btn-toggle-image-controls-panel")) {
+  #togglePanelCollapse() {
     this.#isPanelCollapsed = !this.#isPanelCollapsed;
     this.#element?.classList.toggle("is-collapsed", this.#isPanelCollapsed);
-    if (!toggleButton) return;
+    const handle = this.#element?.querySelector(".btn-resize-director-panel");
+    if (!handle) return;
 
-    toggleButton.setAttribute("aria-expanded", String(!this.#isPanelCollapsed));
-    toggleButton.title = game.i18n.localize(this.#isPanelCollapsed
+    const title = game.i18n.localize(this.#isPanelCollapsed
       ? "NARRATIVE_CANVAS.Director.ExpandImageControls"
-      : "NARRATIVE_CANVAS.Director.CollapseImageControls");
-    toggleButton.setAttribute("aria-label", toggleButton.title);
-    const icon = toggleButton.querySelector("i");
-    if (icon) icon.className = `fas ${this.#isPanelCollapsed ? "fa-chevron-left" : "fa-chevron-right"}`;
+      : "NARRATIVE_CANVAS.Director.ResizePanelWidth");
+    handle.title = title;
+    handle.setAttribute("aria-label", title);
+    handle.setAttribute("aria-expanded", String(!this.#isPanelCollapsed));
+    const icon = handle.querySelector("i");
+    if (icon) icon.className = `fas ${this.#isPanelCollapsed ? "fa-chevron-left" : "fa-grip-lines-vertical"}`;
   }
 
   #destroyPanelResizeController() {

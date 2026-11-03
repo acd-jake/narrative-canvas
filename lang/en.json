@@ -46,7 +46,6 @@
   "NARRATIVE_CANVAS.Director.ImageControls": "Image Controls",
   "NARRATIVE_CANVAS.Director.NoActiveScene": "No active scene",
   "NARRATIVE_CANVAS.Director.DeactivateActiveScene": "Deactivate active scene",
-  "NARRATIVE_CANVAS.Director.CollapseImageControls": "Hide image controls",
   "NARRATIVE_CANVAS.Director.ExpandImageControls": "Show image controls",
   "NARRATIVE_CANVAS.Director.CollapseImageList": "Collapse image list",
   "NARRATIVE_CANVAS.Director.ExpandImageList": "Expand image list",

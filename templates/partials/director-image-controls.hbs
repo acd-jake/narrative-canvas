@@ -1,9 +1,6 @@
 <div class="narrative-director-image-controls font-foundry {{#if isPanelCollapsed}}is-collapsed{{/if}}" style="--nc-director-image-tile-size: {{tileSize}}px;">
-    <button type="button" class="btn-toggle-image-controls-panel" aria-expanded="{{#unless isPanelCollapsed}}true{{else}}false{{/unless}}" title="{{#if isPanelCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageControls'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageControls'}}{{/if}}" aria-label="{{#if isPanelCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageControls'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageControls'}}{{/if}}">
-        <i class="fas {{#if isPanelCollapsed}}fa-chevron-left{{else}}fa-chevron-right{{/if}}" aria-hidden="true"></i>
-    </button>
-    <div class="btn-resize-director-panel" role="separator" aria-orientation="vertical" tabindex="0" title="{{localize 'NARRATIVE_CANVAS.Director.ResizePanelWidth'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.ResizePanelWidth'}}">
-        <i class="fas fa-grip-lines-vertical" aria-hidden="true"></i>
+    <div class="btn-resize-director-panel" role="separator" aria-orientation="vertical" tabindex="0" aria-expanded="{{#unless isPanelCollapsed}}true{{else}}false{{/unless}}" title="{{#if isPanelCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageControls'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ResizePanelWidth'}}{{/if}}" aria-label="{{#if isPanelCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageControls'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ResizePanelWidth'}}{{/if}}">
+        <i class="fas {{#if isPanelCollapsed}}fa-chevron-left{{else}}fa-grip-lines-vertical{{/if}}" aria-hidden="true"></i>
     </div>
     <header class="director-image-controls-header">
         <i class="fas fa-images" aria-hidden="true"></i>
