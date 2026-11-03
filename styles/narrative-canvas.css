@@ -634,48 +634,10 @@ body.acd-nc-active {
         margin: 0 0 12px 0;
 
         .director-image-list-header {
-            display: flex;
-            flex: 0 0 auto;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
-            cursor: ns-resize;
-            touch-action: none;
-            user-select: none;
-        }
-
-        h4 {
-            display: block;
-            flex: 1 1 auto;
-            min-width: 0;
-            max-width: 100%;
-            overflow: hidden;
-            font-size: 0.9rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            color: #7a6842;
-            margin-bottom: 8px;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .btn-toggle-image-list {
-            display: grid;
-            width: 26px;
-            height: 26px;
-            flex: 0 0 26px;
-            place-items: center;
-            padding: 0;
-            border: 1px solid #444;
-            border-radius: 4px;
-            background: transparent;
-            color: #888;
-            cursor: pointer;
-
-            &:hover,
-            &:focus-visible {
-                border-color: #7a6842;
-                color: #fff;
+            &.is-resizable {
+                cursor: ns-resize;
+                touch-action: none;
+                user-select: none;
             }
         }
     }
@@ -1136,7 +1098,63 @@ body.acd-nc-active {
         }
     }
 
-    /* ==========================================================================
+     /* ========================================================================== 
+         Shared Director Section Header
+       ========================================================================== */
+    .director-section-header {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        border-bottom: 1px solid #7a6842;
+        padding-bottom: 6px;
+        margin-bottom: 8px;
+
+        h4 {
+            display: flex;
+            flex: 1 1 auto;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            margin: 0;
+            overflow: hidden;
+            color: #f0f0f3;
+            font-size: 1rem;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+
+            i { color: #7a6842; }
+        }
+
+        .sidebar-section-toggle,
+        .btn-toggle-image-list {
+            display: grid;
+            width: 26px;
+            height: 26px;
+            flex: 0 0 26px;
+            place-items: center;
+            margin-left: auto;
+            padding: 4px 6px;
+            border: 0;
+            border-radius: 4px;
+            background: transparent;
+            color: #888;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.15s, background 0.15s;
+
+            &:hover,
+            &:focus-visible {
+                background: rgba(255, 255, 255, 0.1);
+                color: #fff;
+            }
+
+            i { font-size: 0.85rem; }
+        }
+    }
+
+    /* ========================================================================== 
        Director Left Sidebar (Scenes & Journal Viewer)
        ========================================================================== */
     .narrative-director-sidebar {
@@ -1201,25 +1219,6 @@ body.acd-nc-active {
 
         /* Common row & header styling */
         .sidebar-section-header {
-            display: flex;
-            align-items: center;
-            border-bottom: 1px solid #7a6842;
-            padding-bottom: 6px;
-            margin-bottom: 8px;
-
-            h4 {
-                margin: 0;
-                font-size: 1rem;
-                color: #f0f0f3;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-
-                i { color: #7a6842; }
-            }
-
             .sidebar-active-scene-name {
                 flex: 1 1 auto;
                 min-width: 0;
@@ -1259,27 +1258,6 @@ body.acd-nc-active {
                 }
             }
 
-            .sidebar-section-toggle {
-                margin-left: auto;
-                background: transparent;
-                border: none;
-                color: #888;
-                cursor: pointer;
-                padding: 4px 6px;
-                border-radius: 4px;
-                line-height: 1;
-                transition: color 0.15s, background 0.15s;
-
-                &:hover {
-                    color: #fff;
-                    background: rgba(255, 255, 255, 0.1);
-                }
-
-                i {
-                    font-size: 0.85rem;
-                }
-            }
-
             .btn-journal-back {
                 margin-left: auto;
                 background: transparent;
@@ -1297,12 +1275,20 @@ body.acd-nc-active {
             }
         }
 
-        > .sidebar-scenes-section > .sidebar-section-header,
-        > .sidebar-journal-section > .sidebar-section-header,
-        > .sidebar-audio-section > .sidebar-section-header {
-            cursor: ns-resize;
-            touch-action: none;
-            user-select: none;
+        > .sidebar-scenes-section > .sidebar-section-header.is-resizable,
+        > .sidebar-journal-section > .sidebar-section-header.is-resizable,
+        > .sidebar-audio-section > .sidebar-section-header.is-resizable {
+            &.is-resizable {
+                cursor: ns-resize;
+                touch-action: none;
+                user-select: none;
+            }
+        }
+
+        > .sidebar-scenes-section,
+        > .sidebar-journal-section,
+        > .sidebar-audio-section {
+            min-height: min-content;
         }
 
         .sidebar-search-row {
@@ -1481,7 +1467,7 @@ body.acd-nc-active {
 
         /* Compact Section: Scenes */
         .sidebar-scenes-section {
-            flex: 0 0 auto;
+            flex: 0 1 auto;
             max-height: 26%;
             display: flex;
             flex-direction: column;
@@ -1560,13 +1546,11 @@ body.acd-nc-active {
 
         /* Primary Section: Journal Viewer */
         .sidebar-journal-section {
-            flex: 1 1 auto;
+            flex: 1 1 0;
             display: flex;
             flex-direction: column;
             min-height: 0;
             overflow: hidden;
-
-            > .sidebar-section-header > .sidebar-section-toggle { margin-left: 0; }
 
             &.is-collapsed {
                 flex: 0 0 auto;
@@ -1778,7 +1762,7 @@ body.acd-nc-active {
 
         /* Compact Section: Scene Audio & Volume */
         .sidebar-audio-section {
-            flex: 0 0 auto;
+            flex: 0 1 auto;
             max-height: 20%;
             display: flex;
             flex-direction: column;
@@ -1805,53 +1789,12 @@ body.acd-nc-active {
             }
 
             .director-audio-tracks-list {
-                flex: 1 1 0;
-                min-height: 0;
-                overflow-y: auto;
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
                 padding-right: 4px;
                 margin-bottom: 8px;
 
                 > * {
                     flex: 0 0 auto;
                 }
-            }
-
-            .director-audio-track-item {
-                background: rgba(0, 0, 0, 0.3);
-                border: 1px solid #3a3a42;
-                border-radius: 5px;
-                padding: 4px 6px;
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-                transition: border-color 0.15s, background 0.15s;
-
-                &.is-playing {
-                    border-color: #7a6842;
-                    background: rgba(122, 104, 66, 0.15);
-
-                    .track-status-icon {
-                        color: #55ff77;
-                        animation: nc-pulse 1.6s infinite;
-                    }
-                }
-
-                &.is-paused {
-                    border-color: #555;
-                    background: rgba(255, 255, 255, 0.03);
-
-                    .track-status-icon {
-                        color: #ffaa33;
-                    }
-                }
-
-                .audio-track-info {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
                     gap: 6px;
 
                     .audio-track-name {

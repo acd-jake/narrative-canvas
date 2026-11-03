@@ -6,7 +6,7 @@
 
     <!-- Compact Section: Filterable Scenes List -->
     <section class="sidebar-scenes-section {{#if isScenesCollapsed}}is-collapsed{{/if}}">
-        <header class="sidebar-section-header">
+        <header class="director-section-header sidebar-section-header">
             <h4><i class="fas fa-cubes"></i> {{localize "NARRATIVE_CANVAS.Editor.Scenes"}}</h4>
             <span class="sidebar-active-scene-name {{#unless activeSceneId}}is-empty{{/unless}}" title="{{currentSceneName}}">{{currentSceneName}}</span>
             <button type="button" class="btn-clear-active-scene" title="{{localize 'NARRATIVE_CANVAS.Director.DeactivateActiveScene'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.DeactivateActiveScene'}}" {{#unless activeSceneId}}hidden{{/unless}}>
@@ -53,7 +53,7 @@
 
     <!-- Primary Section: Journal Viewer -->
     <section class="sidebar-journal-section {{#if isJournalCollapsed}}is-collapsed{{/if}}">
-        <header class="sidebar-section-header">
+        <header class="director-section-header sidebar-section-header">
             <h4><i class="fas fa-book-open"></i> {{localize "NARRATIVE_CANVAS.Director.JournalViewer"}}</h4>
             <button type="button" class="btn-journal-back type-icon" title="{{localize 'NARRATIVE_CANVAS.Director.BackToPreviousDocument'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.BackToPreviousDocument'}}" {{#unless canGoBack}}hidden{{/unless}}>
                 <i class="fas fa-arrow-left" aria-hidden="true"></i>
@@ -144,7 +144,7 @@
 
     <!-- Compact Section: Scene Audio Elements & Volume Controls -->
     <section class="sidebar-audio-section {{#if isAudioCollapsed}}is-collapsed{{/if}} {{#if audioMuted}}is-muted{{/if}}">
-        <header class="sidebar-section-header">
+        <header class="director-section-header sidebar-section-header">
             <h4><i class="fas fa-music"></i> {{localize "NARRATIVE_CANVAS.Director.Audio"}}</h4>
             <button type="button" class="sidebar-section-toggle" data-section-toggle="audio" aria-expanded="{{#unless isAudioCollapsed}}true{{else}}false{{/unless}}" aria-controls="director-audio-content" title="{{#if isAudioCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandAudio'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseAudio'}}{{/if}}" aria-label="{{#if isAudioCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandAudio'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseAudio'}}{{/if}}">
                 <i class="fas {{#if isAudioCollapsed}}fa-chevron-right{{else}}fa-chevron-down{{/if}}" aria-hidden="true"></i>

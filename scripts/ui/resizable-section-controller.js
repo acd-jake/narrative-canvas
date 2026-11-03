@@ -4,11 +4,15 @@ export class ResizableSectionController {
   #content;
   #toggleButton;
   #isCollapsed;
+  #isResizable;
   #expandedHeight;
   #minHeight;
   #getMaxHeight;
+  #createResizeHandler;
   #applyHeight;
   #onChange;
+  #onBeforeToggle;
+  #onToggle;
   #expandLabel;
   #collapseLabel;
   #collapsedIcon;
@@ -22,11 +26,15 @@ export class ResizableSectionController {
     content,
     toggleButton,
     isCollapsed = false,
+    isResizable = true,
     expandedHeight = null,
     minHeight = 100,
     getMaxHeight = () => section.parentElement?.clientHeight ?? window.innerHeight,
+    createResizeHandler = null,
     applyHeight = () => {},
     onChange = () => {},
+    onBeforeToggle = () => null,
+    onToggle = () => {},
     expandLabel,
     collapseLabel,
     collapsedIcon = "fa-chevron-right",
@@ -37,16 +45,21 @@ export class ResizableSectionController {
     this.#content = content;
     this.#toggleButton = toggleButton;
     this.#isCollapsed = isCollapsed;
+    this.#isResizable = isResizable;
     this.#expandedHeight = expandedHeight;
     this.#minHeight = minHeight;
     this.#getMaxHeight = getMaxHeight;
+    this.#createResizeHandler = createResizeHandler;
     this.#applyHeight = applyHeight;
     this.#onChange = onChange;
+    this.#onBeforeToggle = onBeforeToggle;
+    this.#onToggle = onToggle;
     this.#expandLabel = expandLabel;
     this.#collapseLabel = collapseLabel;
     this.#collapsedIcon = collapsedIcon;
     this.#expandedIcon = expandedIcon;
 
+    header.classList.toggle("is-resizable", this.#isResizable);
     this.#applyState();
     toggleButton.addEventListener("click", this.#handleToggle, { signal: this.#listeners.signal });
     header.addEventListener("pointerdown", this.#handlePointerDown, { signal: this.#listeners.signal });
@@ -54,16 +67,37 @@ export class ResizableSectionController {
 
   #handleToggle = event => {
     event.preventDefault();
-    this.#setCollapsed(!this.#isCollapsed);
+    const isCollapsed = !this.#isCollapsed;
+    const previousHeight = this.#section.getBoundingClientRect().height;
+    const snapshot = this.#onBeforeToggle({
+      section: this.#section,
+      isCollapsed,
+      previousHeight
+    });
+    this.#setCollapsed(isCollapsed);
+    this.#onToggle({
+      section: this.#section,
+      isCollapsed,
+      previousHeight,
+      currentHeight: this.#section.getBoundingClientRect().height,
+      expandedHeight: this.#expandedHeight,
+      snapshot
+    });
   };
 
   #handlePointerDown = event => {
+    if (!this.#isResizable) return;
     if (event.target instanceof Element && event.target.closest("button")) return;
 
     const wasCollapsed = this.#isCollapsed;
     const startHeight = this.#section.getBoundingClientRect().height;
     const startY = event.clientY;
     const pointerId = event.pointerId;
+    const resizeHandler = this.#createResizeHandler?.({
+      section: this.#section,
+      startHeight,
+      wasCollapsed
+    });
     this.#dragListeners?.abort();
     this.#dragListeners = new AbortController();
     const { signal } = this.#dragListeners;
@@ -74,10 +108,10 @@ export class ResizableSectionController {
 
       const minHeight = wasCollapsed ? startHeight : this.#minHeight;
       const maxHeight = Math.max(minHeight, this.#getMaxHeight());
-      this.#expandedHeight = Math.max(
-        minHeight,
-        Math.min(maxHeight, startHeight + startY - moveEvent.clientY)
-      );
+      const requestedHeight = startHeight + startY - moveEvent.clientY;
+      this.#expandedHeight = resizeHandler
+        ? resizeHandler({ startHeight, requestedHeight, delta: startY - moveEvent.clientY, minHeight, maxHeight })
+        : Math.max(minHeight, Math.min(maxHeight, requestedHeight));
       this.#applyHeight({ isCollapsed: false, expandedHeight: this.#expandedHeight });
       this.#notifyChange();
       moveEvent.preventDefault();

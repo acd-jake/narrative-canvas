@@ -126,12 +126,16 @@ export class DirectorImageControls {
         content,
         toggleButton,
         isCollapsed: this.#collapsedLists.has(listId),
+        isResizable: listId !== "backgrounds",
         expandedHeight,
         minHeight: 100,
         getMaxHeight: () => Math.max(
           header.getBoundingClientRect().height,
           this.#element?.querySelector(".director-image-controls-content")?.clientHeight ?? window.innerHeight
         ),
+        createResizeHandler: resizeContext => this.#createImageListResizeHandler(section, resizeContext),
+        onBeforeToggle: () => this.#captureImageListHeights(root),
+        onToggle: toggleState => this.#resizeAdjacentImageList(section, toggleState),
         applyHeight: ({ isCollapsed, expandedHeight: sectionHeight }) => {
           content.hidden = isCollapsed;
           if (isCollapsed || sectionHeight === null) return;
@@ -139,7 +143,9 @@ export class DirectorImageControls {
             listId,
             this.#getListHeight(section, sectionHeight)
           );
-          content.style.maxHeight = `${this.#manualListHeights.get(listId)}px`;
+          const height = `${this.#manualListHeights.get(listId)}px`;
+          content.style.height = height;
+          content.style.maxHeight = height;
         },
         onChange: ({ isCollapsed, expandedHeight: sectionHeight }) => {
           if (isCollapsed) this.#collapsedLists.add(listId);
@@ -154,6 +160,100 @@ export class DirectorImageControls {
       });
       this.#resizableSections.push(controller);
     });
+  }
+
+  #captureImageListHeights(root) {
+    return [...root.querySelectorAll(".director-image-control-group")].map(section => {
+      const list = section.querySelector(".director-image-list");
+      const listId = section.querySelector(".btn-toggle-image-list")?.dataset.imageList;
+      const isCollapsed = list?.hidden ?? true;
+      return {
+        section,
+        list,
+        listId,
+        height: section.getBoundingClientRect().height,
+        listHeight: isCollapsed
+          ? this.#manualListHeights.get(listId) ?? 0
+          : list.getBoundingClientRect().height,
+        isCollapsed
+      };
+    });
+  }
+
+  #resizeAdjacentImageList(section, { isCollapsed, previousHeight, currentHeight, snapshot }) {
+    if (!snapshot) return;
+
+    const heightChange = currentHeight - previousHeight;
+    const adjacentSection = section.nextElementSibling ?? section.previousElementSibling;
+    const adjacentState = snapshot.find(item => item.section === adjacentSection);
+
+    snapshot.forEach(item => {
+      if (item.section === section) {
+        const listHeight = isCollapsed
+          ? item.listHeight
+          : item.list.getBoundingClientRect().height;
+        this.#manualListHeights.set(item.listId, listHeight);
+        return;
+      }
+
+      if (!item.isCollapsed && item.list) {
+        const isAdjacent = item === adjacentState;
+        const nextHeight = isAdjacent
+          ? Math.max(0, item.listHeight - heightChange)
+          : item.listHeight;
+        item.list.style.height = `${nextHeight}px`;
+        item.list.style.maxHeight = `${nextHeight}px`;
+        this.#manualListHeights.set(item.listId, nextHeight);
+      }
+    });
+
+    this.#scheduleListLayout();
+  }
+
+  #createImageListResizeHandler(section, { startHeight, wasCollapsed }) {
+    const previousSection = section.previousElementSibling;
+    const previousList = previousSection?.querySelector(".director-image-list");
+    const currentList = section.querySelector(".director-image-list");
+    const previousToggle = previousSection?.querySelector(".btn-toggle-image-list");
+    const currentToggle = section.querySelector(".btn-toggle-image-list");
+    if (!previousList || !currentList || !previousToggle || !currentToggle) return null;
+
+    const previousListHeight = previousList.hidden ? 0 : previousList.getBoundingClientRect().height;
+    const currentListHeight = currentList.hidden ? 0 : currentList.getBoundingClientRect().height;
+    const currentChromeHeight = startHeight - currentListHeight;
+    const previousChromeHeight = previousSection.getBoundingClientRect().height - previousListHeight;
+    const totalListHeight = previousListHeight + currentListHeight;
+    const previousIsCollapsed = previousList.hidden;
+    const minimumCurrentListHeight = wasCollapsed ? 0 : Math.max(0, 100 - currentChromeHeight);
+    const minimumPreviousListHeight = previousIsCollapsed
+      ? 0
+      : Math.max(0, 100 - previousChromeHeight);
+
+    return ({ requestedHeight }) => {
+      const requestedListHeight = requestedHeight - currentChromeHeight;
+      const maximumCurrentListHeight = Math.max(
+        minimumCurrentListHeight,
+        totalListHeight - minimumPreviousListHeight
+      );
+      const nextCurrentListHeight = Math.max(
+        minimumCurrentListHeight,
+        Math.min(maximumCurrentListHeight, requestedListHeight)
+      );
+      const nextPreviousListHeight = totalListHeight - nextCurrentListHeight;
+
+      currentList.hidden = false;
+      currentList.style.height = `${nextCurrentListHeight}px`;
+      currentList.style.maxHeight = `${nextCurrentListHeight}px`;
+      this.#manualListHeights.set(currentToggle.dataset.imageList, nextCurrentListHeight);
+
+      if (!previousIsCollapsed) {
+        previousList.style.height = `${nextPreviousListHeight}px`;
+        previousList.style.maxHeight = `${nextPreviousListHeight}px`;
+        this.#manualListHeights.set(previousToggle.dataset.imageList, nextPreviousListHeight);
+      }
+
+      return currentChromeHeight + nextCurrentListHeight;
+    };
   }
 
   #getListHeight(section, sectionHeight) {
@@ -230,7 +330,11 @@ export class DirectorImageControls {
     }
 
     visibleLists.forEach((list, index) => {
-      list.style.maxHeight = `${targetHeights[index]}px`;
+      const height = `${targetHeights[index]}px`;
+      list.style.maxHeight = height;
+      const listId = list.closest(".director-image-control-group")
+        ?.querySelector(".btn-toggle-image-list")?.dataset.imageList;
+      list.style.height = this.#manualListHeights.has(listId) ? height : "";
     });
   }
 

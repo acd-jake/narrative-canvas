@@ -551,6 +551,7 @@ export class DirectorSidebar {
         sectionSelector: ".sidebar-scenes-section",
         contentSelector: "#director-scenes-content",
         isCollapsed: this.#areScenesCollapsed,
+        isResizable: false,
         expandedHeight: this.#sceneSectionHeight,
         expandLabel: "NARRATIVE_CANVAS.Director.ExpandScenes",
         collapseLabel: "NARRATIVE_CANVAS.Director.CollapseScenes"
@@ -588,12 +589,16 @@ export class DirectorSidebar {
         content,
         toggleButton,
         isCollapsed: config.isCollapsed,
+        isResizable: config.isResizable ?? true,
         expandedHeight: config.expandedHeight,
         minHeight: 100,
         getMaxHeight: () => Math.max(
           100,
           (section.parentElement?.clientHeight ?? window.innerHeight) - 180
         ),
+        createResizeHandler: resizeContext => this.#createSidebarResizeHandler(section, resizeContext),
+        onBeforeToggle: () => this.#captureSidebarSectionHeights(),
+        onToggle: toggleState => this.#resizeAdjacentSidebarSection(section, toggleState),
         applyHeight: state => this.#applySidebarSectionHeight(section, state),
         onChange: state => {
           if (config.name === "scenes") {
@@ -627,8 +632,78 @@ export class DirectorSidebar {
       return;
     }
 
-    section.style.flex = `0 0 ${expandedHeight}px`;
+    section.style.flex = `0 1 ${expandedHeight}px`;
     section.style.maxHeight = "none";
+  }
+
+  #createSidebarResizeHandler(section, { startHeight, wasCollapsed }) {
+    const previousSection = section.previousElementSibling;
+    if (!previousSection?.classList.contains("sidebar-scenes-section")
+      && !previousSection?.classList.contains("sidebar-journal-section")
+      && !previousSection?.classList.contains("sidebar-audio-section")) return null;
+
+    const previousHeight = previousSection.getBoundingClientRect().height;
+    const previousIsCollapsed = previousSection.classList.contains("is-collapsed");
+    const minCurrentHeight = wasCollapsed ? startHeight : 100;
+    const minPreviousHeight = previousIsCollapsed ? previousHeight : 100;
+    const pairHeight = startHeight + previousHeight;
+
+    return ({ requestedHeight }) => {
+      const maxCurrentHeight = Math.max(minCurrentHeight, pairHeight - minPreviousHeight);
+      const currentHeight = Math.max(
+        minCurrentHeight,
+        Math.min(maxCurrentHeight, requestedHeight)
+      );
+      const nextPreviousHeight = pairHeight - currentHeight;
+
+      this.#applySidebarSectionHeight(previousSection, {
+        isCollapsed: previousIsCollapsed,
+        expandedHeight: nextPreviousHeight
+      });
+      this.#rememberSidebarSectionHeight(previousSection, nextPreviousHeight);
+      return currentHeight;
+    };
+  }
+
+  #rememberSidebarSectionHeight(section, height) {
+    if (section.classList.contains("is-collapsed")) return;
+    if (section.classList.contains("sidebar-scenes-section")) this.#sceneSectionHeight = height;
+    else if (section.classList.contains("sidebar-journal-section")) this.#journalSectionHeight = height;
+    else if (section.classList.contains("sidebar-audio-section")) this.#audioSectionHeight = height;
+  }
+
+  #captureSidebarSectionHeights() {
+    return [...this.#element.children]
+      .filter(section => section.matches(
+        ".sidebar-scenes-section, .sidebar-journal-section, .sidebar-audio-section"
+      ))
+      .map(section => ({
+        section,
+        height: section.getBoundingClientRect().height,
+        isCollapsed: section.classList.contains("is-collapsed")
+      }));
+  }
+
+  #resizeAdjacentSidebarSection(section, { previousHeight, currentHeight, snapshot }) {
+    if (!snapshot) return;
+
+    const heightChange = currentHeight - previousHeight;
+    const adjacentSection = section.nextElementSibling ?? section.previousElementSibling;
+    const adjacentState = snapshot.find(item => item.section === adjacentSection);
+
+    snapshot.forEach(item => {
+      if (item.section === section) return;
+
+      const shouldResizeAdjacent = item === adjacentState && !item.isCollapsed;
+      const expandedHeight = shouldResizeAdjacent
+        ? Math.max(100, item.height - heightChange)
+        : item.height;
+      this.#applySidebarSectionHeight(item.section, {
+        isCollapsed: item.isCollapsed,
+        expandedHeight
+      });
+      this.#rememberSidebarSectionHeight(item.section, expandedHeight);
+    });
   }
 
   #addImageOverlayButtons(root) {
