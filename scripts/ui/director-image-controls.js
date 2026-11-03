@@ -10,6 +10,7 @@ export class DirectorImageControls {
   #element = null;
   #isPanelCollapsed = false;
   #panelWidth = null;
+  #panelOverflowOffset = 0;
   #panelResizeController = null;
   #collapsedLists = new Set();
   #manualListHeights = new Map();
@@ -105,15 +106,27 @@ export class DirectorImageControls {
       panel: root,
       handle,
       edge: "left",
-      minWidth: 210,
+      minWidth: 50,
+      minContentWidth: 150,
       maxWidth: 560,
       getMaxWidth: () => Math.min(560, window.innerWidth * 0.45),
       initialWidth: this.#panelWidth,
-      isEnabled: () => !root.classList.contains("is-collapsed"),
+      initialOverflowOffset: this.#panelOverflowOffset,
+      isCollapsed: () => root.classList.contains("is-collapsed"),
       onResize: width => {
         this.#panelWidth = width;
       },
-      onToggle: () => this.#togglePanelCollapse()
+      onOverflow: offset => {
+        this.#panelOverflowOffset = offset;
+        root.style.setProperty("--nc-panel-overflow-offset", `${offset}px`);
+      },
+      onToggle: () => {
+        this.#togglePanelCollapse();
+        if (!this.#isPanelCollapsed) {
+          this.#panelOverflowOffset = 0;
+          root.style.removeProperty("--nc-panel-overflow-offset");
+        }
+      }
     });
   }
 

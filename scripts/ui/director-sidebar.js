@@ -35,6 +35,7 @@ export class DirectorSidebar {
   #sceneSectionHeight = null;
   #journalSectionHeight = null;
   #audioSectionHeight = null;
+  #panelOverflowOffset = 0;
   #resizableSections = [];
   #panelWidth = null;
   #panelResizeController = null;
@@ -556,15 +557,27 @@ export class DirectorSidebar {
       panel,
       handle,
       edge: "right",
-      minWidth: 280,
+      minWidth: 50,
+      minContentWidth: 150,
       maxWidth: 560,
       getMaxWidth: () => Math.min(560, window.innerWidth * 0.45),
       initialWidth: this.#panelWidth,
-      isEnabled: () => !panel.classList.contains("is-collapsed"),
+      initialOverflowOffset: this.#panelOverflowOffset,
+      isCollapsed: () => panel.classList.contains("is-collapsed"),
       onResize: width => {
         this.#panelWidth = width;
       },
-      onToggle: () => this.toggleCollapse()
+      onOverflow: offset => {
+        this.#panelOverflowOffset = offset;
+        panel.style.setProperty("--nc-panel-overflow-offset", `${offset}px`);
+      },
+      onToggle: () => {
+        this.toggleCollapse();
+        if (!this.#isCollapsed) {
+          this.#panelOverflowOffset = 0;
+          panel.style.removeProperty("--nc-panel-overflow-offset");
+        }
+      }
     });
   }
 

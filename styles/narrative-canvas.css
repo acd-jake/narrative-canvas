@@ -506,9 +506,10 @@ body.acd-nc-active {
         position: absolute;
         top: 82px;
         bottom: 25px;
-        right: 25px;
+        right: calc(25px - var(--nc-panel-overflow-offset, 0px));
         z-index: 10;
         width: calc(var(--nc-director-image-tile-size, 200px) + 34px);
+        min-width: calc(150px + 34px);
         display: flex;
         flex-direction: column;
         min-height: 0;
@@ -531,7 +532,7 @@ body.acd-nc-active {
         }
 
         &.is-collapsed {
-            transform: translateX(calc(100% - 5px));
+            transform: translateX(calc(100% - 5px - var(--nc-panel-overflow-offset, 0px)));
             .btn-resize-director-panel { cursor: pointer; }
         }
 
@@ -751,7 +752,7 @@ body.acd-nc-active {
     .narrative-director-audio-sidebar {
         position: absolute;
         top: 25px;
-        left: 25px;
+        left: calc(25px + var(--nc-panel-overflow-offset, 0px));
         z-index: 10;
         width: 260px;
         background: rgba(22, 22, 26, 0.96);
@@ -1166,7 +1167,7 @@ body.acd-nc-active {
     .narrative-director-sidebar {
         position: absolute;
         top: 25px;
-        left: 25px;
+        left: calc(25px + var(--nc-panel-overflow-offset, 0px));
         bottom: 25px;
         z-index: 10;
         width: 360px;
@@ -1193,7 +1194,7 @@ body.acd-nc-active {
         }
 
         &.is-collapsed {
-            transform: translateX(calc(-100% + 5px));
+            transform: translateX(calc(-100% + 5px - var(--nc-panel-overflow-offset, 0px)));
             .btn-resize-director-panel { cursor: pointer; }
         }
 
