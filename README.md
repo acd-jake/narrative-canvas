@@ -85,6 +85,12 @@ The **Activation Permission Role** setting defines the minimum user role allowed
 
 Select **Hide from Players** to return from Live to Preparation: player views close while the GM's Narrative Canvas remains open. Publishing again shows the current presentation.
 
+### Director sidebars
+
+Resize the left Scene List/Journal Viewer/Audio sidebar and the right Background Images/Handout Images sidebar by dragging their edge handles. Click a handle to collapse or restore its sidebar. The default widths are 350px on the left and 175px on the right. When narrowing a sidebar, its content retains a minimum width of 150px; dragging below 50px collapses it.
+
+Section headers also provide collapse controls. Dragging a resizable section changes its height together with the adjacent section. Sidebar widths and section/list heights are saved locally as percentages of the available space and restored for the current user.
+
 ### Stage actions
 
 - **Publish to Players** makes the stage visible to players.
@@ -98,13 +104,13 @@ Select **Hide from Players** to return from Live to Preparation: player views cl
 
 ### Backgrounds and handout images
 
-Use the image controls on the right side of the Narrative Canvas. Select a background tile to replace the current stage background. The file-picker button can select a background that is not in the active scene. Use an image's caption control to show or hide its description.
+Use the image controls on the right side of the Narrative Canvas. Background and handout tiles flow into additional rows when the sidebar is wide enough. Select a background tile to replace the current stage background. The file-picker button can select a background that is not in the active scene. Use an image's caption control to show or hide its description.
 
 Select a handout tile to display that image as a foreground overlay. Selecting an already open handout brings it forward; additional handouts can be open at the same time. Drag an overlay to reposition it, including partly beyond the stage edge. Dragging does not resize it. Use its resize handle to change its size, or its X button to close it. The buttons retain their screen size while the image is resized.
 
 ### Audio
 
-The Audio section in the Director Controls lists the active scene's audio. Playlist tracks are grouped under their playlist name; expand a playlist to see each track and its status. The full audio list scrolls as one area. Drag the Audio section header vertically to resize the section. Use playlist-level or track-level play/pause and stop controls as needed. Currently playing or paused audio also appears below the master-volume control with a pause/resume button. The track volume slider changes an individual track; the master volume slider changes the overall audio level. **Stop All Audio** stops scene tracks and playlists. **Mute Audio** silences playback without stopping tracks.
+The Audio section in the Director Controls lists the active scene's audio. Playlist tracks are grouped under their playlist name; expand a playlist to see each track and its status. The full audio list scrolls as one area. Drag the Audio section header vertically to resize it with its adjacent section. The **Now Playing** line above the master-volume slider identifies the current track or playlist and track. Use playlist-level or track-level play/pause and stop controls as needed. The master volume slider changes the overall audio level. **Stop All Audio** stops scene tracks and playlists. **Mute Audio** silences playback without stopping tracks.
 
 ### Visual Novel overlay
 

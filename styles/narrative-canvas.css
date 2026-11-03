@@ -1450,8 +1450,7 @@ body.acd-nc-active {
 
         /* Compact Section: Scenes */
         .sidebar-scenes-section {
-            flex: 0 1 auto;
-            max-height: 26%;
+            flex: 1 1 auto;
             display: flex;
             flex-direction: column;
             min-height: 0;
@@ -1459,7 +1458,7 @@ body.acd-nc-active {
             padding-bottom: 6px;
 
             &.is-collapsed {
-                max-height: none;
+                flex: 0 0 auto;
                 padding-bottom: 0;
 
                 .sidebar-section-content { display: none; }
@@ -1745,8 +1744,7 @@ body.acd-nc-active {
 
         /* Compact Section: Scene Audio & Volume */
         .sidebar-audio-section {
-            flex: 0 1 auto;
-            max-height: 20%;
+            flex: 1 1 auto;
             display: flex;
             flex-direction: column;
             border-top: 1px solid #333;
@@ -1759,7 +1757,7 @@ body.acd-nc-active {
             }
 
             &.is-collapsed {
-                max-height: none;
+                flex: 0 0 auto;
                 padding-top: 0;
 
                 .sidebar-section-content { display: none; }
@@ -1772,67 +1770,108 @@ body.acd-nc-active {
             }
 
             .director-audio-tracks-list {
+                display: flex;
+                flex: 1 1 0;
+                flex-direction: column;
+                min-height: 0;
+                gap: 4px;
+                overflow-y: auto;
                 padding-right: 4px;
                 margin-bottom: 8px;
 
                 > * {
                     flex: 0 0 auto;
                 }
-                    gap: 6px;
+            }
 
-                    .audio-track-name {
-                        flex: 1 1 auto;
-                        font-size: 0.85rem;
-                        color: #f0f0f3;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        white-space: nowrap;
-                        display: flex;
-                        align-items: center;
-                        gap: 6px;
+            .director-audio-track-item {
+                display: flex;
+                flex: 0 0 auto;
+                flex-direction: column;
+                gap: 2px;
+                padding: 4px 6px;
+                border: 1px solid #3a3a42;
+                border-radius: 5px;
+                background: rgba(0, 0, 0, 0.3);
+                transition: border-color 0.15s, background 0.15s;
 
-                        .track-status-icon {
-                            font-size: 0.75rem;
-                            color: #777;
-                        }
-                    }
+                &.is-playing {
+                    border-color: #7a6842;
+                    background: rgba(122, 104, 66, 0.15);
 
-                    .audio-track-actions {
-                        display: flex;
-                        align-items: center;
-                        gap: 4px;
-                        flex-shrink: 0;
-
-                        button {
-                            width: 22px;
-                            height: 22px;
-                            padding: 0;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            font-size: 0.75rem;
-                            border-radius: 3px;
-                            border: 1px solid #444;
-                            background: rgba(255, 255, 255, 0.05);
-                            color: #ccc;
-                            cursor: pointer;
-                            transition: all 0.15s ease;
-
-                            &:hover {
-                                background: rgba(122, 104, 66, 0.4);
-                                border-color: #7a6842;
-                                color: #fff;
-                            }
-
-                            &.btn-track-stop:hover {
-                                background: rgba(160, 40, 40, 0.6);
-                                border-color: #ff4444;
-                                color: #fff;
-                            }
-                        }
+                    .track-status-icon {
+                        color: #55ff77;
+                        animation: nc-pulse 1.6s infinite;
                     }
                 }
 
+                &.is-paused {
+                    border-color: #555;
+                    background: rgba(255, 255, 255, 0.03);
+
+                    .track-status-icon { color: #ffaa33; }
+                }
+
+                .audio-track-info {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 6px;
+                    min-width: 0;
+                }
+
+                .audio-track-name {
+                    display: flex;
+                    flex: 1 1 auto;
+                    align-items: center;
+                    gap: 6px;
+                    min-width: 0;
+                    overflow: hidden;
+                    color: #f0f0f3;
+                    font-size: 0.85rem;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+
+                    .track-status-icon {
+                        flex: 0 0 auto;
+                        color: #777;
+                        font-size: 0.75rem;
+                    }
+                }
+
+                .audio-track-actions {
+                    display: flex;
+                    flex: 0 0 auto;
+                    align-items: center;
+                    gap: 4px;
+
+                    button {
+                        display: flex;
+                        width: 22px;
+                        height: 22px;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 0;
+                        border: 1px solid #444;
+                        border-radius: 3px;
+                        background: rgba(255, 255, 255, 0.05);
+                        color: #ccc;
+                        cursor: pointer;
+                        font-size: 0.75rem;
+                        transition: all 0.15s ease;
+
+                        &:hover {
+                            border-color: #7a6842;
+                            background: rgba(122, 104, 66, 0.4);
+                            color: #fff;
+                        }
+
+                        &.btn-track-stop:hover {
+                            border-color: #ff4444;
+                            background: rgba(160, 40, 40, 0.6);
+                        }
+                    }
+                }
             }
 
             .director-audio-playlist-group {

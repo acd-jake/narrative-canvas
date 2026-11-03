@@ -695,7 +695,7 @@ export class DirectorSidebar {
       return;
     }
 
-    section.style.flex = `0 1 ${expandedHeight}px`;
+    section.style.flex = `1 1 ${expandedHeight}px`;
     section.style.maxHeight = "none";
   }
 
