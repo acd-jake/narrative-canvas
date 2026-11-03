@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A persistent **Now Playing** line above the master-volume control that identifies the active track or playlist track.
 - Shared resize handles for both Director sidebars, with click-to-collapse/restore and drag resizing.
 - Client-local percentage persistence for Director sidebar widths and resizable section/list heights.
+- Standalone audio tracks played by the GM are now also played on player clients, including pause, resume, stop, master volume, mute and late-joining players.
 
 ### Changed
 
@@ -20,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Background and handout image tiles wrap into rows when space allows; their list headers share the Director section styling.
 - The Audio section now appears below the image lists in the right Media & Audio sidebar.
 - The Audio section is more compact: individual track-volume sliders and the duplicate active-playback list were removed; the master-volume slider remains.
+
+### Fixed
+
+- Standalone tracks that also exist in a Foundry playlist are no longer shown grouped under that playlist in the Director audio list.
 
 ## [0.3] - 2026-11-03
 

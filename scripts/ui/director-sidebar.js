@@ -430,8 +430,6 @@ export class DirectorSidebar {
 
       return {
         ...track,
-        sourcePlaylistId: track.sourcePlaylistId || playlist?.id,
-        sourcePlaylistName: track.sourcePlaylistName || playlist?.name,
         playState
       };
     });

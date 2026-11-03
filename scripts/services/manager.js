@@ -6,9 +6,12 @@ import { JournalAssetBrowser } from "./journal-asset-browser.js";
 import { NarrativePlayer } from "../ui/narrative-player.js";
 import { NarrativeDirector } from "../ui/narrative-director.js";
 import { NarrativeSceneEditor } from "../ui/scene-editor.js";
+import { TrackAudioPublisher } from "./track-audio-publisher.js";
+import { TrackAudioReceiver } from "./track-audio-receiver.js";
 
 export class NarrativeManager {
   #journalAssetRequestId = 0;
+  #trackAudioReceiver = new TrackAudioReceiver();
 
   constructor() {
     this.narrativeState = {
@@ -188,6 +191,20 @@ export class NarrativeManager {
   sendCurrentStateToUser(targetUserId) {
     if (!game.user.isGM) return;
     NarrativeSocket.emit("SYNC_STATE", this.narrativeState, targetUserId);
+    if (this.view?.audioController) {
+      TrackAudioPublisher.publishPlayingTracksTo(this.view.audioController, targetUserId);
+    }
+  }
+
+  /**
+   * Mirrors a standalone track playback change published by the GM. Players only.
+   * @param {{state: "playing"|"paused"|"stopped", track: object}} command
+   */
+  async handleTrackAudio(command) {
+    if (game.user.isGM) return;
+
+    this.#trackAudioReceiver.applyMix(this.narrativeState);
+    await this.#trackAudioReceiver.apply(command);
   }
 
   /**
@@ -201,6 +218,7 @@ export class NarrativeManager {
     }
 
     this.narrativeState = { ...this.narrativeState, ...data };
+    if (!game.user.isGM) this.#trackAudioReceiver.applyMix(data);
     if (game.user.isGM && !isRemote) {
       NarrativeSocket.emit("UPDATE_DISPLAY", data);
       await this.persistActiveState();
@@ -660,6 +678,7 @@ export class NarrativeManager {
    * Shuts down the canvas display if the active GM disconnects.
    */
   async forceShutdownDueToGMDisconnect() {
+    await this.#trackAudioReceiver.stopAll();
     this.narrativeState.active = false;
     this.narrativeState.playerViewActive = false;
     if (this.view) {

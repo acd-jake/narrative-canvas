@@ -4,6 +4,7 @@
  */
 export class SceneAudioController {
   #sounds = new Map();
+  #tracks = new Map();
   #states = new Map();
   #volumes = new Map();
   #globalVolume = 0.5;
@@ -52,6 +53,23 @@ export class SceneAudioController {
   }
 
   /**
+   * Returns the track definition last used to play the given track id.
+   * @param {string} trackId
+   * @returns {object|undefined}
+   */
+  getTrack(trackId) {
+    return this.#tracks.get(trackId);
+  }
+
+  /**
+   * Returns the tracks that are currently playing.
+   * @returns {object[]}
+   */
+  getPlayingTracks() {
+    return [...this.#tracks.values()].filter(track => this.getTrackState(track.id) === "playing");
+  }
+
+  /**
    * Returns individual volume of a track (0.0 to 1.0, default 1.0).
    * @param {string} trackId
    * @returns {number}
@@ -96,6 +114,7 @@ export class SceneAudioController {
       return;
     }
 
+    this.#tracks.set(track.id, track);
     let sound = this.#sounds.get(track.id);
 
     if (sound && this.getTrackState(track.id) === "paused") {
@@ -195,6 +214,7 @@ export class SceneAudioController {
     const trackIds = Array.from(this.#sounds.keys());
     await Promise.all(trackIds.map(id => this.stop(id)));
     this.#sounds.clear();
+    this.#tracks.clear();
     this.#states.clear();
   }
 

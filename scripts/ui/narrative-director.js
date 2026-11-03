@@ -4,6 +4,7 @@ import { DirectorActorCarousel } from "./director-carousel.js";
 import { DirectorImageControls } from "./director-image-controls.js";
 import { DirectorCanvasToolbar } from "./director-canvas-toolbar.js";
 import { SceneAudioController } from "../services/audio-controller.js";
+import { TrackAudioPublisher } from "../services/track-audio-publisher.js";
 
 /**
  * Interactive master control interface layout for Gamemasters.
@@ -20,7 +21,10 @@ export class NarrativeDirector extends NarrativeCanvas {
     this.automaticPlaylistMuted = false;
     this.audioController = new SceneAudioController({
       globalVolume: 0.5,
-      onStateChange: (trackId) => this.sidebar?.updateAudioTrackItem(trackId)
+      onStateChange: (trackId, state) => {
+        this.sidebar?.updateAudioTrackItem(trackId);
+        TrackAudioPublisher.publishStateChange(this.audioController, trackId, state);
+      }
     });
     this.toolbar = new DirectorCanvasToolbar({
       onVisibilityChange: (visible) => this.callbacks.onVisibilityChange(visible),

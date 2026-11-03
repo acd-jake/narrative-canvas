@@ -110,7 +110,7 @@ Select a handout tile to display that image as a foreground overlay. Selecting a
 
 ### Audio
 
-The Audio section below the image lists in the right Media & Audio sidebar shows the active scene's audio. Playlist tracks are grouped under their playlist name; expand a playlist to see each track and its status. The full audio list scrolls as one area. Drag its header vertically to resize it with the adjacent image list. The **Now Playing** line above the master-volume slider identifies the current track or playlist and track. Use playlist-level or track-level play/pause and stop controls as needed. The master volume slider changes the overall audio level. **Stop All Audio** stops scene tracks and playlists. **Mute Audio** silences playback without stopping tracks.
+The Audio section below the image lists in the right Media & Audio sidebar shows the active scene's audio. Playlist tracks are grouped under their playlist name; expand a playlist to see each track and its status. The full audio list scrolls as one area. Drag its header vertically to resize it with the adjacent image list. The **Now Playing** line above the master-volume slider identifies the current track or playlist and track. Use playlist-level or track-level play/pause and stop controls as needed. The master volume slider changes the overall audio level. **Stop All Audio** stops scene tracks and playlists. **Mute Audio** silences playback without stopping tracks. Standalone tracks the GM plays are mirrored on every player's client (play, pause, stop, master volume and mute), including players who join later; playlists are synchronized by Foundry's own playlist playback.
 
 ### Visual Novel overlay
 

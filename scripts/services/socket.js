@@ -40,6 +40,12 @@ export class NarrativeSocket {
             manager.reopenPlayerCanvas();
           }
           break;
+
+        case "TRACK_AUDIO":
+          if (game.users.get(userId)?.isGM || game.user.id === userId) {
+            manager.handleTrackAudio(data);
+          }
+          break;
       }
     });
   }
