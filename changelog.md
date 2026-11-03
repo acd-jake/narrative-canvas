@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4] - 2026-11-03
+
 ### Added
 
 - Playlist audio appears as a single expandable entry in Director Controls, with per-track playback status and playlist-level controls.
@@ -80,7 +82,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Dragging handout images no longer changes their size unintentionally.
 
-[Unreleased]: https://github.com/acd-jake/narrative-canvas/compare/0.3...HEAD
+[Unreleased]: https://github.com/acd-jake/narrative-canvas/compare/0.4...HEAD
+[0.4]: https://github.com/acd-jake/narrative-canvas/compare/0.3...0.4
 [0.3]: https://github.com/acd-jake/narrative-canvas/compare/0.2...0.3
 [0.2]: https://github.com/acd-jake/narrative-canvas/compare/0.1...0.2
 [0.1]: https://github.com/acd-jake/narrative-canvas/releases/tag/0.1
