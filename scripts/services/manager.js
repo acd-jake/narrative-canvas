@@ -28,6 +28,7 @@ export class NarrativeManager {
       journalImage: null,
       activeDialogue: null,
       handout: null,
+      isVisualNovelOverlayVisible: true,
 
       activeSceneId: "",
       currentSceneData: null,

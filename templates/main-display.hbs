@@ -60,7 +60,7 @@
     <div class="narrative-overlay-vignette"></div>
 
     <!-- Visual Novel Character Overlays Layer -->
-    <div class="narrative-visual-novel-stage {{#if hasActiveSpeaker}}has-speaker{{/if}}">
+    <div class="narrative-visual-novel-stage {{#if hasActiveSpeaker}}has-speaker{{/if}} {{#unless isVisualNovelOverlayVisible}}is-hidden-from-players{{/unless}}">
         {{#each activeActors}}
             <div class="narrative-vn-character {{#if this.isSpeaker}}is-speaker{{/if}}" id="nc-vn-{{this.id}}" data-actor-id="{{this.id}}">
                 <div class="narrative-vn-image-wrapper">

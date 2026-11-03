@@ -93,6 +93,19 @@ export class NarrativeDirectorActions {
         const activeSpeakerId = state.activeSpeakerId === actorId ? null : state.activeSpeakerId;
         this.handleDisplayUpdate({ activeActors: activeList, activeSpeakerId });
       },
+      onActorStageClear: () => this.handleDisplayUpdate({ activeActors: [], activeSpeakerId: null }),
+      onVisualNovelOverlayVisibilityToggle: () => this.handleDisplayUpdate({
+        isVisualNovelOverlayVisible: !this.getState().isVisualNovelOverlayVisible
+      }),
+      onActorOrderChange: actorIds => {
+        const activeActors = this.getState().activeActors || [];
+        const actorsById = new Map(activeActors.map(actor => [actor.id, actor]));
+        const orderedActors = actorIds.map(actorId => actorsById.get(actorId)).filter(Boolean);
+        const orderedIds = new Set(orderedActors.map(actor => actor.id));
+        this.handleDisplayUpdate({
+          activeActors: [...orderedActors, ...activeActors.filter(actor => !orderedIds.has(actor.id))]
+        });
+      },
       onActorSpeakerToggle: actorId => {
         const state = this.getState();
         let activeSpeakerId = state.activeSpeakerId;

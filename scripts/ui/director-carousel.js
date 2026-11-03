@@ -14,6 +14,8 @@ export class DirectorActorCarousel {
    * @param {(actorId: string) => void} callbacks.onActorStageRemove
    * @param {(actorId: string) => void} callbacks.onActorSpeakerToggle
    * @param {(actorId: string) => void} callbacks.onActorToggleName
+  * @param {() => void} callbacks.onActorStageClear
+  * @param {() => void} callbacks.onVisualNovelOverlayVisibilityToggle
    */
   constructor(callbacks) {
     this.#callbacks = callbacks;
@@ -34,6 +36,7 @@ export class DirectorActorCarousel {
 
     const activeIds = new Set((context.activeActors || []).map(a => a.id));
     const activeSpeakerId = context.activeSpeakerId ?? null;
+    const isVisualNovelOverlayVisible = context.isVisualNovelOverlayVisible !== false;
 
     const actors = sceneActors.map(actor => ({
       id: actor.id,
@@ -46,7 +49,11 @@ export class DirectorActorCarousel {
 
     const htmlString = await foundry.applications.handlebars.renderTemplate(
       "modules/narrative-canvas/templates/partials/director-actors.hbs",
-      { actors }
+      {
+        actors,
+        hasActiveActors: activeIds.size > 0,
+        isVisualNovelOverlayVisible
+      }
     );
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");
@@ -107,6 +114,23 @@ export class DirectorActorCarousel {
     const activeIds = new Set((context.activeActors || []).map(a => a.id));
     const activeSpeakerId = context.activeSpeakerId ?? null;
     const sceneActors = context.currentSceneData?.actors || [];
+    const isVisualNovelOverlayVisible = context.isVisualNovelOverlayVisible !== false;
+
+    const visibilityButton = this.#element.querySelector(".btn-carousel-toggle-player-visibility");
+    if (visibilityButton) {
+      const labelKey = isVisualNovelOverlayVisible
+        ? "NARRATIVE_CANVAS.Director.HideVisualNovelFromPlayers"
+        : "NARRATIVE_CANVAS.Director.ShowVisualNovelToPlayers";
+      const label = game.i18n.localize(labelKey);
+      visibilityButton.classList.toggle("is-active", isVisualNovelOverlayVisible);
+      visibilityButton.setAttribute("aria-pressed", String(isVisualNovelOverlayVisible));
+      visibilityButton.title = label;
+      visibilityButton.setAttribute("aria-label", label);
+      visibilityButton.querySelector("i").className = `fas ${isVisualNovelOverlayVisible ? "fa-eye" : "fa-eye-slash"}`;
+    }
+
+    const clearButton = this.#element.querySelector(".btn-carousel-clear-stage");
+    if (clearButton) clearButton.disabled = activeIds.size === 0;
 
     this.#element.querySelectorAll(".actor-carousel-card").forEach(card => {
       const actorId = card.dataset.actorId;
@@ -162,6 +186,18 @@ export class DirectorActorCarousel {
 
   #bindListeners(element) {
     if (!element) return;
+
+    element.querySelector(".btn-carousel-toggle-player-visibility")?.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.#callbacks.onVisualNovelOverlayVisibilityToggle?.();
+    });
+
+    element.querySelector(".btn-carousel-clear-stage")?.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.#callbacks.onActorStageClear?.();
+    });
 
     // 1. Left-click to deploy or toggle actor on the visual novel stage
     element.querySelectorAll(".actor-carousel-card").forEach(card => {

@@ -42,8 +42,11 @@ export class NarrativeDirector extends NarrativeCanvas {
     this.carousel = new DirectorActorCarousel({
       onActorStageToggle: (actorId) => this.callbacks.onActorStageToggle?.(actorId),
       onActorStageRemove: (actorId) => this.callbacks.onActorStageRemove?.(actorId),
+      onActorStageClear: () => this.callbacks.onActorStageClear?.(),
       onActorSpeakerToggle: (actorId) => this.callbacks.onActorSpeakerToggle?.(actorId),
-      onActorToggleName: (actorId) => this.callbacks.onActorToggleName?.(actorId)
+      onActorToggleName: (actorId) => this.callbacks.onActorToggleName?.(actorId),
+      onVisualNovelOverlayVisibilityToggle: () => this.callbacks.onVisualNovelOverlayVisibilityToggle?.(),
+      onActorOrderChange: actorIds => this.callbacks.onActorOrderChange?.(actorIds)
     });
     this._setupGlobalDelegatedListeners();
   }
@@ -186,6 +189,10 @@ export class NarrativeDirector extends NarrativeCanvas {
 
   _onHandoutImageClose(overlayId) {
     this.callbacks.onHandoutImageClose?.(overlayId);
+  }
+
+  _onActorOrderChange(actorIds) {
+    this.callbacks.onActorOrderChange?.(actorIds);
   }
 
   /**

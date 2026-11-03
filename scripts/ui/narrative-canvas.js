@@ -27,7 +27,9 @@ export class NarrativeCanvas {
     this._opacityAnimations = new WeakMap();
     this._backgroundDescriptionTransitionId = 0;
     this.bgController = new StageBackgroundController();
-    this.vnStageController = new VisualNovelStage();
+    this.vnStageController = new VisualNovelStage({
+      onActorOrderChange: actorIds => this._onActorOrderChange(actorIds)
+    });
     this.handoutImageOverlayController = new HandoutImageOverlayController({
       animateOpacity: (element, opacity, duration) => this._animateElementOpacity(element, opacity, duration),
       fadeOutAndRemove: (element, duration) => this._fadeOutAndRemove(element, duration),
@@ -128,6 +130,7 @@ export class NarrativeCanvas {
     // Initialize background controller and visual novel character layer
     this.bgController.mount(newStage, context.background);
     this.vnStageController.mount(newStage);
+    this.vnStageController.update(context);
 
     await this._onPrepareElements(newStage, context);
     if (renderRequestId !== this._renderRequestId) return;
@@ -343,6 +346,8 @@ export class NarrativeCanvas {
   _onHandoutImageLayoutChange(layout) {}
 
   _onHandoutImageClose(overlayId) {}
+
+  _onActorOrderChange(actorIds) {}
 
   applyHandoutImageLayout(layout) {
     this.handoutImageOverlayController.applyLayout(layout);

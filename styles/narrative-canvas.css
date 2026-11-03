@@ -847,6 +847,30 @@ body.acd-nc-active {
         }
     }
 
+    &.director-view .narrative-visual-novel-stage.is-hidden-from-players {
+        opacity: 0.6;
+    }
+
+    &.player-view .narrative-visual-novel-stage.is-hidden-from-players {
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    &.director-view .narrative-vn-character[draggable="true"] {
+        pointer-events: auto;
+        cursor: grab;
+    }
+
+    &.director-view .narrative-vn-character.is-dragging {
+        cursor: grabbing;
+        opacity: 0.6;
+    }
+
+    &.director-view .narrative-vn-character.is-drop-target .narrative-vn-image-wrapper {
+        outline: 2px solid rgba(255, 215, 0, 0.8);
+        outline-offset: 6px;
+    }
+
     &.player-view .narrative-visual-novel-stage {
         bottom: 20px;
     }
@@ -992,11 +1016,26 @@ body.acd-nc-active {
             gap: 12px;
             overflow-x: auto;
             scrollbar-width: none;
-            padding: 4px 2px;
+            padding: 22px 2px 4px;
             align-items: center;
 
             &::-webkit-scrollbar {
                 display: none;
+            }
+        }
+
+        .actor-carousel-corner-actions {
+            position: absolute;
+            top: 4px;
+            left: 8px;
+            right: 8px;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 5;
+
+            .btn-carousel-action {
+                pointer-events: auto;
             }
         }
 
@@ -1096,6 +1135,28 @@ body.acd-nc-active {
                 background: rgba(122, 104, 66, 0.9);
                 color: #fff;
                 border-color: #9a8458;
+            }
+
+            &.btn-carousel-toggle-player-visibility.is-active {
+                background: rgba(122, 104, 66, 0.9);
+                color: #fff;
+                border-color: #9a8458;
+            }
+
+            &.btn-carousel-clear-stage {
+                background: rgba(140, 30, 30, 0.9);
+                color: #fff;
+                border-color: #662222;
+
+                &:hover:not(:disabled) {
+                    background: #ff3333;
+                    border-color: #ff5555;
+                }
+
+                &:disabled {
+                    opacity: 0.4;
+                    cursor: default;
+                }
             }
 
             &.btn-carousel-remove-stage {

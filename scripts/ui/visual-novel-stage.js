@@ -4,6 +4,7 @@
  * and FLIP (First-Last-Invert-Play) gliding transitions when screen positions change.
  */
 export class VisualNovelStage {
+  #onActorOrderChange;
   /** @type {HTMLElement|null} */
   #stageElement = null;
 
@@ -12,6 +13,11 @@ export class VisualNovelStage {
 
   /** @type {number|null} */
   #cleanupTimer = null;
+  #draggedActorId = null;
+
+  constructor({ onActorOrderChange } = {}) {
+    this.#onActorOrderChange = onActorOrderChange;
+  }
 
   /**
    * Mounts the controller to the given canvas stage element.
@@ -34,6 +40,7 @@ export class VisualNovelStage {
     if (!this.#vnStage) return;
 
     this.#vnStage.classList.toggle("has-speaker", Boolean(context.hasActiveSpeaker));
+    this.#vnStage.classList.toggle("is-hidden-from-players", context.isVisualNovelOverlayVisible === false);
     const fadeDuration = context.fadeDuration ?? 500;
 
     const targetActors = context.activeActors || [];
@@ -74,6 +81,14 @@ export class VisualNovelStage {
       } else {
         this.#updateCharacterElement(charEl, actor);
       }
+      this.#bindReorderListeners(charEl, context.isGM === true);
+    }
+
+    for (const actor of targetActors) {
+      const charEl = this.#vnStage.querySelector(
+        `.narrative-vn-character:not(.is-exiting)[data-actor-id="${actor.id}"]`
+      );
+      if (charEl) this.#vnStage.appendChild(charEl);
     }
 
     // FLIP - Step 2: LAST (Record new screen coordinates of all in-flow characters)
@@ -233,6 +248,55 @@ export class VisualNovelStage {
     } else if (namePlate) {
       namePlate.remove();
     }
+  }
+
+  #bindReorderListeners(charEl, canReorder) {
+    charEl.draggable = canReorder;
+    if (charEl.dataset.reorderListenersBound) return;
+    charEl.dataset.reorderListenersBound = "true";
+
+    charEl.addEventListener("dragstart", event => {
+      if (!charEl.draggable) return;
+      this.#draggedActorId = charEl.dataset.actorId;
+      event.dataTransfer?.setData("application/x-narrative-canvas-actor", this.#draggedActorId);
+      if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+      charEl.classList.add("is-dragging");
+    });
+
+    charEl.addEventListener("dragover", event => {
+      if (!this.#draggedActorId || this.#draggedActorId === charEl.dataset.actorId) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+      charEl.classList.add("is-drop-target");
+    });
+
+    charEl.addEventListener("dragleave", () => charEl.classList.remove("is-drop-target"));
+
+    charEl.addEventListener("drop", event => {
+      const draggedActorId = event.dataTransfer?.getData("application/x-narrative-canvas-actor")
+        || this.#draggedActorId;
+      const targetActorId = charEl.dataset.actorId;
+      if (!draggedActorId || draggedActorId === targetActorId) return;
+      event.preventDefault();
+
+      const actorIds = Array.from(
+        this.#vnStage.querySelectorAll(".narrative-vn-character:not(.is-exiting)")
+      ).map(element => element.dataset.actorId);
+      const sourceIndex = actorIds.indexOf(draggedActorId);
+      const targetIndex = actorIds.indexOf(targetActorId);
+      if (sourceIndex < 0 || targetIndex < 0) return;
+
+      actorIds.splice(sourceIndex, 1);
+      actorIds.splice(targetIndex, 0, draggedActorId);
+      this.#onActorOrderChange?.(actorIds);
+    });
+
+    charEl.addEventListener("dragend", () => {
+      this.#draggedActorId = null;
+      this.#vnStage?.querySelectorAll(".is-dragging, .is-drop-target").forEach(element => {
+        element.classList.remove("is-dragging", "is-drop-target");
+      });
+    });
   }
 
   /**

@@ -161,5 +161,8 @@
   "NARRATIVE_CANVAS.Director.RemoveSpeaker": "Remove active speaker highlight",
   "NARRATIVE_CANVAS.Director.ShowName": "Show name on stage",
   "NARRATIVE_CANVAS.Director.HideName": "Hide name on stage",
-  "NARRATIVE_CANVAS.Director.RemoveFromStage": "Remove from stage (or right-click)"
+  "NARRATIVE_CANVAS.Director.RemoveFromStage": "Remove from stage (or right-click)",
+  "NARRATIVE_CANVAS.Director.ClearActorStage": "Remove all actors from the Visual Novel overlay",
+  "NARRATIVE_CANVAS.Director.HideVisualNovelFromPlayers": "Hide the Visual Novel overlay from players",
+  "NARRATIVE_CANVAS.Director.ShowVisualNovelToPlayers": "Show the Visual Novel overlay to players"
 }

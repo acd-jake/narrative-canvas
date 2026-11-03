@@ -62,4 +62,61 @@ describe("NarrativeDirectorActions", () => {
     expect(handleDisplayUpdate).not.toHaveBeenCalled();
     expect(activateSceneAudio).not.toHaveBeenCalled();
   });
+
+  it("clears staged actors and the active speaker together", () => {
+    const handleDisplayUpdate = vi.fn();
+    const actions = new NarrativeDirectorActions({
+      getState: () => ({ activeActors: [{ id: "actor-1" }], activeSpeakerId: "actor-1" }),
+      handleDisplayUpdate,
+      handleHandoutImageLayout: vi.fn(),
+      activateSceneAudio: vi.fn(),
+      reopenPlayerCanvases: vi.fn(),
+      toggleCanvasState: vi.fn(),
+      addHandoutImageOverlay: vi.fn()
+    });
+
+    actions.createCallbacks().onActorStageClear();
+
+    expect(handleDisplayUpdate).toHaveBeenCalledWith({ activeActors: [], activeSpeakerId: null });
+  });
+
+  it("toggles player visibility for the Visual Novel overlay", () => {
+    const state = { isVisualNovelOverlayVisible: true };
+    const handleDisplayUpdate = vi.fn();
+    const actions = new NarrativeDirectorActions({
+      getState: () => state,
+      handleDisplayUpdate,
+      handleHandoutImageLayout: vi.fn(),
+      activateSceneAudio: vi.fn(),
+      reopenPlayerCanvases: vi.fn(),
+      toggleCanvasState: vi.fn(),
+      addHandoutImageOverlay: vi.fn()
+    });
+
+    actions.createCallbacks().onVisualNovelOverlayVisibilityToggle();
+
+    expect(handleDisplayUpdate).toHaveBeenCalledWith({ isVisualNovelOverlayVisible: false });
+  });
+
+  it("reorders staged actors while retaining actors omitted by a stale drag payload", () => {
+    const state = {
+      activeActors: [{ id: "actor-1" }, { id: "actor-2" }, { id: "actor-3" }]
+    };
+    const handleDisplayUpdate = vi.fn();
+    const actions = new NarrativeDirectorActions({
+      getState: () => state,
+      handleDisplayUpdate,
+      handleHandoutImageLayout: vi.fn(),
+      activateSceneAudio: vi.fn(),
+      reopenPlayerCanvases: vi.fn(),
+      toggleCanvasState: vi.fn(),
+      addHandoutImageOverlay: vi.fn()
+    });
+
+    actions.createCallbacks().onActorOrderChange(["actor-2", "actor-1"]);
+
+    expect(handleDisplayUpdate).toHaveBeenCalledWith({
+      activeActors: [{ id: "actor-2" }, { id: "actor-1" }, { id: "actor-3" }]
+    });
+  });
 });

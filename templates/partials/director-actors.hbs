@@ -1,4 +1,13 @@
 <div class="narrative-director-actors-bar font-foundry">
+    <div class="actor-carousel-corner-actions">
+        <button type="button" class="btn-carousel-action btn-carousel-toggle-player-visibility {{#if isVisualNovelOverlayVisible}}is-active{{/if}}" aria-pressed="{{isVisualNovelOverlayVisible}}" title="{{#if isVisualNovelOverlayVisible}}{{localize 'NARRATIVE_CANVAS.Director.HideVisualNovelFromPlayers'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowVisualNovelToPlayers'}}{{/if}}" aria-label="{{#if isVisualNovelOverlayVisible}}{{localize 'NARRATIVE_CANVAS.Director.HideVisualNovelFromPlayers'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowVisualNovelToPlayers'}}{{/if}}">
+            <i class="fas {{#if isVisualNovelOverlayVisible}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="btn-carousel-action btn-carousel-clear-stage" {{#unless hasActiveActors}}disabled{{/unless}} title="{{localize 'NARRATIVE_CANVAS.Director.ClearActorStage'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.ClearActorStage'}}">
+            <i class="fas fa-users-slash" aria-hidden="true"></i>
+        </button>
+    </div>
+
     <div class="carousel-nav-control">
         <button type="button" class="btn-carousel-scroll btn-carousel-scroll-left" title="{{localize 'NARRATIVE_CANVAS.Director.ScrollLeft'}}">
             <i class="fas fa-chevron-left"></i>

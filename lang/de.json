@@ -161,5 +161,8 @@
   "NARRATIVE_CANVAS.Director.RemoveSpeaker": "Sprecher-Hervorhebung zurücknehmen",
   "NARRATIVE_CANVAS.Director.ShowName": "Name auf der Bühne anzeigen",
   "NARRATIVE_CANVAS.Director.HideName": "Name auf der Bühne verbergen",
-  "NARRATIVE_CANVAS.Director.RemoveFromStage": "Von der Bühne entfernen (oder Rechtsklick)"
+  "NARRATIVE_CANVAS.Director.RemoveFromStage": "Von der Bühne entfernen (oder Rechtsklick)",
+  "NARRATIVE_CANVAS.Director.ClearActorStage": "Alle Akteure aus dem VisualNovel-Overlay entfernen",
+  "NARRATIVE_CANVAS.Director.HideVisualNovelFromPlayers": "VisualNovel-Overlay für Spielende ausblenden",
+  "NARRATIVE_CANVAS.Director.ShowVisualNovelToPlayers": "VisualNovel-Overlay für Spielende einblenden"
 }
