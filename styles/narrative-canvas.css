@@ -131,6 +131,43 @@ body.acd-nc-active {
                 background: #581f1f;
             }
         }
+
+        .toolbar-theme-menu {
+            position: relative;
+
+            &:hover .toolbar-theme-options,
+            &:focus-within .toolbar-theme-options {
+                display: flex;
+            }
+        }
+
+        /* Top padding bridges the gap to the trigger so the hover is not lost. */
+        .toolbar-theme-options {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            z-index: 22;
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 180px;
+            padding-top: 6px;
+
+            button {
+                display: block;
+                width: 100%;
+                height: auto;
+                padding: 8px 12px;
+                text-align: left;
+                white-space: nowrap;
+                font-size: 0.95rem;
+
+                &.is-selected {
+                    border-color: #e0b84c;
+                    background: #38342a;
+                }
+            }
+        }
     }
 
     .narrative-player-toolbar {
@@ -353,15 +390,24 @@ body.acd-nc-active {
         overflow: auto;
         transform: translateX(-50%);
         padding: 10px 24px;
-        border-top: 1px solid rgba(255, 255, 255, 0.65);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.65);
-        background: rgba(0, 0, 0, 0.76);
-        color: #fff;
-        font-family: "Signika", sans-serif;
-        font-size: 1.15rem;
+        border-style: solid;
+        border-color: transparent;
+        border-width: var(--nc-theme-subtitle-frame-width, 0);
+        border-image-source: var(--nc-theme-subtitle-frame-image, none);
+        border-image-slice: var(--nc-theme-subtitle-frame-slice, 0);
+        border-image-outset: var(--nc-theme-subtitle-frame-outset, 0);
+        border-image-repeat: var(--nc-theme-subtitle-frame-repeat, stretch);
+        background: var(--nc-theme-subtitle-background, rgba(0, 0, 0, 0.76));
+        color: var(--nc-theme-subtitle-color, #fff);
+        font-family: var(--nc-theme-subtitle-font-family, "Signika", sans-serif);
+        font-size: var(--nc-theme-subtitle-font-size, 1.15rem);
+        font-style: var(--nc-theme-subtitle-font-style, normal);
+        font-weight: var(--nc-theme-subtitle-font-weight, normal);
+        letter-spacing: var(--nc-theme-subtitle-letter-spacing, normal);
+        text-transform: var(--nc-theme-subtitle-text-transform, none);
         line-height: 1.35;
         text-align: center;
-        text-shadow: 0 2px 3px #000;
+        text-shadow: var(--nc-theme-subtitle-text-shadow, 0 2px 3px #000);
         pointer-events: auto;
 
         p { margin: 0; }
@@ -398,7 +444,15 @@ body.acd-nc-active {
         display: block;
         height: 100%;
         width: auto;
+        box-sizing: border-box;
         object-fit: contain;
+        border-style: solid;
+        border-color: transparent;
+        border-width: var(--nc-theme-handout-image-frame-width, 0);
+        border-image-source: var(--nc-theme-handout-image-frame-image, none);
+        border-image-slice: var(--nc-theme-handout-image-frame-slice, 0);
+        border-image-outset: var(--nc-theme-handout-image-frame-outset, 0);
+        border-image-repeat: var(--nc-theme-handout-image-frame-repeat, stretch);
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.65);
         cursor: grab;
         pointer-events: auto;
@@ -408,19 +462,35 @@ body.acd-nc-active {
 
     .narrative-scene-handout-image-description {
         position: absolute;
-        right: 0;
-        bottom: 25px;
-        left: 0;
-        max-height: 32%;
+        /* Counter-scales the frame transform so the caption keeps a constant on-screen size. */
+        --caption-scale: var(--handout-image-scale-inverse, 1);
+        bottom: calc(25px * var(--caption-scale));
+        left: 50%;
+        width: calc(100% / var(--caption-scale));
+        max-height: calc(32% / var(--caption-scale));
+        transform: translateX(-50%) scale(var(--caption-scale));
+        transform-origin: center bottom;
+        box-sizing: border-box;
         overflow: auto;
         padding: 10px 18px;
-        background: rgba(16, 16, 20, 0.88);
-        color: #f0f0f3;
-        font-family: "Signika", sans-serif;
-        font-size: 1.05rem;
+        border-style: solid;
+        border-color: transparent;
+        border-width: var(--nc-theme-handout-caption-frame-width, 0);
+        border-image-source: var(--nc-theme-handout-caption-frame-image, none);
+        border-image-slice: var(--nc-theme-handout-caption-frame-slice, 0);
+        border-image-outset: var(--nc-theme-handout-caption-frame-outset, 0);
+        border-image-repeat: var(--nc-theme-handout-caption-frame-repeat, stretch);
+        background: var(--nc-theme-handout-caption-background, rgba(16, 16, 20, 0.88));
+        color: var(--nc-theme-handout-caption-color, #f0f0f3);
+        font-family: var(--nc-theme-handout-caption-font-family, "Signika", sans-serif);
+        font-size: var(--nc-theme-handout-caption-font-size, 1.05rem);
+        font-style: var(--nc-theme-handout-caption-font-style, normal);
+        font-weight: var(--nc-theme-handout-caption-font-weight, normal);
+        letter-spacing: var(--nc-theme-handout-caption-letter-spacing, normal);
+        text-transform: var(--nc-theme-handout-caption-text-transform, none);
         line-height: 1.35;
         text-align: center;
-        text-shadow: 0 1px 3px #000;
+        text-shadow: var(--nc-theme-handout-caption-text-shadow, 0 1px 3px #000);
         pointer-events: auto;
 
         p { margin: 0; }
@@ -433,13 +503,24 @@ body.acd-nc-active {
         left: 0;
         z-index: 2;
         padding: 10px 18px;
-        background: rgba(16, 16, 20, 0.88);
-        color: #f0f0f3;
-        font-family: "Signika", sans-serif;
-        font-size: 1.05rem;
+        border-style: solid;
+        border-color: transparent;
+        border-width: var(--nc-theme-actor-name-frame-width, 0);
+        border-image-source: var(--nc-theme-actor-name-frame-image, none);
+        border-image-slice: var(--nc-theme-actor-name-frame-slice, 0);
+        border-image-outset: var(--nc-theme-actor-name-frame-outset, 0);
+        border-image-repeat: var(--nc-theme-actor-name-frame-repeat, stretch);
+        background: var(--nc-theme-actor-name-background, rgba(16, 16, 20, 0.88));
+        color: var(--nc-theme-actor-name-color, #f0f0f3);
+        font-family: var(--nc-theme-actor-name-font-family, "Signika", sans-serif);
+        font-size: var(--nc-theme-actor-name-font-size, 1.05rem);
+        font-style: var(--nc-theme-actor-name-font-style, normal);
+        font-weight: var(--nc-theme-actor-name-font-weight, normal);
+        letter-spacing: var(--nc-theme-actor-name-letter-spacing, normal);
+        text-transform: var(--nc-theme-actor-name-text-transform, none);
         line-height: 1.35;
         text-align: center;
-        text-shadow: 0 1px 3px #000;
+        text-shadow: var(--nc-theme-actor-name-text-shadow, 0 1px 3px #000);
         pointer-events: none;
     }
 
@@ -809,12 +890,14 @@ body.acd-nc-active {
             position: absolute;
             inset: -8px;
             z-index: 0;
-            border: 2px solid var(--nc-vn-speaker-highlight, #ffd700);
-            border-radius: 8px;
-            background: color-mix(in srgb, var(--nc-vn-speaker-highlight, #ffd700) 22%, transparent);
+            --nc-highlight-color: var(--nc-theme-actor-highlight-color, #ffd700);
+            --nc-highlight-glow: var(--nc-theme-actor-highlight-glow-radius, 20px);
+            border: var(--nc-theme-actor-highlight-border-width, 2px) solid var(--nc-highlight-color);
+            border-radius: var(--nc-theme-actor-highlight-border-radius, 8px);
+            background: color-mix(in srgb, var(--nc-highlight-color) 22%, transparent);
             box-shadow:
-                0 0 20px color-mix(in srgb, var(--nc-vn-speaker-highlight, #ffd700) 70%, transparent),
-                0 0 42px color-mix(in srgb, var(--nc-vn-speaker-highlight, #ffd700) 35%, transparent);
+                0 0 var(--nc-highlight-glow) color-mix(in srgb, var(--nc-highlight-color) 70%, transparent),
+                0 0 calc(var(--nc-highlight-glow) * 2) color-mix(in srgb, var(--nc-highlight-color) 35%, transparent);
             content: "";
             opacity: 0;
             pointer-events: none;

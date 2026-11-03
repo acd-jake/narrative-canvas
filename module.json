@@ -37,6 +37,16 @@
       "path": "lang/de.json"
     }
   ],
+  "flags": {
+    "narrative-canvas": {
+      "themes": [
+        { "id": "fantasy", "label": "NARRATIVE_CANVAS.Themes.Fantasy" },
+        { "id": "dark-fantasy", "label": "NARRATIVE_CANVAS.Themes.DarkFantasy" },
+        { "id": "science-fiction", "label": "NARRATIVE_CANVAS.Themes.ScienceFiction" },
+        { "id": "noir", "label": "NARRATIVE_CANVAS.Themes.Noir" }
+      ]
+    }
+  },
   "socket": true,
   "url": "#{URL}#",
   "download": "#{DOWNLOAD}#",

@@ -8,6 +8,7 @@ import { NarrativeDirector } from "../ui/narrative-director.js";
 import { NarrativeSceneEditor } from "../ui/scene-editor.js";
 import { NarrativeLogger } from "./logger.js";
 import { PlaylistAudioMixer } from "./playlist-audio-mixer.js";
+import { ThemeManager } from "./themes/theme-manager.js";
 
 export class NarrativeManager {
   #journalAssetRequestId = 0;
@@ -34,6 +35,7 @@ export class NarrativeManager {
       activeTrackId: null,
       globalVolume: 0.5,
       audioMuted: false,
+      themeOverrideId: "",     // Temporary GM theme choice; not persisted, "" uses the module setting
       scenesList: []
     };
     this.view = null;
@@ -87,6 +89,7 @@ export class NarrativeManager {
       ? this.narrativeState.active
       : this.narrativeState.playerViewActive && !this.playerCanvasDismissed;
     if (shouldRender) {
+      await ThemeManager.activate(this.narrativeState.themeOverrideId || NarrativeSettings.getThemeId());
       if (!this.view) {
         this.view = game.user.isGM
           ? new NarrativeDirector(this._getGMCallbacks())
@@ -602,6 +605,7 @@ export class NarrativeManager {
         });
       },
       onBackgroundReset: () => this.handleDisplayUpdate({ background: "" }),
+      onThemeSelect: themeId => this.handleDisplayUpdate({ themeOverrideId: themeId }),
       onJournalImageShow: (journalImage) => {
         this.handleDisplayUpdate({
           handoutImageOverlays: this.#addHandoutImageOverlay({ ...journalImage, showDescription: true })

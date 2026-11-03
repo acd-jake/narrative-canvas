@@ -1,3 +1,5 @@
+import { ThemeCatalog } from "../services/themes/theme-catalog.js";
+
 /**
  * Owns the director's canvas-level visibility and playback actions.
  */
@@ -10,6 +12,7 @@ export class DirectorCanvasToolbar {
    * @param {(visible: boolean) => void} callbacks.onVisibilityChange
   * @param {() => void} callbacks.onCloseAllHandouts
   * @param {() => void} callbacks.onBackgroundReset
+  * @param {(themeId: string) => void} callbacks.onThemeSelect
     * @param {() => void} callbacks.onReopenPlayers
     * @param {(muted: boolean) => void} callbacks.onAudioMuteChange
    * @param {() => void} callbacks.onShutdown
@@ -27,7 +30,7 @@ export class DirectorCanvasToolbar {
   async render(context = {}) {
     const htmlString = await foundry.applications.handlebars.renderTemplate(
       "modules/narrative-canvas/templates/partials/director-canvas-toolbar.hbs",
-      context
+      this.#withThemeOptions(context)
     );
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");
@@ -47,7 +50,7 @@ export class DirectorCanvasToolbar {
 
     const htmlString = await foundry.applications.handlebars.renderTemplate(
       "modules/narrative-canvas/templates/partials/director-canvas-toolbar.hbs",
-      context
+      this.#withThemeOptions(context)
     );
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");
@@ -65,6 +68,16 @@ export class DirectorCanvasToolbar {
   destroy() {
     this.#element?.remove();
     this.#element = null;
+  }
+
+  /** Adds the theme dropdown entries; "" stands for the module-setting default. */
+  #withThemeOptions(context) {
+    const selectedId = context.themeOverrideId ?? "";
+    const themeOptions = [
+      { id: "", label: "NARRATIVE_CANVAS.Director.ThemeModuleDefault" },
+      ...ThemeCatalog.getEntries()
+    ].map(({ id, label }) => ({ id, label: game.i18n.localize(label), selected: id === selectedId }));
+    return { ...context, themeOptions };
   }
 
   async #handleClick(event) {
@@ -93,6 +106,9 @@ export class DirectorCanvasToolbar {
         break;
       case "close-handouts":
         this.#callbacks.onCloseAllHandouts();
+        break;
+      case "select-theme":
+        this.#callbacks.onThemeSelect(button.dataset.themeId);
         break;
       case "reset-background":
         this.#callbacks.onBackgroundReset();

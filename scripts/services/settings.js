@@ -1,4 +1,5 @@
 import { JournalBrowser } from "./journal-browser.js";
+import { ThemeCatalog } from "./themes/theme-catalog.js";
 
 /**
  * Handles module configurations and permissions.
@@ -10,7 +11,7 @@ export class NarrativeSettings {
   static SETTING_BG_COLOR = "canvasBackgroundColor";
   static SETTING_DEFAULT_BG_IMAGE = "defaultBackgroundImage";
   static SETTING_ACTOR_IMAGE_HEIGHT = "actorImageHeight";
-  static SETTING_SPEAKER_HIGHLIGHT_COLOR = "speakerHighlightColor";
+  static SETTING_THEME = "theme";
   static SETTING_TOASTS = "enableToastNotifications";
   static SETTING_FADE_DURATION = "fadeDuration";
   static SETTING_LOG_LEVEL = "logLevel";
@@ -83,13 +84,14 @@ export class NarrativeSettings {
       }
     });
 
-    game.settings.register("narrative-canvas", this.SETTING_SPEAKER_HIGHLIGHT_COLOR, {
-      name: "NARRATIVE_CANVAS.Settings.SpeakerHighlightColorLabel",
-      hint: "NARRATIVE_CANVAS.Settings.SpeakerHighlightColorHint",
+    game.settings.register("narrative-canvas", this.SETTING_THEME, {
+      name: "NARRATIVE_CANVAS.Settings.ThemeLabel",
+      hint: "NARRATIVE_CANVAS.Settings.ThemeHint",
       scope: "world",
       config: true,
-      type: new foundry.data.fields.ColorField(),
-      default: "#ffd700",
+      type: String,
+      choices: ThemeCatalog.getChoices(),
+      default: ThemeCatalog.DEFAULT_THEME_ID,
       onChange: () => {
         const manager = game.modules?.get("narrative-canvas")?.manager;
         manager?.refreshView();
@@ -340,7 +342,7 @@ export class NarrativeSettings {
     return game.settings.get("narrative-canvas", this.SETTING_ACTOR_IMAGE_HEIGHT);
   }
 
-  static getSpeakerHighlightColor() {
-    return game.settings.get("narrative-canvas", this.SETTING_SPEAKER_HIGHLIGHT_COLOR);
+  static getThemeId() {
+    return game.settings.get("narrative-canvas", this.SETTING_THEME);
   }
 }

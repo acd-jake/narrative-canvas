@@ -25,6 +25,7 @@ export class NarrativeDirector extends NarrativeCanvas {
       onAudioMuteChange: (muted) => this.callbacks.onAudioMuteChange?.(muted),
       onCloseAllHandouts: () => this.callbacks.onCloseAllHandouts(),
       onBackgroundReset: () => this.callbacks.onBackgroundReset(),
+      onThemeSelect: themeId => this.callbacks.onThemeSelect?.(themeId),
       onShutdown: () => this.callbacks.onShutdown(),
       onStopAllAudio: () => this.stopAllAudio()
     });

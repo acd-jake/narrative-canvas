@@ -1,4 +1,5 @@
 import { NarrativeSettings } from "../services/settings.js";
+import { ThemeManager } from "../services/themes/theme-manager.js";
 import { StageBackgroundController } from "./stage-background.js";
 import { VisualNovelStage } from "./visual-novel-stage.js";
 import { HandoutImageOverlayController } from "./handout-image-overlay-controller.js";
@@ -94,8 +95,7 @@ export class NarrativeCanvas {
       isGM: game.user.isGM,
       customBgColor: NarrativeSettings.getBackgroundColor(),
       fadeDuration: NarrativeSettings.getFadeDuration(),
-      actorImageHeight: NarrativeSettings.getActorImageHeight(),
-      speakerHighlightColor: NarrativeSettings.getSpeakerHighlightColor()
+      actorImageHeight: NarrativeSettings.getActorImageHeight()
     };
 
     // If already rendered in DOM, check if we can update the stage in-place to prevent image flickering
@@ -122,7 +122,7 @@ export class NarrativeCanvas {
     newStage.style.setProperty("--nc-custom-bg", context.customBgColor || "#000000");
     newStage.style.setProperty("--nc-fade-duration", `${context.fadeDuration}ms`);
     newStage.style.setProperty("--nc-vn-actor-image-height", `${context.actorImageHeight}vh`);
-    newStage.style.setProperty("--nc-vn-speaker-highlight", context.speakerHighlightColor || "#ffd700");
+    ThemeManager.applyTo(newStage);
     newStage.style.opacity = "0";
 
     // Initialize background controller and visual novel character layer
@@ -190,7 +190,7 @@ export class NarrativeCanvas {
     const fadeDuration = context.fadeDuration;
     this.stageElement.style.setProperty("--nc-fade-duration", `${fadeDuration}ms`);
     this.stageElement.style.setProperty("--nc-vn-actor-image-height", `${context.actorImageHeight}vh`);
-    this.stageElement.style.setProperty("--nc-vn-speaker-highlight", context.speakerHighlightColor || "#ffd700");
+    ThemeManager.applyTo(this.stageElement);
     document.body.style.setProperty("--nc-fade-duration", `${fadeDuration}ms`);
 
     // 1. Update background and actor layers
