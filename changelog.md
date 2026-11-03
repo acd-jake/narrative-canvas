@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7] - 2026-11-03
+
+### Added
+
+- Director controls to remove all staged actors and hide the Visual Novel overlay from players while keeping a dimmed preview visible to the GM.
+- Drag-and-drop actor reordering directly on the Visual Novel stage, with a floating actor preview and an animated insertion gap.
+
 ## [0.6.1] - 2026-11-03
 
 ### Changed
@@ -131,7 +138,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Dragging handout images no longer changes their size unintentionally.
 
-[Unreleased]: https://github.com/acd-jake/narrative-canvas/compare/0.6.1...HEAD
+[Unreleased]: https://github.com/acd-jake/narrative-canvas/compare/0.7...HEAD
+[0.7]: https://github.com/acd-jake/narrative-canvas/compare/0.6.1...0.7
 [0.6.1]: https://github.com/acd-jake/narrative-canvas/compare/0.6...0.6.1
 [0.6]: https://github.com/acd-jake/narrative-canvas/compare/0.5.1...0.6
 [0.5.1]: https://github.com/acd-jake/narrative-canvas/compare/0.5...0.5.1
