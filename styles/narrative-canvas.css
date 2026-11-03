@@ -993,9 +993,11 @@ body.acd-nc-active {
     .director-image-list {
         display: flex;
         flex: 0 0 auto;
-        flex-direction: column;
+        flex-flow: row wrap;
         align-items: flex-start;
+        align-content: flex-start;
         gap: 8px;
+        overflow-x: hidden;
         overflow-y: auto;
     }
 
