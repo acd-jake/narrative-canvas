@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-03
+
+### Changed
+
+- Starting a scene track or playlist stops other active audio assigned to the active scene.
+
+### Fixed
+
+- Automatically start an individually selected PlaylistSound instead of starting its entire playlist.
+
+### Added
+
+- Regression tests for exclusive scene audio playback and automatic individual-track playback.
+
 ## [0.6] - 2026-11-03
 
 ### Added
@@ -117,7 +131,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Dragging handout images no longer changes their size unintentionally.
 
-[Unreleased]: https://github.com/acd-jake/narrative-canvas/compare/0.6...HEAD
+[Unreleased]: https://github.com/acd-jake/narrative-canvas/compare/0.6.1...HEAD
+[0.6.1]: https://github.com/acd-jake/narrative-canvas/compare/0.6...0.6.1
 [0.6]: https://github.com/acd-jake/narrative-canvas/compare/0.5.1...0.6
 [0.5.1]: https://github.com/acd-jake/narrative-canvas/compare/0.5...0.5.1
 [0.5]: https://github.com/acd-jake/narrative-canvas/compare/0.4...0.5

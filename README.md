@@ -12,6 +12,7 @@ Narrative Canvas adds a Theatre of the Mind presentation stage to Foundry Virtua
 - Selectable themes (Fantasy, Dark Fantasy, Science Fiction, Noir) for subtitles, handout images, and actors. Set the default in the module settings or switch temporarily from the Director toolbar. Additional themes are added as directories under `themes/` with a `theme.json` and their images, registered in `module.json`.
 - Journal browsing and the ability to show journal images on the presentation stage.
 - Automatic background and audio playback when a scene is activated or the Canvas is reopened with an active scene.
+- Scenes can automatically start one PlaylistSound or an entire playlist. Starting a scene track or playlist stops other active scene audio.
 - Scene audio uses existing Foundry Playlist and PlaylistSound documents. Foundry synchronizes playlist and individual-track playback with connected players.
 - Players can adjust or mute scene audio locally without changing other clients' volume.
 - Journal Viewer controls let each user adjust journal page text size for readability.
@@ -81,6 +82,7 @@ Narrative Canvas erweitert Foundry Virtual Tabletop um eine Präsentationsfläch
 - Auswählbare Themes (Fantasy, Dark Fantasy, Science Fiction, Noir) für Untertitel, Handout-Bilder und Akteure. Das Standard-Theme wird in den Moduleinstellungen festgelegt und lässt sich über die Regie-Werkzeugleiste temporär umschalten. Weitere Themes entstehen als Verzeichnis unter `themes/` mit einer `theme.json` und den Bilddateien und werden in `module.json` eingetragen.
 - Journal-Navigation und die Möglichkeit, Journal-Bilder direkt auf der Präsentationsfläche anzuzeigen.
 - Automatische Wiedergabe von Hintergründen und Audio beim Aktivieren einer Szene oder beim erneuten Öffnen des Canvas mit aktiver Szene.
+- Szenen können einen einzelnen PlaylistSound oder eine ganze Playlist automatisch starten. Beim Starten eines Szenen-Tracks oder einer Playlist wird anderes aktives Szenen-Audio gestoppt.
 - Synchronisierte Wiedergabe einzelner Audiospuren einschließlich Lautstärke, Stummschaltung, Pause und Stopp. Auch Spielende, die während einer laufenden Spur beitreten, erhalten deren Wiedergabe. Foundry-Playlists verwenden die native Synchronisierung von Foundry.
 - Spielende können die Szenenlautstärke lokal anpassen oder stummschalten, ohne die Lautstärke anderer Clients zu verändern.
 - Die Schriftgröße der Journal-Seitenansicht lässt sich für bessere Lesbarkeit individuell einstellen.
