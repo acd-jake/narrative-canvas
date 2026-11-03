@@ -37,8 +37,10 @@ export class DirectorSidebar {
   #audioSectionHeight = null;
   #panelOverflowOffset = 0;
   #resizableSections = [];
-  #panelWidth = null;
+  #panelWidth = 350;
   #panelResizeController = null;
+  #layoutStateSaveTimeout = null;
+  #layoutState = null;
   #playlistSoundHook = null;
   #expandedPlaylistIds = new Set();
   #activePlaylistIds = new Set();
@@ -54,6 +56,9 @@ export class DirectorSidebar {
   constructor({ audioController, onSceneSelect, onJournalSelect, onVolumeChange, onJournalImageShow }) {
     this.#audioController = audioController;
     this.#callbacks = { onSceneSelect, onJournalSelect, onVolumeChange, onJournalImageShow };
+    this.#layoutState = NarrativeSettings.getDirectorLayoutState() || {};
+    const savedPanelWidthRatio = this.#layoutState.panelWidthRatios.sidebar;
+    if (savedPanelWidthRatio) this.#panelWidth = savedPanelWidthRatio * window.innerWidth;
 
     const journalViewerState = NarrativeSettings.getJournalViewerState();
     this.#rootJournalFolderId = NarrativeSettings.getJournalRootFolder();
@@ -73,6 +78,13 @@ export class DirectorSidebar {
     this.#playlistSoundHook = null;
     this.#destroyResizableSections();
     this.#destroyPanelResizeController();
+    if (this.#layoutStateSaveTimeout !== null) {
+      clearTimeout(this.#layoutStateSaveTimeout);
+      void NarrativeSettings.saveDirectorLayoutState({
+        panelWidthRatios: { sidebar: this.#layoutState.panelWidthRatios.sidebar },
+        sidebarSectionHeightRatios: this.#layoutState.sidebarSectionHeightRatios
+      });
+    }
     this.#element = null;
   }
 
@@ -561,15 +573,16 @@ export class DirectorSidebar {
       minContentWidth: 150,
       maxWidth: 560,
       getMaxWidth: () => Math.min(560, window.innerWidth * 0.45),
-      initialWidth: this.#panelWidth,
-      initialOverflowOffset: this.#panelOverflowOffset,
+      initialWidth: this.#panelWidth + this.#panelOverflowOffset,
       isCollapsed: () => panel.classList.contains("is-collapsed"),
       onResize: width => {
         this.#panelWidth = width;
+        this.#scheduleLayoutStateSave();
       },
       onOverflow: offset => {
         this.#panelOverflowOffset = offset;
         panel.style.setProperty("--nc-panel-overflow-offset", `${offset}px`);
+        this.#scheduleLayoutStateSave();
       },
       onToggle: () => {
         this.toggleCollapse();
@@ -577,6 +590,7 @@ export class DirectorSidebar {
           this.#panelOverflowOffset = 0;
           panel.style.removeProperty("--nc-panel-overflow-offset");
         }
+        this.#scheduleLayoutStateSave();
       }
     });
   }
@@ -592,6 +606,7 @@ export class DirectorSidebar {
   }
 
   #bindResizableSections(root) {
+    const availableHeight = root.clientHeight || Math.max(1, window.innerHeight - 50);
     const sectionConfigs = [
       {
         name: "scenes",
@@ -599,7 +614,7 @@ export class DirectorSidebar {
         contentSelector: "#director-scenes-content",
         isCollapsed: this.#areScenesCollapsed,
         isResizable: false,
-        expandedHeight: this.#sceneSectionHeight,
+        expandedHeight: this.#getSavedSectionHeight("scenes", this.#sceneSectionHeight, availableHeight),
         expandLabel: "NARRATIVE_CANVAS.Director.ExpandScenes",
         collapseLabel: "NARRATIVE_CANVAS.Director.CollapseScenes"
       },
@@ -608,7 +623,7 @@ export class DirectorSidebar {
         sectionSelector: ".sidebar-journal-section",
         contentSelector: "#director-journal-content",
         isCollapsed: this.#isJournalCollapsed,
-        expandedHeight: this.#journalSectionHeight,
+        expandedHeight: this.#getSavedSectionHeight("journal", this.#journalSectionHeight, availableHeight),
         expandLabel: "NARRATIVE_CANVAS.Director.ExpandJournalViewer",
         collapseLabel: "NARRATIVE_CANVAS.Director.CollapseJournalViewer"
       },
@@ -617,7 +632,7 @@ export class DirectorSidebar {
         sectionSelector: ".sidebar-audio-section",
         contentSelector: "#director-audio-content",
         isCollapsed: this.#isAudioCollapsed,
-        expandedHeight: this.#audioSectionHeight,
+        expandedHeight: this.#getSavedSectionHeight("audio", this.#audioSectionHeight, availableHeight),
         expandLabel: "NARRATIVE_CANVAS.Director.ExpandAudio",
         collapseLabel: "NARRATIVE_CANVAS.Director.CollapseAudio"
       }
@@ -658,6 +673,7 @@ export class DirectorSidebar {
             this.#isAudioCollapsed = state.isCollapsed;
             this.#audioSectionHeight = state.expandedHeight;
           }
+          this.#scheduleLayoutStateSave();
         },
         expandLabel: config.expandLabel,
         collapseLabel: config.collapseLabel
@@ -717,6 +733,45 @@ export class DirectorSidebar {
     if (section.classList.contains("sidebar-scenes-section")) this.#sceneSectionHeight = height;
     else if (section.classList.contains("sidebar-journal-section")) this.#journalSectionHeight = height;
     else if (section.classList.contains("sidebar-audio-section")) this.#audioSectionHeight = height;
+    this.#scheduleLayoutStateSave();
+  }
+
+  #getSavedSectionHeight(sectionName, currentHeight, availableHeight) {
+    const savedRatio = this.#layoutState.sidebarSectionHeightRatios[sectionName];
+    return typeof savedRatio === "number"
+      ? savedRatio * availableHeight
+      : currentHeight;
+  }
+
+  #scheduleLayoutStateSave() {
+    const availableWidth = Math.max(1, window.innerWidth);
+    const availableHeight = this.#element?.clientHeight || Math.max(1, window.innerHeight - 50);
+    const sidebarSectionHeightRatios = { ...this.#layoutState.sidebarSectionHeightRatios };
+    for (const [sectionName, height] of Object.entries({
+      scenes: this.#sceneSectionHeight,
+      journal: this.#journalSectionHeight,
+      audio: this.#audioSectionHeight
+    })) {
+      if (height !== null) sidebarSectionHeightRatios[sectionName] = height / availableHeight;
+    }
+
+    this.#layoutState = {
+      ...this.#layoutState,
+      panelWidthRatios: {
+        ...this.#layoutState.panelWidthRatios,
+        sidebar: Math.max(0, this.#panelWidth + this.#panelOverflowOffset) / availableWidth
+      },
+      sidebarSectionHeightRatios
+    };
+
+    if (this.#layoutStateSaveTimeout !== null) clearTimeout(this.#layoutStateSaveTimeout);
+    this.#layoutStateSaveTimeout = window.setTimeout(() => {
+      this.#layoutStateSaveTimeout = null;
+      void NarrativeSettings.saveDirectorLayoutState({
+        panelWidthRatios: { sidebar: this.#layoutState.panelWidthRatios.sidebar },
+        sidebarSectionHeightRatios: this.#layoutState.sidebarSectionHeightRatios
+      });
+    }, 250);
   }
 
   #captureSidebarSectionHeights() {

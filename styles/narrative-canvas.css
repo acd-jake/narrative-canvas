@@ -508,15 +508,15 @@ body.acd-nc-active {
         bottom: 25px;
         right: calc(25px - var(--nc-panel-overflow-offset, 0px));
         z-index: 10;
-        width: calc(var(--nc-director-image-tile-size, 200px) + 34px);
-        min-width: calc(150px + 34px);
+        width: 175px;
+        min-width: calc(150px + 22px);
         display: flex;
         flex-direction: column;
         min-height: 0;
         background: rgba(22, 22, 26, 0.96);
         border: 1px solid #444;
         border-radius: 8px;
-        padding: 16px;
+        padding: 16px 10px;
         box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8);
         color: #c8c8c8;
         box-sizing: border-box;
@@ -1170,7 +1170,7 @@ body.acd-nc-active {
         left: calc(25px + var(--nc-panel-overflow-offset, 0px));
         bottom: 25px;
         z-index: 10;
-        width: 360px;
+        width: 350px;
         background: rgba(22, 22, 26, 0.96);
         border: 1px solid #444;
         border-radius: 8px;

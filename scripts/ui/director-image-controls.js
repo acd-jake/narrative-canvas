@@ -9,14 +9,23 @@ export class DirectorImageControls {
   /** @type {HTMLElement|null} */
   #element = null;
   #isPanelCollapsed = false;
-  #panelWidth = null;
+  #panelWidth = 175;
   #panelOverflowOffset = 0;
   #panelResizeController = null;
+  #layoutStateSaveTimeout = null;
+  #layoutState = null;
   #collapsedLists = new Set();
   #manualListHeights = new Map();
+  #lastAvailableListHeight = null;
   #resizableSections = [];
   #resizeObserver = null;
   #layoutFrame = null;
+
+  constructor() {
+    this.#layoutState = NarrativeSettings.getDirectorLayoutState();
+    const savedPanelWidthRatio = this.#layoutState.panelWidthRatios.imageControls;
+    if (savedPanelWidthRatio) this.#panelWidth = savedPanelWidthRatio * window.innerWidth;
+  }
 
   /**
    * Renders the image controls panel.
@@ -110,15 +119,16 @@ export class DirectorImageControls {
       minContentWidth: 150,
       maxWidth: 560,
       getMaxWidth: () => Math.min(560, window.innerWidth * 0.45),
-      initialWidth: this.#panelWidth,
-      initialOverflowOffset: this.#panelOverflowOffset,
+      initialWidth: this.#panelWidth - this.#panelOverflowOffset,
       isCollapsed: () => root.classList.contains("is-collapsed"),
       onResize: width => {
         this.#panelWidth = width;
+        this.#scheduleLayoutStateSave();
       },
       onOverflow: offset => {
         this.#panelOverflowOffset = offset;
         root.style.setProperty("--nc-panel-overflow-offset", `${offset}px`);
+        this.#scheduleLayoutStateSave();
       },
       onToggle: () => {
         this.#togglePanelCollapse();
@@ -126,6 +136,7 @@ export class DirectorImageControls {
           this.#panelOverflowOffset = 0;
           root.style.removeProperty("--nc-panel-overflow-offset");
         }
+        this.#scheduleLayoutStateSave();
       }
     });
   }
@@ -198,6 +209,7 @@ export class DirectorImageControls {
           if (sectionHeight !== null) {
             this.#manualListHeights.set(listId, this.#getListHeight(section, sectionHeight));
           }
+          this.#scheduleLayoutStateSave();
           this.#scheduleListLayout();
         },
         expandLabel: "NARRATIVE_CANVAS.Director.ExpandImageList",
@@ -341,6 +353,12 @@ export class DirectorImageControls {
     const availableHeight = Math.max(0,
       content.clientHeight - scaleController.getBoundingClientRect().height - scaleMargin - groupSpace
     );
+    if (availableHeight !== this.#lastAvailableListHeight) {
+      this.#lastAvailableListHeight = availableHeight;
+      for (const [listId, ratio] of Object.entries(this.#layoutState.imageListHeightRatios)) {
+        this.#manualListHeights.set(listId, ratio * availableHeight);
+      }
+    }
     const requiredHeights = visibleLists.map(list => list.scrollHeight);
     const halfHeight = availableHeight / 2;
     let targetHeights;
@@ -381,6 +399,35 @@ export class DirectorImageControls {
         ?.querySelector(".btn-toggle-image-list")?.dataset.imageList;
       list.style.height = this.#manualListHeights.has(listId) ? height : "";
     });
+
+  }
+
+  #scheduleLayoutStateSave() {
+    const availableWidth = Math.max(1, window.innerWidth);
+    const imageListHeightRatios = { ...this.#layoutState.imageListHeightRatios };
+    if (this.#lastAvailableListHeight > 0) {
+      for (const [listId, height] of this.#manualListHeights) {
+        imageListHeightRatios[listId] = height / this.#lastAvailableListHeight;
+      }
+    }
+
+    this.#layoutState = {
+      ...this.#layoutState,
+      panelWidthRatios: {
+        ...this.#layoutState.panelWidthRatios,
+        imageControls: Math.max(0, this.#panelWidth - this.#panelOverflowOffset) / availableWidth
+      },
+      imageListHeightRatios
+    };
+
+    if (this.#layoutStateSaveTimeout !== null) clearTimeout(this.#layoutStateSaveTimeout);
+    this.#layoutStateSaveTimeout = window.setTimeout(() => {
+      this.#layoutStateSaveTimeout = null;
+      void NarrativeSettings.saveDirectorLayoutState({
+        panelWidthRatios: { imageControls: this.#layoutState.panelWidthRatios.imageControls },
+        imageListHeightRatios: this.#layoutState.imageListHeightRatios
+      });
+    }, 250);
   }
 
   /**
@@ -389,6 +436,13 @@ export class DirectorImageControls {
   destroy() {
     this.#destroyResizableSections();
     this.#destroyPanelResizeController();
+    if (this.#layoutStateSaveTimeout !== null) {
+      clearTimeout(this.#layoutStateSaveTimeout);
+      void NarrativeSettings.saveDirectorLayoutState({
+        panelWidthRatios: { imageControls: this.#layoutState.panelWidthRatios.imageControls },
+        imageListHeightRatios: this.#layoutState.imageListHeightRatios
+      });
+    }
     this.#resizeObserver?.disconnect();
     this.#resizeObserver = null;
     if (this.#layoutFrame !== null) cancelAnimationFrame(this.#layoutFrame);

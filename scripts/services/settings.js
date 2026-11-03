@@ -4,6 +4,8 @@ import { JournalBrowser } from "./journal-browser.js";
  * Handles module configurations and permissions.
  */
 export class NarrativeSettings {
+  static #directorLayoutSaveQueue = Promise.resolve();
+
   static SETTING_PERMISSION = "activationPermission";
   static SETTING_BG_COLOR = "canvasBackgroundColor";
   static SETTING_DEFAULT_BG_IMAGE = "defaultBackgroundImage";
@@ -15,6 +17,7 @@ export class NarrativeSettings {
   static SETTING_TILE_SIZE = "editorTileSize";
   static SETTING_ACTIVE_STATE = "activeNarrativeState";
   static SETTING_JOURNAL_VIEWER_STATE = "journalViewerState";
+  static SETTING_DIRECTOR_LAYOUT_STATE = "directorLayoutState";
   static SETTING_JOURNAL_ROOT_FOLDER = "journalRootFolder";
 
   /**
@@ -142,6 +145,13 @@ export class NarrativeSettings {
       type: Object,
       default: {}
     });
+
+    game.settings.register("narrative-canvas", this.SETTING_DIRECTOR_LAYOUT_STATE, {
+      scope: "client",
+      config: false,
+      type: Object,
+      default: {}
+    });
   }
 
   static registerJournalRootFolder() {
@@ -246,6 +256,36 @@ export class NarrativeSettings {
       journalId: typeof state?.journalId === "string" ? state.journalId : "",
       pageId: typeof state?.pageId === "string" ? state.pageId : ""
     });
+  }
+
+  static getDirectorLayoutState() {
+    const state = game.settings.get("narrative-canvas", this.SETTING_DIRECTOR_LAYOUT_STATE) ?? {};
+    const normalizeRatios = values => Object.fromEntries(
+      Object.entries(values ?? {}).filter(([, ratio]) =>
+        typeof ratio === "number" && Number.isFinite(ratio) && ratio > 0 && ratio <= 2
+      )
+    );
+
+    return {
+      panelWidthRatios: normalizeRatios(state.panelWidthRatios),
+      sidebarSectionHeightRatios: normalizeRatios(state.sidebarSectionHeightRatios),
+      imageListHeightRatios: normalizeRatios(state.imageListHeightRatios)
+    };
+  }
+
+  static async saveDirectorLayoutState(updates) {
+    this.#directorLayoutSaveQueue = this.#directorLayoutSaveQueue.catch(() => {}).then(async () => {
+      const current = this.getDirectorLayoutState();
+      await game.settings.set("narrative-canvas", this.SETTING_DIRECTOR_LAYOUT_STATE, {
+        panelWidthRatios: { ...current.panelWidthRatios, ...updates.panelWidthRatios },
+        sidebarSectionHeightRatios: {
+          ...current.sidebarSectionHeightRatios,
+          ...updates.sidebarSectionHeightRatios
+        },
+        imageListHeightRatios: { ...current.imageListHeightRatios, ...updates.imageListHeightRatios }
+      });
+    });
+    await this.#directorLayoutSaveQueue;
   }
 
   /**

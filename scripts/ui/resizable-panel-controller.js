@@ -46,9 +46,13 @@ export class ResizablePanelController {
     handle.setAttribute("aria-valuemax", String(Math.round(this.#getMaxWidth())));
     handle.tabIndex = 0;
     if (initialOverflowOffset !== 0) this.#onOverflow(initialOverflowOffset);
-    const currentWidth = panel.getBoundingClientRect().width;
-    if (initialWidth !== null) this.#setWidth(initialWidth);
-    else if (currentWidth < this.#getMinimumWidth()) this.#setWidth(currentWidth);
+    if (initialWidth !== null) {
+      this.#resizeTo(initialWidth);
+      if (initialWidth < this.#minWidth && !this.#getIsCollapsed()) this.#onToggle();
+    } else {
+      const currentWidth = panel.getBoundingClientRect().width;
+      if (currentWidth < this.#getMinimumWidth()) this.#setWidth(currentWidth);
+    }
     handle.addEventListener("pointerdown", this.#handlePointerDown, {
       signal: this.#listeners.signal
     });
