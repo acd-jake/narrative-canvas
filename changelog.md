@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Predefined themes: Fantasy, Dark Fantasy, Science Fiction and Noir (silent-film intertitle style for Call of Cthulhu).
 - A **Visual Theme** module setting to choose the default theme.
 - A theme dropdown in the Director toolbar, left of the reset button, that temporarily switches the theme for the GM and all players.
+- Vitest service tests for active-state persistence, Director actions, scene asset resolution, and non-mutating scene reads, run on pushes and pull requests.
 
 ### Changed
 

@@ -31,6 +31,17 @@ Runtime responsibilities are separated by role:
 - `scripts/services/scene-asset-resolver.js` resolves Foundry drag data into scene asset operations.
 - `scripts/services/scene-repository.js` owns scene data access and mutation; reads normalize a copy of the stored data.
 
+## Development
+
+Automated service tests require Node.js 22.12.0 or newer. From the module directory, run:
+
+```sh
+npm ci
+npm test
+```
+
+Use `npm run test:watch` while developing tests.
+
 ## Installation
 
 ### Install through Foundry
@@ -85,6 +96,17 @@ Die Laufzeitverantwortlichkeiten sind nach Aufgaben getrennt:
 - `scripts/services/director-actions.js` ordnet Regieaktionen Zustands- und Szenenoperationen zu.
 - `scripts/services/scene-asset-resolver.js` löst Foundry-Drag-Daten in Szenen-Asset-Aktionen auf.
 - `scripts/services/scene-repository.js` verwaltet den Szenendatenzugriff und Änderungen; beim Lesen wird eine Kopie der gespeicherten Daten normalisiert.
+
+## Entwicklung
+
+Die automatisierten Service-Tests benötigen Node.js 22.12.0 oder neuer. Führe im Modulverzeichnis Folgendes aus:
+
+```sh
+npm ci
+npm test
+```
+
+Während der Testentwicklung kann `npm run test:watch` verwendet werden.
 
 ## Installation
 
