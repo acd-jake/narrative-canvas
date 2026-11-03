@@ -13,7 +13,15 @@ export class VisualNovelStage {
 
   /** @type {number|null} */
   #cleanupTimer = null;
-  #draggedActorId = null;
+  #pointerListenersController = null;
+  #pointerDownActorId = null;
+  #pointerId = null;
+  #pointerStart = null;
+  #isPointerDragging = false;
+  #dropTargetActorId = null;
+  #dropTargetSide = null;
+  #dragGhostElement = null;
+  #dragGhostOffset = null;
 
   constructor({ onActorOrderChange } = {}) {
     this.#onActorOrderChange = onActorOrderChange;
@@ -26,6 +34,20 @@ export class VisualNovelStage {
   mount(stageElement) {
     this.#stageElement = stageElement;
     this.#vnStage = stageElement.querySelector(".narrative-visual-novel-stage");
+    this.#pointerListenersController?.abort();
+    this.#pointerListenersController = new AbortController();
+    this.#vnStage?.addEventListener("pointerdown", this.#handlePointerDown, {
+      signal: this.#pointerListenersController.signal
+    });
+    document.addEventListener("pointermove", this.#handlePointerMove, {
+      signal: this.#pointerListenersController.signal
+    });
+    document.addEventListener("pointerup", this.#handlePointerUp, {
+      signal: this.#pointerListenersController.signal
+    });
+    document.addEventListener("pointercancel", this.#handlePointerCancel, {
+      signal: this.#pointerListenersController.signal
+    });
   }
 
   /**
@@ -251,58 +273,141 @@ export class VisualNovelStage {
   }
 
   #bindReorderListeners(charEl, canReorder) {
-    charEl.draggable = canReorder;
-    if (charEl.dataset.reorderListenersBound) return;
-    charEl.dataset.reorderListenersBound = "true";
+    charEl.draggable = false;
+    charEl.classList.toggle("is-reorderable", canReorder);
+    const image = charEl.querySelector("img");
+    if (image) image.draggable = false;
+  }
 
-    charEl.addEventListener("dragstart", event => {
-      if (!charEl.draggable) return;
-      this.#draggedActorId = charEl.dataset.actorId;
-      event.dataTransfer?.setData("application/x-narrative-canvas-actor", this.#draggedActorId);
-      if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
-      charEl.classList.add("is-dragging");
+  #handlePointerDown = event => {
+    if (event.button !== 0 || !(event.target instanceof Element)) return;
+    const actorElement = event.target.closest(".narrative-vn-character.is-reorderable");
+    if (!actorElement || !this.#vnStage?.contains(actorElement)) return;
+
+    this.#pointerDownActorId = actorElement.dataset.actorId;
+    this.#pointerId = event.pointerId;
+    this.#pointerStart = { x: event.clientX, y: event.clientY };
+    const actorRect = actorElement.getBoundingClientRect();
+    this.#dragGhostOffset = {
+      x: event.clientX - actorRect.left,
+      y: event.clientY - actorRect.top
+    };
+    this.#isPointerDragging = false;
+  };
+
+  #handlePointerMove = event => {
+    if (event.pointerId !== this.#pointerId || !this.#pointerDownActorId || !this.#pointerStart) return;
+
+    const deltaX = event.clientX - this.#pointerStart.x;
+    const deltaY = event.clientY - this.#pointerStart.y;
+    if (!this.#isPointerDragging && Math.hypot(deltaX, deltaY) < 6) return;
+
+    if (!this.#isPointerDragging) this.#startDragGhost();
+    this.#isPointerDragging = true;
+    event.preventDefault();
+    this.#updateDragGhost(event);
+
+    const elementUnderPointer = document.elementFromPoint(event.clientX, event.clientY);
+    const target = elementUnderPointer instanceof Element
+      ? elementUnderPointer.closest(".narrative-vn-character.is-reorderable")
+      : null;
+    this.#vnStage?.querySelectorAll(".is-drop-target").forEach(element => {
+      element.classList.remove("is-drop-target", "is-drop-before", "is-drop-after");
     });
+    this.#dropTargetActorId = target && this.#vnStage?.contains(target) ? target.dataset.actorId : null;
+    if (this.#dropTargetActorId && this.#dropTargetActorId !== this.#pointerDownActorId) {
+      const targetRect = target.getBoundingClientRect();
+      this.#dropTargetSide = event.clientX < targetRect.left + targetRect.width / 2 ? "before" : "after";
+      target.classList.add("is-drop-target");
+      target.classList.add(`is-drop-${this.#dropTargetSide}`);
+    } else {
+      this.#dropTargetActorId = null;
+      this.#dropTargetSide = null;
+    }
+  };
 
-    charEl.addEventListener("dragover", event => {
-      if (!this.#draggedActorId || this.#draggedActorId === charEl.dataset.actorId) return;
-      event.preventDefault();
-      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
-      charEl.classList.add("is-drop-target");
-    });
+  #handlePointerUp = event => {
+    if (event.pointerId !== this.#pointerId || !this.#pointerDownActorId) return;
 
-    charEl.addEventListener("dragleave", () => charEl.classList.remove("is-drop-target"));
-
-    charEl.addEventListener("drop", event => {
-      const draggedActorId = event.dataTransfer?.getData("application/x-narrative-canvas-actor")
-        || this.#draggedActorId;
-      const targetActorId = charEl.dataset.actorId;
-      if (!draggedActorId || draggedActorId === targetActorId) return;
-      event.preventDefault();
-
+    if (this.#isPointerDragging && this.#dropTargetActorId
+      && this.#dropTargetActorId !== this.#pointerDownActorId) {
       const actorIds = Array.from(
         this.#vnStage.querySelectorAll(".narrative-vn-character:not(.is-exiting)")
       ).map(element => element.dataset.actorId);
-      const sourceIndex = actorIds.indexOf(draggedActorId);
-      const targetIndex = actorIds.indexOf(targetActorId);
-      if (sourceIndex < 0 || targetIndex < 0) return;
+      const sourceIndex = actorIds.indexOf(this.#pointerDownActorId);
+      const targetIndex = actorIds.indexOf(this.#dropTargetActorId);
+      if (sourceIndex >= 0 && targetIndex >= 0) {
+        actorIds.splice(sourceIndex, 1);
+        const insertionIndex = targetIndex + (this.#dropTargetSide === "after" ? 1 : 0);
+        actorIds.splice(insertionIndex, 0, this.#pointerDownActorId);
+        this.#onActorOrderChange?.(actorIds);
+      }
+    }
 
-      actorIds.splice(sourceIndex, 1);
-      actorIds.splice(targetIndex, 0, draggedActorId);
-      this.#onActorOrderChange?.(actorIds);
-    });
+    this.#resetPointerDragState();
+  };
 
-    charEl.addEventListener("dragend", () => {
-      this.#draggedActorId = null;
-      this.#vnStage?.querySelectorAll(".is-dragging, .is-drop-target").forEach(element => {
-        element.classList.remove("is-dragging", "is-drop-target");
-      });
+  #handlePointerCancel = event => {
+    if (event.pointerId === this.#pointerId) this.#resetPointerDragState();
+  };
+
+  #resetPointerDragState() {
+    this.#vnStage?.querySelectorAll(".is-dragging, .is-drop-target").forEach(element => {
+      element.classList.remove("is-dragging", "is-drop-target", "is-drop-before", "is-drop-after");
     });
+    this.#dragGhostElement?.remove();
+    this.#dragGhostElement = null;
+    this.#pointerDownActorId = null;
+    this.#pointerId = null;
+    this.#pointerStart = null;
+    this.#isPointerDragging = false;
+    this.#dropTargetActorId = null;
+    this.#dropTargetSide = null;
+    this.#dragGhostOffset = null;
+  }
+
+  #startDragGhost() {
+    const source = this.#vnStage?.querySelector(
+      `.narrative-vn-character[data-actor-id="${this.#pointerDownActorId}"]`
+    );
+    if (!source || !this.#stageElement) return;
+
+    const rect = source.getBoundingClientRect();
+    const ghost = source.cloneNode(true);
+    ghost.classList.remove("is-reorderable", "is-entering", "is-speaker", "is-drop-target");
+    ghost.classList.add("narrative-vn-drag-ghost");
+    ghost.draggable = false;
+    Object.assign(ghost.style, {
+      position: "fixed",
+      left: `${rect.left}px`,
+      top: `${rect.top}px`,
+      width: `${rect.width}px`,
+      height: `${rect.height}px`,
+      maxWidth: "none",
+      zIndex: "10001",
+      opacity: "0.85",
+      pointerEvents: "none",
+      transform: "scale(0.96)",
+      transition: "none"
+    });
+    this.#stageElement.appendChild(ghost);
+    source.classList.add("is-dragging");
+    this.#dragGhostElement = ghost;
+  }
+
+  #updateDragGhost(event) {
+    if (!this.#dragGhostElement || !this.#dragGhostOffset) return;
+    this.#dragGhostElement.style.left = `${event.clientX - this.#dragGhostOffset.x}px`;
+    this.#dragGhostElement.style.top = `${event.clientY - this.#dragGhostOffset.y}px`;
   }
 
   /**
    * Destroys the visual novel stage controller and cleans up pending timers.
    */
   destroy() {
+    this.#pointerListenersController?.abort();
+    this.#pointerListenersController = null;
+    this.#resetPointerDragState();
     if (this.#cleanupTimer) {
       clearTimeout(this.#cleanupTimer);
       this.#cleanupTimer = null;
