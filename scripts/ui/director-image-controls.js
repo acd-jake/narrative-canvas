@@ -1,5 +1,6 @@
 import { NarrativeSettings } from "../services/settings.js";
 import { ResizableSectionController } from "./resizable-section-controller.js";
+import { ResizablePanelController } from "./resizable-panel-controller.js";
 
 /**
  * Controls background and handout image selection for the active scene.
@@ -8,6 +9,8 @@ export class DirectorImageControls {
   /** @type {HTMLElement|null} */
   #element = null;
   #isPanelCollapsed = false;
+  #panelWidth = null;
+  #panelResizeController = null;
   #collapsedLists = new Set();
   #manualListHeights = new Map();
   #resizableSections = [];
@@ -21,6 +24,7 @@ export class DirectorImageControls {
    */
   async render(context = {}) {
     this.#destroyResizableSections();
+    this.#destroyPanelResizeController();
     this.#resizeObserver?.disconnect();
     const templateContext = this.#createTemplateContext(context);
     const htmlString = await renderTemplate(
@@ -56,9 +60,11 @@ export class DirectorImageControls {
 
     if (newElement) {
       this.#destroyResizableSections();
+      this.#destroyPanelResizeController();
       this.#element.innerHTML = newElement.innerHTML;
       this.#element.classList.toggle("is-collapsed", this.#isPanelCollapsed);
       this.#element.style.setProperty("--nc-director-image-tile-size", `${templateContext.tileSize}px`);
+      this.#bindPanelResize(this.#element);
       this.#bindResizableSections(this.#element);
       this.#scheduleListLayout();
     }
@@ -91,19 +97,52 @@ export class DirectorImageControls {
       const panelToggle = event.target.closest(".btn-toggle-image-controls-panel");
       if (panelToggle) {
         event.preventDefault();
-        this.#isPanelCollapsed = !this.#isPanelCollapsed;
-        this.#element.classList.toggle("is-collapsed", this.#isPanelCollapsed);
-        panelToggle.setAttribute("aria-expanded", String(!this.#isPanelCollapsed));
-        panelToggle.title = game.i18n.localize(this.#isPanelCollapsed
-          ? "NARRATIVE_CANVAS.Director.ExpandImageControls"
-          : "NARRATIVE_CANVAS.Director.CollapseImageControls");
-        panelToggle.setAttribute("aria-label", panelToggle.title);
-        const icon = panelToggle.querySelector("i");
-        if (icon) icon.className = `fas ${this.#isPanelCollapsed ? "fa-chevron-left" : "fa-chevron-right"}`;
+        this.#togglePanelCollapse(panelToggle);
       }
     });
 
     this.#bindResizableSections(root);
+    this.#bindPanelResize(root);
+  }
+
+  #bindPanelResize(root) {
+    const handle = root.querySelector(".btn-resize-director-panel");
+    if (!handle) return;
+
+    this.#panelResizeController?.destroy();
+    this.#panelResizeController = new ResizablePanelController({
+      panel: root,
+      handle,
+      edge: "left",
+      minWidth: 210,
+      maxWidth: 560,
+      getMaxWidth: () => Math.min(560, window.innerWidth * 0.45),
+      initialWidth: this.#panelWidth,
+      isEnabled: () => !root.classList.contains("is-collapsed"),
+      onResize: width => {
+        this.#panelWidth = width;
+      },
+      onToggle: () => this.#togglePanelCollapse()
+    });
+  }
+
+  #togglePanelCollapse(toggleButton = this.#element?.querySelector(".btn-toggle-image-controls-panel")) {
+    this.#isPanelCollapsed = !this.#isPanelCollapsed;
+    this.#element?.classList.toggle("is-collapsed", this.#isPanelCollapsed);
+    if (!toggleButton) return;
+
+    toggleButton.setAttribute("aria-expanded", String(!this.#isPanelCollapsed));
+    toggleButton.title = game.i18n.localize(this.#isPanelCollapsed
+      ? "NARRATIVE_CANVAS.Director.ExpandImageControls"
+      : "NARRATIVE_CANVAS.Director.CollapseImageControls");
+    toggleButton.setAttribute("aria-label", toggleButton.title);
+    const icon = toggleButton.querySelector("i");
+    if (icon) icon.className = `fas ${this.#isPanelCollapsed ? "fa-chevron-left" : "fa-chevron-right"}`;
+  }
+
+  #destroyPanelResizeController() {
+    this.#panelResizeController?.destroy();
+    this.#panelResizeController = null;
   }
 
   #bindResizableSections(root) {
@@ -343,6 +382,7 @@ export class DirectorImageControls {
    */
   destroy() {
     this.#destroyResizableSections();
+    this.#destroyPanelResizeController();
     this.#resizeObserver?.disconnect();
     this.#resizeObserver = null;
     if (this.#layoutFrame !== null) cancelAnimationFrame(this.#layoutFrame);

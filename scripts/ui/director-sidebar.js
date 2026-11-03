@@ -2,6 +2,7 @@ import { JournalBrowser } from "../services/journal-browser.js";
 import { NarrativeSceneRepository } from "../services/scene-repository.js";
 import { NarrativeSettings } from "../services/settings.js";
 import { ResizableSectionController } from "./resizable-section-controller.js";
+import { ResizablePanelController } from "./resizable-panel-controller.js";
 
 /**
  * Controller for the Director Left Sidebar, managing filterable scenes,
@@ -35,6 +36,8 @@ export class DirectorSidebar {
   #journalSectionHeight = null;
   #audioSectionHeight = null;
   #resizableSections = [];
+  #panelWidth = null;
+  #panelResizeController = null;
   #playlistSoundHook = null;
   #expandedPlaylistIds = new Set();
   #activePlaylistIds = new Set();
@@ -68,6 +71,7 @@ export class DirectorSidebar {
     if (this.#playlistSoundHook) Hooks.off("updatePlaylistSound", this.#playlistSoundHook);
     this.#playlistSoundHook = null;
     this.#destroyResizableSections();
+    this.#destroyPanelResizeController();
     this.#element = null;
   }
 
@@ -112,16 +116,17 @@ export class DirectorSidebar {
     if (!this.#element) return;
     this.#element.classList.toggle("is-collapsed", this.#isCollapsed);
 
-    const toggleBtn = this.#element.querySelector(".sidebar-collapse-toggle");
+    const toggleBtn = this.#element.querySelector(".btn-resize-director-panel");
     if (toggleBtn) {
       const title = this.#isCollapsed
         ? game.i18n.localize("NARRATIVE_CANVAS.Director.ExpandSidebar")
-        : game.i18n.localize("NARRATIVE_CANVAS.Director.CollapseSidebar");
+        : game.i18n.localize("NARRATIVE_CANVAS.Director.ResizePanelWidth");
       toggleBtn.title = title;
+      toggleBtn.setAttribute("aria-label", title);
       toggleBtn.setAttribute("aria-expanded", String(!this.#isCollapsed));
       const icon = toggleBtn.querySelector("i");
       if (icon) {
-        icon.className = `fas ${this.#isCollapsed ? "fa-chevron-right" : "fa-chevron-left"}`;
+        icon.className = `fas ${this.#isCollapsed ? "fa-chevron-right" : "fa-grip-lines-vertical"}`;
       }
     }
 
@@ -150,6 +155,7 @@ export class DirectorSidebar {
     const newElement = doc.body.firstElementChild;
 
     this.#destroyResizableSections();
+    this.#destroyPanelResizeController();
     this.#element = newElement;
     this.#bindListeners(this.#element);
     this.#updateCollapseState();
@@ -526,7 +532,7 @@ export class DirectorSidebar {
   }
 
   #bindListeners(root) {
-    this.#bindCollapseControls(root);
+    this.#bindPanelResize(root);
     this.#bindResizableSections(root);
     this.#bindSceneFilter(root);
     this.#bindSceneSelection(root);
@@ -537,6 +543,34 @@ export class DirectorSidebar {
     this.#bindPageSelection(root);
     this.#addImageOverlayButtons(root);
     this.#bindAudioControls(root);
+  }
+
+  #bindPanelResize(root) {
+    const panel = root.matches(".narrative-director-sidebar")
+      ? root
+      : root.querySelector(".narrative-director-sidebar");
+    const handle = panel?.querySelector(".btn-resize-director-panel");
+    if (!panel || !handle) return;
+
+    this.#panelResizeController = new ResizablePanelController({
+      panel,
+      handle,
+      edge: "right",
+      minWidth: 280,
+      maxWidth: 560,
+      getMaxWidth: () => Math.min(560, window.innerWidth * 0.45),
+      initialWidth: this.#panelWidth,
+      isEnabled: () => !panel.classList.contains("is-collapsed"),
+      onResize: width => {
+        this.#panelWidth = width;
+      },
+      onToggle: () => this.toggleCollapse()
+    });
+  }
+
+  #destroyPanelResizeController() {
+    this.#panelResizeController?.destroy();
+    this.#panelResizeController = null;
   }
 
   #destroyResizableSections() {
@@ -723,14 +757,6 @@ export class DirectorSidebar {
       button.innerHTML = '<i class="fas fa-expand-alt" aria-hidden="true"></i>';
       wrapper.appendChild(button);
     });
-  }
-
-  #bindCollapseControls(root) {
-    root.querySelector(".sidebar-collapse-toggle")?.addEventListener("click", (event) => {
-      event.preventDefault();
-      this.toggleCollapse();
-    });
-
   }
 
   #bindSceneFilter(root) {

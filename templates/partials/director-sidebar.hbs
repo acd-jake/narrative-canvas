@@ -1,8 +1,7 @@
 <aside class="narrative-director-sidebar font-foundry {{#if isCollapsed}}is-collapsed{{/if}}">
-    <!-- Collapse / Expand edge handle -->
-    <button type="button" class="sidebar-collapse-toggle" title="{{#if isCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandSidebar'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseSidebar'}}{{/if}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.ToggleSidebar'}}">
-        <i class="fas {{#if isCollapsed}}fa-chevron-right{{else}}fa-chevron-left{{/if}}"></i>
-    </button>
+    <div class="btn-resize-director-panel" role="separator" aria-orientation="vertical" tabindex="0" aria-expanded="{{#unless isCollapsed}}true{{else}}false{{/unless}}" title="{{#if isCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandSidebar'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ResizePanelWidth'}}{{/if}}" aria-label="{{#if isCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandSidebar'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ResizePanelWidth'}}{{/if}}">
+        <i class="fas {{#if isCollapsed}}fa-chevron-right{{else}}fa-grip-lines-vertical{{/if}}" aria-hidden="true"></i>
+    </div>
 
     <!-- Compact Section: Filterable Scenes List -->
     <section class="sidebar-scenes-section {{#if isScenesCollapsed}}is-collapsed{{/if}}">
