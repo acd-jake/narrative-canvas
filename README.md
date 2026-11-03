@@ -1,5 +1,17 @@
 # Narrative Canvas
 
+![GitHub Release](https://img.shields.io/github/v/release/acd-jake/narrative-canvas?display_name=tag&style=for-the-badge&label=Latest%20Release)
+
+![Latest Release Download Count](https://img.shields.io/github/downloads/acd-jake/narrative-canvas/latest/module.zip?color=2b82fc&label=LATEST%20VERSION%20DOWNLOADS&style=for-the-badge)
+
+![Foundry Core Compatible Version](https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2Facd-jake%2Fnarrative-canvas%2Frefs%2Fheads%2Fmain%2Fmodule.json&label=Foundry%20Version&query=$.compatibility.verified&colorB=orange&style=for-the-badge)
+
+[![Forge Installs](https://img.shields.io/badge/dynamic/json?label=Forge%20Installs&query=package.installs&suffix=%25&url=https%3A%2F%2Fforge-vtt.com%2Fapi%2Fbazaar%2Fpackage%2Fnarrative-canvas&colorB=006400&style=for-the-badge)](https://forge-vtt.com/bazaar#package=narrative-canvas)
+
+[![Foundry Hub Endorsements](https://img.shields.io/endpoint?logoColor=white&url=https%3A%2F%2Fwww.foundryvtt-hub.com%2Fwp-json%2Fhubapi%2Fv1%2Fpackage%2Fnarrative-canvas%2Fshield%2Fendorsements&style=for-the-badge)](https://www.foundryvtt-hub.com/package/narrative-canvas/)
+
+![GitHub all releases](https://img.shields.io/github/downloads/acd-jake/narrative-canvas/total?label=TOTAL%20DOWNLOADS&style=for-the-badge)
+
 Narrative Canvas adds a Theatre of the Mind presentation stage to Foundry Virtual Tabletop. Game Masters can prepare reusable narrative scenes and present backgrounds, handout images, actors, and synchronized audio without changing the active Foundry scene.
 
 ## Features
