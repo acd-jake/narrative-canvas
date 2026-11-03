@@ -130,6 +130,8 @@
   "NARRATIVE_CANVAS.Director.TrackVolume": "Track Volume",
   "NARRATIVE_CANVAS.Director.MasterVolume": "Audio Volume",
   "NARRATIVE_CANVAS.Director.NowPlaying": "Now Playing",
+  "NARRATIVE_CANVAS.Director.ExpandPlaylist": "Show playlist tracks",
+  "NARRATIVE_CANVAS.Director.CollapsePlaylist": "Hide playlist tracks",
   "NARRATIVE_CANVAS.Director.NoAudioTracks": "No audio tracks assigned to this scene",
   "NARRATIVE_CANVAS.Director.AddAudio": "Add Audio",
   "NARRATIVE_CANVAS.Director.InvalidAudioPath": "This audio track has no valid file path.",

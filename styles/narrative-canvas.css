@@ -614,6 +614,14 @@ body.acd-nc-active {
         flex-direction: column;
         min-height: 0;
         overflow: hidden;
+
+            > .sidebar-section-header {
+                cursor: ns-resize;
+                touch-action: none;
+                user-select: none;
+
+                .sidebar-section-toggle { cursor: pointer; }
+            }
     }
 
     .director-image-control-group {
@@ -1760,6 +1768,14 @@ body.acd-nc-active {
             min-height: 0;
             overflow: hidden;
 
+            > .sidebar-section-header {
+                cursor: ns-resize;
+                touch-action: none;
+                user-select: none;
+
+                .sidebar-section-toggle { cursor: pointer; }
+            }
+
             &.is-collapsed {
                 max-height: none;
                 padding-top: 0;
@@ -1774,7 +1790,7 @@ body.acd-nc-active {
             }
 
             .director-audio-tracks-list {
-                flex: 1 1 auto;
+                flex: 1 1 0;
                 min-height: 0;
                 overflow-y: auto;
                 display: flex;
@@ -1782,6 +1798,10 @@ body.acd-nc-active {
                 gap: 6px;
                 padding-right: 4px;
                 margin-bottom: 8px;
+
+                > * {
+                    flex: 0 0 auto;
+                }
             }
 
             .director-audio-track-item {
@@ -1901,6 +1921,94 @@ body.acd-nc-active {
                 }
             }
 
+            .director-audio-playlist-group {
+                overflow: hidden;
+                border: 1px solid #3a3a42;
+                border-radius: 5px;
+                background: rgba(0, 0, 0, 0.24);
+
+                &.is-playing { border-color: #7a6842; }
+                &.is-paused { border-color: #555; }
+            }
+
+            .director-audio-playlist-header {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                min-width: 0;
+                padding: 4px 6px;
+
+                .audio-track-actions {
+                    display: flex;
+                    flex: 0 0 auto;
+                    gap: 4px;
+
+                    button {
+                        display: grid;
+                        width: 24px;
+                        height: 24px;
+                        padding: 0;
+                        place-items: center;
+                        border: 1px solid #444;
+                        border-radius: 3px;
+                        background: rgba(255, 255, 255, 0.05);
+                        color: #ddd;
+                        cursor: pointer;
+                    }
+                }
+            }
+
+            .btn-scene-playlist-expand {
+                display: grid;
+                flex: 0 0 20px;
+                width: 20px;
+                height: 24px;
+                padding: 0;
+                place-items: center;
+                border: 0;
+                background: transparent;
+                color: #aaa;
+                cursor: pointer;
+            }
+
+            .director-audio-playlist-name {
+                display: flex;
+                flex: 1 1 auto;
+                align-items: center;
+                gap: 6px;
+                min-width: 0;
+                overflow: hidden;
+                color: #d7c58b;
+                font-size: 0.82rem;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+
+                i { flex: 0 0 auto; }
+            }
+
+            .playlist-track-count {
+                flex: 0 0 auto;
+                padding: 1px 5px;
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.08);
+                color: #aaa;
+                font-size: 0.65rem;
+            }
+
+            .director-audio-playlist-contents {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                padding: 0 5px 5px 22px;
+
+                &[hidden] { display: none !important; }
+
+                .director-audio-track-item {
+                    padding: 4px 6px;
+                    background: rgba(0, 0, 0, 0.28);
+                }
+            }
+
             .audio-master-volume-box {
                 flex-shrink: 0;
                 background: rgba(0, 0, 0, 0.4);
@@ -1985,6 +2093,48 @@ body.acd-nc-active {
 
                 &.is-playing .active-audio-name i { color: #55ff77; }
                 &.is-paused .active-audio-name i { color: #ffaa33; }
+            }
+
+            .btn-active-playlist-expand {
+                flex: 0 0 20px;
+                width: 20px;
+                height: 24px;
+            }
+
+            .active-audio-playlist-tracks {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                margin: 2px 0 4px 24px;
+                padding-left: 8px;
+                border-left: 1px solid #49433a;
+
+                &[hidden] { display: none !important; }
+            }
+
+            .active-audio-playlist-track {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                min-width: 0;
+                color: #888;
+                font-size: 0.7rem;
+
+                i {
+                    flex: 0 0 12px;
+                    font-size: 0.65rem;
+                }
+
+                span {
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
+                &.is-playing { color: #d7e5d8; }
+                &.is-playing i { color: #55ff77; }
+                &.is-paused { color: #c5b9a2; }
+                &.is-paused i { color: #ffaa33; }
             }
 
             .active-audio-name {

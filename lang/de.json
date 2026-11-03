@@ -130,6 +130,8 @@
   "NARRATIVE_CANVAS.Director.TrackVolume": "Track-Lautstärke",
   "NARRATIVE_CANVAS.Director.MasterVolume": "Wiedergabelautstärke",
   "NARRATIVE_CANVAS.Director.NowPlaying": "Aktive Wiedergabe",
+  "NARRATIVE_CANVAS.Director.ExpandPlaylist": "Playlist-Elemente anzeigen",
+  "NARRATIVE_CANVAS.Director.CollapsePlaylist": "Playlist-Elemente ausblenden",
   "NARRATIVE_CANVAS.Director.NoAudioTracks": "Keine Audiotitel in dieser Szene vorhanden",
   "NARRATIVE_CANVAS.Director.AddAudio": "Audio hinzufügen",
   "NARRATIVE_CANVAS.Director.InvalidAudioPath": "Dieser Audiotitel hat keinen gültigen Dateipfad.",

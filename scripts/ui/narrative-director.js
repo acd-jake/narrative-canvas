@@ -101,6 +101,7 @@ export class NarrativeDirector extends NarrativeCanvas {
 
   async stopAllAudio() {
     await this.audioController?.stopAll();
+    await this.sidebar?.stopAllPlaylists();
     await this.automaticPlaylist?.stopAll();
     this.automaticPlaylist = null;
     this.automaticPlaylistMuted = false;

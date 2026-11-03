@@ -29,7 +29,11 @@ export class DirectorSidebar {
   #scenesList = [];
   #currentSceneData = null;
   #audioMuted = false;
+  #audioSectionHeight = null;
+  #audioResizeAbortController = null;
   #playlistSoundHook = null;
+  #expandedPlaylistIds = new Set();
+  #activePlaylistIds = new Set();
 
   /**
    * @param {object} options
@@ -59,7 +63,25 @@ export class DirectorSidebar {
   destroy() {
     if (this.#playlistSoundHook) Hooks.off("updatePlaylistSound", this.#playlistSoundHook);
     this.#playlistSoundHook = null;
+    this.#audioResizeAbortController?.abort();
+    this.#audioResizeAbortController = null;
     this.#element = null;
+  }
+
+  async stopAllPlaylists() {
+    const playlistIds = [...this.#activePlaylistIds];
+    await Promise.all(playlistIds.map(async playlistId => {
+      const playlist = game.playlists?.get(playlistId)
+        ?? game.collections?.get("Playlist")?.get(playlistId);
+      if (!playlist) return;
+
+      await playlist.stopAll();
+      await Promise.all(Array.from(playlist.sounds ?? [])
+        .filter(sound => !sound.playing && Number(sound.pausedTime) > 0)
+        .map(sound => sound.update({ playing: false, pausedTime: 0 })));
+    }));
+    this.#activePlaylistIds.clear();
+    this.#refreshAudioTracksList();
   }
 
   /**
@@ -127,6 +149,7 @@ export class DirectorSidebar {
     this.#element = newElement;
     this.#bindListeners(this.#element);
     this.#updateCollapseState();
+    this.#applyAudioSectionHeight();
     this.#applySceneFilters();
 
     return newElement;
@@ -157,6 +180,7 @@ export class DirectorSidebar {
     }
 
     this.#updateCollapseState();
+    this.#applyAudioSectionHeight();
     this.#element.querySelector(".sidebar-audio-section")?.classList.toggle("is-muted", this.#audioMuted);
 
     // Refresh audio tracks list for the active scene
@@ -207,39 +231,19 @@ export class DirectorSidebar {
     const tracksContainer = this.#element.querySelector(".director-audio-tracks-list");
     if (!tracksContainer) return;
 
+    const scrollTop = tracksContainer.scrollTop;
     const activeSceneTracks = this.#getAudioTracksWithPlaybackState();
     if (activeSceneTracks.length === 0) {
       tracksContainer.innerHTML = `<div class="sidebar-empty-hint">${game.i18n.localize("NARRATIVE_CANVAS.Director.NoAudioTracks")}</div>`;
+      tracksContainer.scrollTop = scrollTop;
       this.#refreshActiveAudioList(activeSceneTracks);
       return;
     }
 
-    tracksContainer.innerHTML = activeSceneTracks.map(track => {
-      const state = track.playState;
-      const vol = this.#audioController?.getTrackVolume(track.id) ?? 1.0;
-      return { ...track, playState: state, volume: vol, volumePercent: Math.round(vol * 100) };
-    }).map(track => `
-      <div class="director-audio-track-item ${track.playState === 'playing' ? 'is-playing' : ''} ${track.playState === 'paused' ? 'is-paused' : ''}" data-track-id="${track.id}" data-track-path="${track.path}" data-track-name="${track.name}">
-        <div class="audio-track-info">
-          <span class="audio-track-name" title="${Handlebars.escapeExpression(track.name)}">
-            <i class="fas fa-volume-up track-status-icon"></i> ${Handlebars.escapeExpression(track.name)}
-          </span>
-          <div class="audio-track-actions">
-            <button type="button" class="btn-track-toggle type-icon" title="${track.playState === 'playing' ? game.i18n.localize('NARRATIVE_CANVAS.Director.Pause') : game.i18n.localize('NARRATIVE_CANVAS.Director.Play')}">
-              <i class="fas ${track.playState === 'playing' ? 'fa-pause' : 'fa-play'}"></i>
-            </button>
-            <button type="button" class="btn-track-stop type-icon" title="${game.i18n.localize('NARRATIVE_CANVAS.Director.Stop')}">
-              <i class="fas fa-stop"></i>
-            </button>
-          </div>
-        </div>
-        <div class="audio-track-volume-row">
-          <i class="fas fa-volume-down volume-icon"></i>
-          <input type="range" class="slider-track-volume" min="0" max="1" step="0.05" value="${track.volume}" title="${game.i18n.localize('NARRATIVE_CANVAS.Director.TrackVolume')}" />
-          <span class="volume-val-display">${track.volumePercent}%</span>
-        </div>
-      </div>
-    `).join("");
+    tracksContainer.innerHTML = this.#getSceneAudioEntries(activeSceneTracks)
+      .map(entry => this.#renderSceneAudioEntry(entry))
+      .join("");
+    tracksContainer.scrollTop = scrollTop;
     this.#refreshActiveAudioList(activeSceneTracks);
   }
 
@@ -247,14 +251,165 @@ export class DirectorSidebar {
     this.#refreshAudioTracksList();
   }
 
+  #getSceneAudioEntries(tracks) {
+    const entries = [];
+    const playlists = new Map();
+
+    for (const track of tracks) {
+      if (!track.sourcePlaylistId) {
+        entries.push({ type: "track", track });
+        continue;
+      }
+
+      let playlist = playlists.get(track.sourcePlaylistId);
+      if (!playlist) {
+        playlist = {
+          playlistId: track.sourcePlaylistId,
+          name: track.sourcePlaylistName
+            || game.playlists?.get(track.sourcePlaylistId)?.name
+            || game.collections?.get("Playlist")?.get(track.sourcePlaylistId)?.name
+            || game.i18n.localize("NARRATIVE_CANVAS.Editor.AudioPlaylist"),
+          tracks: []
+        };
+        playlists.set(track.sourcePlaylistId, playlist);
+      }
+      playlist.tracks.push(track);
+    }
+
+    for (const playlist of playlists.values()) {
+      const isPlaying = playlist.tracks.some(track => track.playState === "playing");
+      const isPaused = !isPlaying && playlist.tracks.some(track => track.playState === "paused");
+      entries.push({
+        ...playlist,
+        type: "playlist",
+        playState: isPlaying ? "playing" : isPaused ? "paused" : "stopped",
+        isExpanded: this.#expandedPlaylistIds.has(playlist.playlistId)
+      });
+    }
+
+    return entries;
+  }
+
+  #renderSceneAudioEntry(entry) {
+    if (entry.type === "track") return this.#renderSceneAudioTrack(entry.track);
+
+    const isPlaying = entry.playState === "playing";
+    const isPaused = entry.playState === "paused";
+    const playLabel = game.i18n.localize(isPlaying
+      ? "NARRATIVE_CANVAS.Director.Pause"
+      : "NARRATIVE_CANVAS.Director.Play");
+    const stopLabel = game.i18n.localize("NARRATIVE_CANVAS.Director.Stop");
+    const expandLabel = game.i18n.localize(entry.isExpanded
+      ? "NARRATIVE_CANVAS.Director.CollapsePlaylist"
+      : "NARRATIVE_CANVAS.Director.ExpandPlaylist");
+
+    return `
+      <div class="director-audio-playlist-group ${isPlaying ? "is-playing" : ""} ${isPaused ? "is-paused" : ""}" data-playlist-id="${Handlebars.escapeExpression(entry.playlistId)}">
+        <div class="director-audio-playlist-header">
+          <button type="button" class="btn-scene-playlist-expand type-icon" data-playlist-id="${Handlebars.escapeExpression(entry.playlistId)}" aria-expanded="${entry.isExpanded}" title="${expandLabel}" aria-label="${expandLabel}">
+            <i class="fas ${entry.isExpanded ? "fa-chevron-down" : "fa-chevron-right"}" aria-hidden="true"></i>
+          </button>
+          <span class="director-audio-playlist-name" title="${Handlebars.escapeExpression(entry.name)}">
+            <i class="fas fa-list-ul" aria-hidden="true"></i> ${Handlebars.escapeExpression(entry.name)}
+          </span>
+          <div class="audio-track-actions">
+            <button type="button" class="btn-scene-playlist-toggle type-icon" data-playlist-id="${Handlebars.escapeExpression(entry.playlistId)}" title="${playLabel}" aria-label="${playLabel}">
+              <i class="fas ${isPlaying ? "fa-pause" : "fa-play"}" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="btn-scene-playlist-stop type-icon" data-playlist-id="${Handlebars.escapeExpression(entry.playlistId)}" title="${stopLabel}" aria-label="${stopLabel}">
+              <i class="fas fa-stop" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+        <div class="director-audio-playlist-contents" ${entry.isExpanded ? "" : "hidden"}>
+          ${entry.tracks.map(track => this.#renderSceneAudioTrack(track, true)).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  #renderSceneAudioTrack(track, isPlaylistTrack = false) {
+    const volume = this.#audioController?.getTrackVolume(track.id) ?? 1.0;
+    const volumePercent = Math.round(volume * 100);
+    const isPlaying = track.playState === "playing";
+    const isPaused = track.playState === "paused";
+    const playLabel = game.i18n.localize(isPlaying
+      ? "NARRATIVE_CANVAS.Director.Pause"
+      : "NARRATIVE_CANVAS.Director.Play");
+    const stopLabel = game.i18n.localize("NARRATIVE_CANVAS.Director.Stop");
+    const volumeLabel = game.i18n.localize("NARRATIVE_CANVAS.Director.TrackVolume");
+
+    return `
+      <div class="director-audio-track-item ${isPlaylistTrack ? "is-playlist-track" : ""} ${isPlaying ? "is-playing" : ""} ${isPaused ? "is-paused" : ""}" data-track-id="${Handlebars.escapeExpression(track.id)}" data-track-path="${Handlebars.escapeExpression(track.path)}" data-track-name="${Handlebars.escapeExpression(track.name)}">
+        <div class="audio-track-info">
+          <span class="audio-track-name" title="${Handlebars.escapeExpression(track.name)}">
+            <i class="fas fa-volume-up track-status-icon"></i> ${Handlebars.escapeExpression(track.name)}
+          </span>
+          <div class="audio-track-actions">
+            <button type="button" class="btn-track-toggle type-icon" title="${playLabel}" aria-label="${playLabel}">
+              <i class="fas ${isPlaying ? "fa-pause" : "fa-play"}" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="btn-track-stop type-icon" title="${stopLabel}" aria-label="${stopLabel}">
+              <i class="fas fa-stop" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+        <div class="audio-track-volume-row">
+          <i class="fas fa-volume-down volume-icon"></i>
+          <input type="range" class="slider-track-volume" min="0" max="1" step="0.05" value="${volume}" title="${volumeLabel}" />
+          <span class="volume-val-display">${volumePercent}%</span>
+        </div>
+      </div>
+    `;
+  }
+
   #refreshActiveAudioList(tracks) {
     const panel = this.#element?.querySelector(".active-audio-playback");
     const list = panel?.querySelector(".active-audio-list");
     if (!panel || !list) return;
 
-    const activeTracks = tracks.filter(track => track.playState !== "stopped");
-    panel.hidden = activeTracks.length === 0;
-    list.innerHTML = activeTracks.map(track => {
+    const activeEntries = this.#getActiveAudioEntries(tracks);
+    panel.hidden = activeEntries.length === 0;
+    list.innerHTML = activeEntries.map(entry => {
+      if (entry.type === "playlist") {
+        const isPlaying = entry.playState === "playing";
+        const actionLabel = game.i18n.localize(
+          isPlaying ? "NARRATIVE_CANVAS.Director.Pause" : "NARRATIVE_CANVAS.Director.Play"
+        );
+        const expandLabel = game.i18n.localize(entry.isExpanded
+          ? "NARRATIVE_CANVAS.Director.CollapsePlaylist"
+          : "NARRATIVE_CANVAS.Director.ExpandPlaylist");
+        const playlistTracks = entry.tracks.map(track => {
+          const isTrackPlaying = track.playState === "playing";
+          const isTrackPaused = track.playState === "paused";
+          return `
+            <div class="active-audio-playlist-track ${isTrackPlaying ? "is-playing" : ""} ${isTrackPaused ? "is-paused" : ""}" title="${Handlebars.escapeExpression(track.name)}">
+              <i class="fas ${isTrackPlaying ? "fa-volume-up" : isTrackPaused ? "fa-pause" : "fa-circle"}" aria-hidden="true"></i>
+              <span>${Handlebars.escapeExpression(track.name)}</span>
+            </div>
+          `;
+        }).join("");
+
+        return `
+          <div class="active-audio-playlist-group ${isPlaying ? "is-playing" : "is-paused"}" data-playlist-id="${Handlebars.escapeExpression(entry.playlistId)}">
+            <div class="active-audio-item active-audio-playlist-item ${isPlaying ? "is-playing" : "is-paused"}">
+              <button type="button" class="btn-active-playlist-expand type-icon" data-playlist-id="${Handlebars.escapeExpression(entry.playlistId)}" aria-expanded="${entry.isExpanded}" title="${expandLabel}" aria-label="${expandLabel}">
+                <i class="fas ${entry.isExpanded ? "fa-chevron-down" : "fa-chevron-right"}" aria-hidden="true"></i>
+              </button>
+              <span class="active-audio-name" title="${Handlebars.escapeExpression(entry.name)}">
+                <i class="fas fa-list-ul" aria-hidden="true"></i>
+                ${Handlebars.escapeExpression(entry.name)}
+              </span>
+              <button type="button" class="btn-active-playlist-toggle type-icon" data-playlist-id="${Handlebars.escapeExpression(entry.playlistId)}" title="${actionLabel}" aria-label="${actionLabel}">
+                <i class="fas ${isPlaying ? "fa-pause" : "fa-play"}" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div class="active-audio-playlist-tracks" ${entry.isExpanded ? "" : "hidden"}>${playlistTracks}</div>
+          </div>
+        `;
+      }
+
+      const track = entry.track;
       const isPlaying = track.playState === "playing";
       const actionLabel = game.i18n.localize(
         isPlaying ? "NARRATIVE_CANVAS.Director.Pause" : "NARRATIVE_CANVAS.Director.Play"
@@ -273,14 +428,63 @@ export class DirectorSidebar {
     }).join("");
   }
 
+  #getActiveAudioEntries(tracks) {
+    const entries = [];
+    const playlists = new Map();
+
+    for (const track of tracks) {
+      if (!track.sourcePlaylistId) {
+        if (track.playState !== "stopped") entries.push({ type: "track", track });
+        continue;
+      }
+
+      let playlist = playlists.get(track.sourcePlaylistId);
+      if (!playlist) {
+        playlist = {
+          playlistId: track.sourcePlaylistId,
+          name: track.sourcePlaylistName
+            || game.playlists?.get(track.sourcePlaylistId)?.name
+            || game.collections?.get("Playlist")?.get(track.sourcePlaylistId)?.name
+            || game.i18n.localize("NARRATIVE_CANVAS.Editor.AudioPlaylist"),
+          tracks: []
+        };
+        playlists.set(track.sourcePlaylistId, playlist);
+      }
+      playlist.tracks.push(track);
+    }
+
+    for (const playlist of playlists.values()) {
+      if (!playlist.tracks.some(track => track.playState !== "stopped")) continue;
+      entries.push({
+        ...playlist,
+        type: "playlist",
+        playState: playlist.tracks.some(track => track.playState === "playing") ? "playing" : "paused",
+        isExpanded: this.#expandedPlaylistIds.has(playlist.playlistId)
+      });
+    }
+
+    return entries;
+  }
+
   #getAudioTracksWithPlaybackState() {
     return (this.#currentSceneData?.tracks ?? []).map(track => {
       const managedState = this.#audioController?.getTrackState(track.id) ?? "stopped";
-      const playlist = track.sourcePlaylistId
+      const playlists = game.playlists ?? game.collections?.get("Playlist");
+      let playlist = track.sourcePlaylistId
         ? game.playlists?.get(track.sourcePlaylistId)
           ?? game.collections?.get("Playlist")?.get(track.sourcePlaylistId)
         : null;
-      const playlistSound = playlist?.sounds?.get(track.id);
+      let playlistSound = playlist?.sounds?.get(track.id);
+      if (!playlist && track.uuid) {
+        try {
+          playlistSound = foundry.utils.fromUuidSync(track.uuid);
+          playlist = playlistSound?.parent?.documentName === "Playlist" ? playlistSound.parent : null;
+        } catch {}
+      }
+      if (!playlist && playlists) {
+        playlist = Array.from(playlists).find(candidate => candidate.sounds?.has(track.id)) ?? null;
+        playlistSound = playlist?.sounds?.get(track.id);
+      }
       const playState = managedState !== "stopped"
         ? managedState
         : playlistSound?.playing || playlistSound?.sound?.playing
@@ -289,7 +493,12 @@ export class DirectorSidebar {
             ? "paused"
             : "stopped";
 
-      return { ...track, playState };
+      return {
+        ...track,
+        sourcePlaylistId: track.sourcePlaylistId || playlist?.id,
+        sourcePlaylistName: track.sourcePlaylistName || playlist?.name,
+        playState
+      };
     });
   }
 
@@ -352,7 +561,8 @@ export class DirectorSidebar {
         volumePercent: Math.round(vol * 100)
       };
     });
-    const activeAudioTracks = activeSceneTracks.filter(track => track.playState !== "stopped");
+    const activeSceneAudioEntries = this.#getSceneAudioEntries(activeSceneTracks);
+    const activeAudioEntries = this.#getActiveAudioEntries(activeSceneTracks);
 
     const gVol = this.#audioController?.globalVolume ?? 0.5;
     const currentFolder = JournalBrowser.getFolders().find(folder => folder.id === this.#currentJournalFolderId);
@@ -383,7 +593,8 @@ export class DirectorSidebar {
       selectedPageId: this.#selectedPageId,
       activePage,
       activeSceneTracks,
-      activeAudioTracks,
+      activeSceneAudioEntries,
+      activeAudioEntries,
       globalVolume: gVol,
       masterVolumePercent: Math.round(gVol * 100)
     };
@@ -417,6 +628,54 @@ export class DirectorSidebar {
     this.#bindPageSelection(root);
     this.#addImageOverlayButtons(root);
     this.#bindAudioControls(root);
+    this.#bindAudioSectionResize(root);
+  }
+
+  #bindAudioSectionResize(root) {
+    const audioSection = root.querySelector(".sidebar-audio-section");
+    const header = audioSection?.querySelector(":scope > .sidebar-section-header");
+    if (!audioSection || !header) return;
+
+    header.addEventListener("pointerdown", event => {
+      if (event.target instanceof Element && event.target.closest(".sidebar-section-toggle")) return;
+
+      const startHeight = audioSection.getBoundingClientRect().height;
+      const startY = event.clientY;
+      const sidebarHeight = audioSection.parentElement?.getBoundingClientRect().height ?? window.innerHeight;
+      const pointerId = event.pointerId;
+      this.#audioResizeAbortController?.abort();
+      this.#audioResizeAbortController = new AbortController();
+      const { signal } = this.#audioResizeAbortController;
+
+      const onPointerMove = moveEvent => {
+        if (moveEvent.pointerId !== pointerId) return;
+        const minHeight = 100;
+        const maxHeight = Math.max(minHeight, sidebarHeight - 180);
+        this.#audioSectionHeight = Math.max(
+          minHeight,
+          Math.min(maxHeight, startHeight + startY - moveEvent.clientY)
+        );
+        this.#applyAudioSectionHeight();
+        moveEvent.preventDefault();
+      };
+      const onPointerEnd = endEvent => {
+        if (endEvent.pointerId === pointerId) this.#audioResizeAbortController?.abort();
+      };
+
+      document.addEventListener("pointermove", onPointerMove, { signal });
+      document.addEventListener("pointerup", onPointerEnd, { signal });
+      document.addEventListener("pointercancel", onPointerEnd, { signal });
+      event.preventDefault();
+    });
+  }
+
+  #applyAudioSectionHeight() {
+    const audioSection = this.#element?.querySelector(".sidebar-audio-section");
+    if (!audioSection) return;
+    if (this.#audioSectionHeight === null) return;
+
+    audioSection.style.flex = `0 0 ${this.#audioSectionHeight}px`;
+    audioSection.style.maxHeight = "none";
   }
 
   #addImageOverlayButtons(root) {
@@ -1055,6 +1314,50 @@ export class DirectorSidebar {
 
     // Track play/pause and stop clicks
     audioSection.addEventListener("click", async (event) => {
+      const scenePlaylistExpandButton = event.target.closest(".btn-scene-playlist-expand");
+      if (scenePlaylistExpandButton) {
+        event.preventDefault();
+        const playlistId = scenePlaylistExpandButton.dataset.playlistId;
+        if (this.#expandedPlaylistIds.has(playlistId)) this.#expandedPlaylistIds.delete(playlistId);
+        else this.#expandedPlaylistIds.add(playlistId);
+        this.#refreshAudioTracksList();
+        return;
+      }
+
+      const scenePlaylistToggleButton = event.target.closest(".btn-scene-playlist-toggle");
+      if (scenePlaylistToggleButton) {
+        event.preventDefault();
+        await this.#togglePlaylistPlayback(scenePlaylistToggleButton.dataset.playlistId);
+        this.#refreshAudioTracksList();
+        return;
+      }
+
+      const scenePlaylistStopButton = event.target.closest(".btn-scene-playlist-stop");
+      if (scenePlaylistStopButton) {
+        event.preventDefault();
+        await this.#stopPlaylistPlayback(scenePlaylistStopButton.dataset.playlistId);
+        this.#refreshAudioTracksList();
+        return;
+      }
+
+      const playlistExpandButton = event.target.closest(".btn-active-playlist-expand");
+      if (playlistExpandButton) {
+        event.preventDefault();
+        const playlistId = playlistExpandButton.dataset.playlistId;
+        if (this.#expandedPlaylistIds.has(playlistId)) this.#expandedPlaylistIds.delete(playlistId);
+        else this.#expandedPlaylistIds.add(playlistId);
+        this.#refreshAudioTracksList();
+        return;
+      }
+
+      const playlistToggleButton = event.target.closest(".btn-active-playlist-toggle");
+      if (playlistToggleButton) {
+        event.preventDefault();
+        await this.#togglePlaylistPlayback(playlistToggleButton.dataset.playlistId);
+        this.#refreshAudioTracksList();
+        return;
+      }
+
       const activeToggleBtn = event.target.closest(".btn-active-audio-toggle");
       if (activeToggleBtn) {
         event.preventDefault();
@@ -1170,6 +1473,7 @@ export class DirectorSidebar {
       ?? game.collections?.get("Playlist")?.get(track.sourcePlaylistId);
     const sound = playlist?.sounds?.get(track.id);
     if (!playlist || !sound) return;
+    this.#activePlaylistIds.add(playlist.id);
 
     if (sound.playing || sound.sound?.playing) {
       const currentTime = Number(sound.sound?.currentTime);
@@ -1197,5 +1501,59 @@ export class DirectorSidebar {
 
     if (sound.playing || sound.sound?.playing) await playlist.stopSound(sound);
     else if (Number(sound.pausedTime) > 0) await sound.update({ playing: false, pausedTime: 0 });
+    const hasRemainingPlayback = (this.#currentSceneData?.tracks ?? [])
+      .filter(item => item.sourcePlaylistId === track.sourcePlaylistId)
+      .some(item => {
+        const playlistSound = playlist.sounds.get(item.id);
+        return playlistSound?.playing || playlistSound?.sound?.playing || Number(playlistSound?.pausedTime) > 0;
+      });
+    if (!hasRemainingPlayback) this.#activePlaylistIds.delete(playlist.id);
+  }
+
+  async #togglePlaylistPlayback(playlistId) {
+    const playlist = game.playlists?.get(playlistId)
+      ?? game.collections?.get("Playlist")?.get(playlistId);
+    if (!playlist) return;
+
+    const sceneTracks = (this.#currentSceneData?.tracks ?? [])
+      .filter(track => track.sourcePlaylistId === playlistId)
+      .map(track => playlist.sounds?.get(track.id))
+      .filter(Boolean);
+    const playingSounds = sceneTracks.filter(sound => sound.playing || sound.sound?.playing);
+
+    if (playingSounds.length > 0) {
+      this.#activePlaylistIds.add(playlistId);
+      await Promise.all(playingSounds.map(sound => {
+        const currentTime = Number(sound.sound?.currentTime);
+        const pausedTime = Number(sound.pausedTime);
+        return sound.update({
+          playing: false,
+          pausedTime: Number.isFinite(currentTime) ? currentTime : Number.isFinite(pausedTime) ? pausedTime : 0
+        });
+      }));
+      return;
+    }
+
+    const pausedSounds = sceneTracks.filter(sound => Number(sound.pausedTime) > 0);
+    this.#activePlaylistIds.add(playlistId);
+    if (pausedSounds.length === 0) {
+      await playlist.playAll();
+    } else if (playlist.mode === CONST.PLAYLIST_MODES.SIMULTANEOUS) {
+      await Promise.all(pausedSounds.map(sound => playlist.playSound(sound)));
+    } else {
+      await playlist.playSound(pausedSounds[0]);
+    }
+  }
+
+  async #stopPlaylistPlayback(playlistId) {
+    const playlist = game.playlists?.get(playlistId)
+      ?? game.collections?.get("Playlist")?.get(playlistId);
+    if (!playlist) return;
+
+    await playlist.stopAll();
+    await Promise.all(Array.from(playlist.sounds ?? [])
+      .filter(sound => !sound.playing && Number(sound.pausedTime) > 0)
+      .map(sound => sound.update({ playing: false, pausedTime: 0 })));
+    this.#activePlaylistIds.delete(playlistId);
   }
 }

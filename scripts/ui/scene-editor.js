@@ -546,10 +546,9 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
       const path = soundDoc?.path || dropped.path || "";
       if (!path) return null;
       const track = {
-        id: soundDoc?.id || dropped.soundId || dropped.id || foundry.utils.randomID(),
+        id: foundry.utils.randomID(),
         name,
-        path,
-        uuid: soundDoc?.uuid || dropped.uuid || ""
+        path
       };
       return {
         type: "PlaylistSound",

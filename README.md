@@ -104,7 +104,7 @@ Select a handout tile to display that image as a foreground overlay. Selecting a
 
 ### Audio
 
-The Audio section in the Director Controls lists the active scene's tracks. Use each track's play/pause and stop buttons to control playback. The track volume slider changes that track; the master volume slider changes the overall audio level. Currently playing or paused scene audio appears below the master-volume control with a pause/resume button. Playlist entries reflect Foundry's actual playing or paused state there as well as in the track list. The toolbar's **Stop All Audio** action stops scene tracks and automatic playlists. **Mute Audio** silences playback without stopping scene tracks.
+The Audio section in the Director Controls lists the active scene's audio. Playlist tracks are grouped under their playlist name; expand a playlist to see each track and its status. The full audio list scrolls as one area. Drag the Audio section header vertically to resize the section. Use playlist-level or track-level play/pause and stop controls as needed. Currently playing or paused audio also appears below the master-volume control with a pause/resume button. The track volume slider changes an individual track; the master volume slider changes the overall audio level. **Stop All Audio** stops scene tracks and playlists. **Mute Audio** silences playback without stopping tracks.
 
 ### Visual Novel overlay
 

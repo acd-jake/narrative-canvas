@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The Scene Audio section can be resized by dragging its header; playlists expand inside the shared scrollable audio list.
 - The Scene Configurator preserves editor-area scroll positions after content changes.
 - The docked Scene Configurator follows the activated Journal Entry, matches its z-order, and retains its width across journal page changes.
 - Images can be dropped into their designated Background Images or Handout Images areas.
