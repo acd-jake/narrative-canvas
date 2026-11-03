@@ -74,11 +74,11 @@ export class DirectorImageControls {
   async #renderPanel(context) {
     const templateContext = this.#createTemplateContext(context);
     const [panelMarkup, audioMarkup] = await Promise.all([
-      renderTemplate(
+      foundry.applications.handlebars.renderTemplate(
         "modules/narrative-canvas/templates/partials/director-image-controls.hbs",
         templateContext
       ),
-      renderTemplate(
+      foundry.applications.handlebars.renderTemplate(
         "modules/narrative-canvas/templates/partials/director-audio-controls.hbs",
         templateContext
       )

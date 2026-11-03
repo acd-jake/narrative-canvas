@@ -179,7 +179,7 @@ export class JournalBrowser {
       let content = "";
       if (page.type === "text") {
         const raw = page.text?.content || page.text?.markdown || "";
-        content = await TextEditor.enrichHTML(raw, {
+        content = await foundry.applications.ux.TextEditor.implementation.enrichHTML(raw, {
           relativeTo: page,
           secrets: game.user.isGM,
           documents: true,
@@ -191,7 +191,7 @@ export class JournalBrowser {
       } else if (page.type === "image") {
         const src = page.src || page.image?.src;
         const caption = page.image?.caption
-          ? await TextEditor.enrichHTML(page.image.caption, {
+          ? await foundry.applications.ux.TextEditor.implementation.enrichHTML(page.image.caption, {
               relativeTo: page,
               secrets: game.user.isGM,
               documents: true,
@@ -207,7 +207,7 @@ export class JournalBrowser {
       } else if (page.type === "pdf") {
         content = page.src ? `<iframe src="${page.src}" class="journal-pdf-frame"></iframe>` : "";
       } else if (page.text?.content) {
-        content = await TextEditor.enrichHTML(page.text.content, {
+        content = await foundry.applications.ux.TextEditor.implementation.enrichHTML(page.text.content, {
           relativeTo: page,
           secrets: game.user.isGM,
           documents: true,
@@ -228,7 +228,7 @@ export class JournalBrowser {
 
     if (!pages.length && (entry.content || entry.text?.content)) {
       const raw = entry.content || entry.text?.content || "";
-      const enriched = await TextEditor.enrichHTML(raw, {
+      const enriched = await foundry.applications.ux.TextEditor.implementation.enrichHTML(raw, {
         relativeTo: entry,
         secrets: game.user.isGM,
         documents: true,

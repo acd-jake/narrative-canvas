@@ -174,7 +174,7 @@ export class NarrativeSceneEditor extends HandlebarsApplicationMixin(Application
   }
 
   #createDragDrop() {
-    return new DragDrop({
+    return new foundry.applications.ux.DragDrop.implementation({
       dropSelector: ".editor-dropzone",
       permissions: { drop: () => game.user.isGM },
       callbacks: {

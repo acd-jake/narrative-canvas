@@ -55,7 +55,7 @@ export class NarrativeCanvas {
       ?.find(background => background.path === state.background);
     const effectiveBackground = (state.background || defaultBg || "").trim();
     const enrichedBackgroundDescription = activeBackground?.showDescription === true
-      ? await TextEditor.enrichHTML(activeBackground.description || "", {
+      ? await foundry.applications.ux.TextEditor.implementation.enrichHTML(activeBackground.description || "", {
           secrets: game.user.isGM,
           documents: true,
           links: true,
@@ -69,7 +69,7 @@ export class NarrativeCanvas {
       return {
         ...overlay,
         description: description
-          ? await TextEditor.enrichHTML(description, {
+          ? await foundry.applications.ux.TextEditor.implementation.enrichHTML(description, {
           secrets: game.user.isGM,
           documents: true,
           links: true,
@@ -108,7 +108,10 @@ export class NarrativeCanvas {
     const existingNode = document.getElementById(this.id);
     if (existingNode) existingNode.remove();
 
-    const htmlString = await renderTemplate("modules/narrative-canvas/templates/main-display.hbs", context);
+    const htmlString = await foundry.applications.handlebars.renderTemplate(
+      "modules/narrative-canvas/templates/main-display.hbs",
+      context
+    );
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");

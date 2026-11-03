@@ -168,7 +168,10 @@ export class DirectorSidebar {
     }
 
     const templateData = await this.#prepareTemplateData();
-    const htmlString = await renderTemplate("modules/narrative-canvas/templates/partials/director-sidebar.hbs", templateData);
+    const htmlString = await foundry.applications.handlebars.renderTemplate(
+      "modules/narrative-canvas/templates/partials/director-sidebar.hbs",
+      templateData
+    );
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");

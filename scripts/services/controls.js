@@ -35,7 +35,8 @@ export class NarrativeControls {
           icon: "fa-solid fa-clapperboard",
           button: true,
           visible: true,
-          onClick: (event) => {
+          onChange: (event, active) => {
+            if (!active) return;
             if (!manager) return;
 
             const wasOpen = manager.editorApp?.rendered === true;
@@ -54,7 +55,8 @@ export class NarrativeControls {
         button: true,
         visible: true,
         disabled: !game.user.isGM && !manager?.narrativeState.playerViewActive,
-        onClick: () => {
+        onChange: (_event, active) => {
+          if (!active) return;
           if (game.user.isGM) {
             return manager?.toggleCanvasState(true);
           }

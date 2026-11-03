@@ -44,7 +44,10 @@ export class DirectorActorCarousel {
       isSpeaker: activeSpeakerId === actor.id
     }));
 
-    const htmlString = await renderTemplate("modules/narrative-canvas/templates/partials/director-actors.hbs", { actors });
+    const htmlString = await foundry.applications.handlebars.renderTemplate(
+      "modules/narrative-canvas/templates/partials/director-actors.hbs",
+      { actors }
+    );
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, "text/html");
     const newElement = doc.body.firstElementChild;

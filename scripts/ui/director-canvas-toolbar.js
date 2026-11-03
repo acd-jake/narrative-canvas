@@ -25,7 +25,7 @@ export class DirectorCanvasToolbar {
    * @returns {Promise<HTMLElement>}
    */
   async render(context = {}) {
-    const htmlString = await renderTemplate(
+    const htmlString = await foundry.applications.handlebars.renderTemplate(
       "modules/narrative-canvas/templates/partials/director-canvas-toolbar.hbs",
       context
     );
@@ -45,7 +45,7 @@ export class DirectorCanvasToolbar {
       ?? (this.#element?.isConnected ? this.#element : null);
     if (!toolbarElement) return;
 
-    const htmlString = await renderTemplate(
+    const htmlString = await foundry.applications.handlebars.renderTemplate(
       "modules/narrative-canvas/templates/partials/director-canvas-toolbar.hbs",
       context
     );
