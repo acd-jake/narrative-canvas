@@ -30,6 +30,7 @@ Narrative Canvas adds a Theatre of the Mind presentation stage to Foundry Virtua
 - Optional **Talking Actors** integration reads lines aloud (`/talk`, or `/narrate` for the narrator) while the canvas is released to the players; the Live badge shows whether lines would currently be read aloud, and a setting controls whether they also appear in the chat.
 - Optional **Polyglot** integration to pick the language of a line; players who do not know it see scrambled text.
 - Text selections and read-aloud sections of journals (for example `keeper-read-aloud` in Call of Cthulhu 7e or `narrative` in Pathfinder 2e; configurable in the module settings) can be sent to the dialogue input.
+- A character sheet dock: moving the mouse to the bottom edge of the left third of the canvas slides in the tokens of player characters (all for the GM, only owned ones for players). Clicking a token opens or closes that character's sheet centered above the canvas; only one sheet is open at a time. The dock hides 2 seconds after the pointer leaves and stays visible while a sheet is open, with the matching token highlighted.
 - Automatic background and audio playback when a scene is activated or the Canvas is reopened with an active scene.
 - Scenes can automatically start one PlaylistSound or an entire playlist. Starting a scene track or playlist stops other active scene audio.
 - Scene audio uses existing Foundry Playlist and PlaylistSound documents. Foundry synchronizes playlist and individual-track playback with connected players.
@@ -57,6 +58,7 @@ Runtime responsibilities are separated by role:
 - `scripts/services/settings-layout.js` groups the module settings into sections in the settings window.
 - `scripts/ui/dialogue-line.js` displays dialogue and narrator lines on the stage, including reveal animation and autoscroll.
 - `scripts/ui/journal-selection-menu.js` sends selected journal text and read-aloud sections to the dialogue input.
+- `scripts/ui/character-sheet-dock.js` provides the hover dock with character tokens that toggle character sheets.
 
 ## Development
 
@@ -111,6 +113,7 @@ Narrative Canvas erweitert Foundry Virtual Tabletop um eine Präsentationsfläch
 - Optionale Anbindung an **Talking Actors**: Zeilen werden vorgelesen (`/talk`, für den Erzähler `/narrate`), solange der Canvas für die Spielenden freigegeben ist. Das Live-Badge zeigt, ob gerade vorgelesen würde, und eine Einstellung legt fest, ob die Zeilen zusätzlich im Chat erscheinen.
 - Optionale Anbindung an **Polyglot** zur Wahl der Sprache einer Zeile; Spielende, die sie nicht beherrschen, sehen verschleierten Text.
 - Textauswahlen und Vorlesetexte aus Journalen (zum Beispiel `keeper-read-aloud` bei Call of Cthulhu 7e oder `narrative` bei Pathfinder 2e; in den Moduleinstellungen konfigurierbar) lassen sich in die Eingabezeile übernehmen.
+- Eine Charakterbogen-Leiste: Bewegt man die Maus an den unteren Rand des linken Canvas-Drittels, gleiten die Token der Spielercharaktere ins Bild (für die Spielleitung alle, für Spielende nur die eigenen). Ein Klick auf ein Token öffnet bzw. schließt den Charakterbogen zentriert über dem Canvas; es ist immer nur ein Bogen offen. Die Leiste blendet sich 2 Sekunden nach dem Verlassen des Bereichs aus und bleibt sichtbar, solange ein Bogen offen ist; das passende Token ist hervorgehoben.
 - Automatische Wiedergabe von Hintergründen und Audio beim Aktivieren einer Szene oder beim erneuten Öffnen des Canvas mit aktiver Szene.
 - Szenen können einen einzelnen PlaylistSound oder eine ganze Playlist automatisch starten. Beim Starten eines Szenen-Tracks oder einer Playlist wird anderes aktives Szenen-Audio gestoppt.
 - Synchronisierte Wiedergabe einzelner Audiospuren einschließlich Lautstärke, Stummschaltung, Pause und Stopp. Auch Spielende, die während einer laufenden Spur beitreten, erhalten deren Wiedergabe. Foundry-Playlists verwenden die native Synchronisierung von Foundry.
@@ -138,6 +141,7 @@ Die Laufzeitverantwortlichkeiten sind nach Aufgaben getrennt:
 - `scripts/services/settings-layout.js` gliedert die Moduleinstellungen im Einstellungsfenster in Abschnitte.
 - `scripts/ui/dialogue-line.js` zeigt Dialog- und Erzählerzeilen auf der Bühne an, einschließlich Einblendanimation und Autoscroll.
 - `scripts/ui/journal-selection-menu.js` übergibt markierten Journaltext und Vorlesetexte an die Dialog-Eingabezeile.
+- `scripts/ui/character-sheet-dock.js` stellt die Hover-Leiste mit Charakter-Token bereit, die Charakterbögen öffnen und schließen.
 
 ## Entwicklung
 
