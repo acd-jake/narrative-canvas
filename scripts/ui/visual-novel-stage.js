@@ -137,7 +137,7 @@ export class VisualNovelStage {
         if (Math.abs(deltaX) > 0.5 || Math.abs(deltaY) > 0.5) {
           el.style.transition = "none";
           const isSpeaker = el.classList.contains("is-speaker");
-          const baseTransform = isSpeaker ? "scale(1.05)" : "";
+          const baseTransform = isSpeaker ? "scale(1.25)" : "";
           el.style.transform = `translate(${deltaX}px, ${deltaY}px) ${baseTransform}`;
         }
       }
@@ -151,7 +151,7 @@ export class VisualNovelStage {
       for (const el of inFlowElements) {
         const isSpeaker = el.classList.contains("is-speaker");
         const isDimmed = this.#vnStage.classList.contains("has-speaker") && !isSpeaker;
-        const baseTransform = isSpeaker ? "scale(1.05)" : "";
+        const baseTransform = isSpeaker ? "scale(1.25)" : "";
 
         el.style.transition = `transform ${fadeDuration}ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity ${fadeDuration}ms ease, filter ${fadeDuration}ms ease`;
         el.style.transform = baseTransform;

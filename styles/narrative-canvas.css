@@ -913,7 +913,7 @@ body.acd-nc-active {
     }
 
     .narrative-vn-character.is-speaker {
-        transform: scale(1.05);
+        transform: scale(1.25);
     }
 
     .narrative-vn-image-wrapper {
@@ -1300,9 +1300,15 @@ body.acd-nc-active {
             }
 
             &.is-active-speaker {
+                width: 90px;
                 border-color: #ffd700;
                 background: rgba(180, 140, 40, 0.28);
                 box-shadow: 0 0 12px rgba(255, 215, 0, 0.55);
+
+                .actor-card-thumbnail-box {
+                    width: 78px;
+                    height: 78px;
+                }
             }
         }
 
@@ -1328,10 +1334,19 @@ body.acd-nc-active {
             top: 2px;
             left: 2px;
             right: 2px;
+            bottom: 2px;
             display: flex;
-            justify-content: space-between;
+            align-items: flex-start;
+            justify-content: flex-end;
             pointer-events: none;
             z-index: 4;
+
+            .btn-carousel-toggle-speaker {
+                position: absolute;
+                bottom: 0;
+                left: 50%;
+                transform: translateX(-50%);
+            }
         }
 
         .btn-carousel-action {
@@ -2558,6 +2573,15 @@ body.acd-nc-active {
 
         }
     }
+
+.acd-nc.is-speaking .narrative-vn-character.is-speaker .narrative-vn-image-wrapper::before {
+    animation: nc-speaker-glow-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes nc-speaker-glow-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.65; }
+}
 
 @keyframes nc-dialogue-char-in {
     from { opacity: 0; }

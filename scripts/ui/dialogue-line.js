@@ -54,6 +54,7 @@ export class DialogueLineController {
   #clearTimers() {
     this.#timers.forEach(timer => clearTimeout(timer));
     this.#timers = [];
+    this.#stage?.classList.remove("is-speaking");
   }
 
   #play(line, isGM) {
@@ -103,6 +104,7 @@ export class DialogueLineController {
     // Restart the transition after the content swap.
     void element.offsetHeight;
     element.classList.add("is-visible");
+    this.#stage?.classList.add("is-speaking");
 
     const revealMs = charIndex * delay + CHAR_FADE_MS;
     this.#timers.push(setTimeout(() => {
@@ -110,6 +112,7 @@ export class DialogueLineController {
     }, revealMs + HOLD_MS));
     this.#timers.push(setTimeout(() => {
       element.classList.remove("is-visible", "is-fading-out");
+      this.#stage?.classList.remove("is-speaking");
       textEl.replaceChildren();
     }, revealMs + HOLD_MS + FADE_OUT_MS));
   }
