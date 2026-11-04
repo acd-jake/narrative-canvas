@@ -1,6 +1,5 @@
 import { NarrativeSettings } from "../services/settings.js";
 
-const HOLD_MS = 2200;
 const FADE_OUT_MS = 700;
 const CHAR_FADE_MS = 350;
 const MAX_LINE_AGE_MS = 30000;
@@ -325,12 +324,10 @@ export class DialogueLineController {
     // Only the lines that are visible in the box at the end count, not the whole text.
     const lastBottom = rows.length ? rows[rows.length - 1].bottom : 0;
     const visibleRows = rows.filter(row => row.top >= lastBottom - textEl.clientHeight - 1).length;
-    const holdMs = isNarrator
-      ? 1000 * (
-        NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_HOLD_BASE)
-        + NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_HOLD_PER_LINE) * Math.max(1, visibleRows)
-      )
-      : HOLD_MS;
+    const holdMs = 1000 * (
+      NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_HOLD_BASE)
+      + NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_HOLD_PER_LINE) * Math.max(1, visibleRows)
+    );
     this.#active = {
       id: line.id,
       textEl,
