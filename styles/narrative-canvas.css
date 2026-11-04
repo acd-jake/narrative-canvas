@@ -1011,12 +1011,9 @@ body.acd-nc-active {
     max-height: calc(var(--nc-narration-max-height, 66vh) - 20px);
 }
 
-.acd-nc .narrative-narration-paragraph {
+.acd-nc .narrative-narration-gap {
     display: block;
-}
-
-.acd-nc .narrative-narration-paragraph + .narrative-narration-paragraph {
-    margin-top: 0.7em;
+    height: 0.7em;
 }
 
     .narrative-director-ui-layer .narrative-director-actors-bar.has-dialogue-controls {

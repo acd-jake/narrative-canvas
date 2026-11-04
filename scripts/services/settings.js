@@ -31,7 +31,7 @@ export class NarrativeSettings {
   static SETTING_NARRATION_TEXT_SCALE = "narrationTextScale";
   static SETTING_NARRATION_MAX_HEIGHT = "narrationMaxHeight";
   static SETTING_DIALOGUE_REVEAL_SPEED = "dialogueRevealSpeed";
-  static SETTING_NARRATION_PARAGRAPH_SECONDS = "narrationParagraphSeconds";
+  static SETTING_NARRATION_READING_SPEED = "narrationReadingSpeed";
   static SETTING_DIALOGUE_SCROLL_SPEED = "dialogueScrollSpeed";
   static SETTING_NARRATION_HOLD_BASE = "narrationHoldBase";
   static SETTING_NARRATION_HOLD_PER_LINE = "narrationHoldPerLine";
@@ -45,7 +45,7 @@ export class NarrativeSettings {
     ["narrationTextScale", 100, 50, 200, 5, "NarrationTextScale"],
     ["narrationMaxHeight", 66, 30, 90, 1, "NarrationMaxHeight"],
     ["dialogueRevealSpeed", 40, 5, 200, 5, "DialogueRevealSpeed"],
-    ["narrationParagraphSeconds", 3.5, 0.5, 6, 0.1, "NarrationParagraphSeconds"],
+    ["narrationReadingSpeed", 50, 25, 150, 5, "NarrationReadingSpeed"],
     ["dialogueScrollSpeed", 100, 25, 400, 5, "DialogueScrollSpeed"],
     ["narrationHoldBase", 2, 0, 20, 0.5, "NarrationHoldBase"],
     ["narrationHoldPerLine", 0.8, 0, 5, 0.1, "NarrationHoldPerLine"]

@@ -4,6 +4,11 @@ const HOLD_MS = 2200;
 const FADE_OUT_MS = 700;
 const CHAR_FADE_MS = 350;
 const MAX_LINE_AGE_MS = 30000;
+const MIN_NARRATION_LINE_MS = 500;
+// Pause after a paragraph, expressed as the number of characters it takes to read or write.
+const NARRATION_PARAGRAPH_PAUSE_CHARS = 10;
+const DIALOGUE_PARAGRAPH_PAUSE_CHARS = 20;
+const MAX_NARRATION_FADE_MS = 1500;
 
 /**
  * Shows dialogue lines at the bottom of the canvas: characters fade in one by one,
@@ -182,7 +187,7 @@ export class DialogueLineController {
     return {
       factor,
       charsPerSecond: NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_DIALOGUE_REVEAL_SPEED) * factor,
-      paragraphMs: NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_PARAGRAPH_SECONDS) * 1000 / factor,
+      readingCharsPerSecond: NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_READING_SPEED) * factor,
       scrollFactor: NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_DIALOGUE_SCROLL_SPEED) / 100 * Math.sqrt(factor)
     };
   }
@@ -214,14 +219,19 @@ export class DialogueLineController {
 
     const delay = 1000 / Math.max(1, timing.charsPerSecond);
     let charIndex = 0;
+    let afterBreak = false;
 
     const words = text.split(/(\n|[^\S\n]+)/);
     for (const word of words) {
       if (!word) continue;
       if (word === "\n") {
         textEl.appendChild(document.createElement("br"));
+        // A short pause at each paragraph break, scaled by the writing speed.
+        if (!afterBreak && charIndex > 0) charIndex += DIALOGUE_PARAGRAPH_PAUSE_CHARS;
+        afterBreak = true;
         continue;
       }
+      afterBreak = false;
       if (/^\s+$/.test(word)) {
         textEl.appendChild(document.createTextNode(" "));
         continue;
@@ -262,33 +272,66 @@ export class DialogueLineController {
     this.#scheduleEnd(element, textEl, revealMs + HOLD_MS);
   }
 
-  /** Narration fades in paragraph by paragraph and holds for a base time plus a time per displayed line. */
+  /** Narration fades in line by line at a comfortable reading speed and holds for a base time plus a time per line. */
   #playNarration(element, textEl, text, timing, line) {
+    const words = [];
     const paragraphs = text.split(/\n+/).map(part => part.trim()).filter(Boolean);
     for (const [index, paragraph] of paragraphs.entries()) {
-      const paragraphEl = document.createElement("span");
-      paragraphEl.className = "narrative-narration-paragraph";
-      paragraphEl.textContent = paragraph;
-      paragraphEl.style.animation = `nc-dialogue-char-in ${timing.paragraphMs}ms ease-in ${index * timing.paragraphMs}ms both`;
-      textEl.appendChild(paragraphEl);
+      if (index > 0) {
+        const gap = document.createElement("span");
+        gap.className = "narrative-narration-gap";
+        textEl.appendChild(gap);
+      }
+      for (const [wordIndex, word] of paragraph.split(/\s+/).entries()) {
+        if (wordIndex > 0) textEl.appendChild(document.createTextNode(" "));
+        const wordEl = document.createElement("span");
+        wordEl.textContent = word;
+        textEl.appendChild(wordEl);
+        words.push({ el: wordEl, paragraph: index });
+      }
     }
 
-    const revealMs = paragraphs.length * timing.paragraphMs;
+    // Group the words by the visual line they were laid out on.
+    const lines = [];
+    for (const { el: wordEl, paragraph } of words) {
+      const top = wordEl.offsetTop;
+      const current = lines[lines.length - 1];
+      if (current && Math.abs(top - current.top) < 3) {
+        current.words.push(wordEl);
+        current.chars += wordEl.textContent.length + 1;
+      } else {
+        lines.push({ top, bottom: top + wordEl.offsetHeight, words: [wordEl], chars: wordEl.textContent.length, paragraph });
+      }
+    }
+
+    // Each line takes as long to appear as it takes to read.
+    let startMs = 0;
+    let revealMs = 0;
+    for (const [rowIndex, row] of lines.entries()) {
+      const readMs = Math.max(MIN_NARRATION_LINE_MS, row.chars / timing.readingCharsPerSecond * 1000);
+      const fadeMs = Math.min(MAX_NARRATION_FADE_MS, readMs);
+      row.startMs = startMs;
+      for (const wordEl of row.words) {
+        wordEl.style.animation = `nc-dialogue-char-in ${fadeMs}ms ease-in ${startMs}ms both`;
+      }
+      revealMs = startMs + fadeMs;
+      startMs += readMs;
+      if (lines[rowIndex + 1] && lines[rowIndex + 1].paragraph !== row.paragraph) {
+        startMs += NARRATION_PARAGRAPH_PAUSE_CHARS / timing.readingCharsPerSecond * 1000;
+      }
+    }
+
     void textEl.offsetHeight;
     element.classList.add("is-visible");
 
-    // Scrolling starts when the first paragraph that no longer fits begins to fade in.
-    const overflowIndex = [...textEl.children].findIndex(
-      child => child.offsetTop + child.offsetHeight > textEl.clientHeight
-    );
-    if (overflowIndex >= 0) this.#autoScroll(textEl, overflowIndex * timing.paragraphMs, revealMs, timing.scrollFactor);
+    // Scrolling starts when the first line that no longer fits begins to fade in.
+    const overflowRow = lines.find(row => row.bottom > textEl.clientHeight);
+    const fillMs = overflowRow ? overflowRow.startMs : null;
+    if (fillMs !== null) this.#autoScroll(textEl, fillMs, revealMs, timing.scrollFactor);
 
-    const lineHeight = Number.parseFloat(getComputedStyle(textEl).lineHeight)
-      || Number.parseFloat(getComputedStyle(textEl).fontSize) * 1.35;
-    const lines = Math.max(1, Math.round(textEl.scrollHeight / lineHeight));
     const holdMs = 1000 * (
       NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_HOLD_BASE)
-      + NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_HOLD_PER_LINE) * lines
+      + NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_HOLD_PER_LINE) * Math.max(1, lines.length)
     );
     this.#active = {
       id: line.id,
@@ -297,7 +340,7 @@ export class DialogueLineController {
       baseFactor: timing.factor,
       factor: timing.factor,
       revealMs,
-      fillMs: overflowIndex >= 0 ? overflowIndex * timing.paragraphMs : null,
+      fillMs,
       holdMs
     };
     this.#scheduleEnd(element, textEl, revealMs + holdMs);
