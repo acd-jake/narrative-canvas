@@ -25,8 +25,8 @@ export class NarrativeSocket {
       isGM: game.user.isGM
     });
 
-    game.socket.on(this.EVENT_NAME, (packet) => {
-      if (!packet || typeof packet.type !== "string") {
+    game.socket.on(this.EVENT_NAME, (packet, senderId) => {
+      if (!packet || typeof packet.type !== "string" || typeof senderId !== "string") {
         NarrativeLogger.warn("Ignoring invalid socket packet", {
           packetType: typeof packet,
           packetKeys: packet && typeof packet === "object" ? Object.keys(packet) : []
@@ -35,9 +35,15 @@ export class NarrativeSocket {
       }
 
       const { type, data, userId } = packet;
+      const sender = game.users.get(senderId);
+      if (!sender) {
+        NarrativeLogger.warn("Ignoring socket packet from an unknown user", { senderId, type });
+        return;
+      }
+
       NarrativeLogger.debug("Received socket event", {
         type,
-        senderOrTargetId: userId,
+        senderOrTargetId: senderId,
         userId: game.user.id
       });
       NarrativeLogger.trace("Socket event payload keys", {
@@ -47,45 +53,52 @@ export class NarrativeSocket {
       
       switch (type) {
         case "UPDATE_DISPLAY":
+          if (!sender.isGM || !data || typeof data !== "object" || Array.isArray(data)) {
+            NarrativeLogger.warn("Ignoring invalid display update", { senderId, isGM: sender.isGM });
+            return;
+          }
           manager.handleDisplayUpdate(data, true);
           break;
 
         case "HANDOUT_IMAGE_LAYOUT":
+          if (!sender.isGM || !data || typeof data !== "object" || !Array.isArray(data.layout)) {
+            NarrativeLogger.warn("Ignoring invalid handout image layout", { senderId, isGM: sender.isGM });
+            return;
+          }
           manager.handleHandoutImageLayout(data.layout, data.isFinal, true);
           break;
           
         case "REQUEST_STATE":
-          // Only the GM should respond to a state request from a newly logged-in user
-          if (game.user.isGM) {
-            manager.sendCurrentStateToUser(userId);
+          if (game.user.isGM && !sender.isGM) {
+            manager.sendCurrentStateToUser(senderId);
           }
           break;
           
         case "SYNC_STATE":
-          // A player receives the direct sync packet from the GM
-          if (game.user.id === userId) {
+          if (sender.isGM && game.user.id === userId && data && typeof data === "object" && !Array.isArray(data)) {
             NarrativeLogger.info("Applying direct Canvas state sync", { targetUserId: userId });
             manager.handleDisplayUpdate(data, true);
           } else {
-            NarrativeLogger.trace("Ignoring Canvas state sync for another user", {
+            NarrativeLogger.warn("Ignoring unauthorized Canvas state sync", {
+              senderId,
               targetUserId: userId
             });
           }
           break;
 
         case "REOPEN_PLAYER_CANVAS":
-          if (game.users.get(userId)?.isGM) {
-            NarrativeLogger.info("Reopening player Canvas after GM request", { gmUserId: userId });
+          if (sender.isGM) {
+            NarrativeLogger.info("Reopening player Canvas after GM request", { gmUserId: senderId });
             manager.reopenPlayerCanvas();
           } else {
             NarrativeLogger.warn("Ignoring player Canvas reopen request from a non-GM", {
-              senderUserId: userId
+              senderUserId: senderId
             });
           }
           break;
 
         default:
-          NarrativeLogger.debug("Ignoring unhandled socket event", { type, senderOrTargetId: userId });
+          NarrativeLogger.debug("Ignoring unhandled socket event", { type, senderOrTargetId: senderId });
       }
     });
   }

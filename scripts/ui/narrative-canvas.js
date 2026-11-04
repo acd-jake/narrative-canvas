@@ -67,12 +67,11 @@ export class NarrativeCanvas {
           async: true
         })
       : "";
+    const safeBackgroundDescription = foundry.utils.cleanHTML(enrichedBackgroundDescription);
     const handoutImageOverlays = await Promise.all((state.handoutImageOverlays || []).map(async overlay => {
       const description = overlay.showDescription === true ? overlay.description : "";
-      return {
-        ...overlay,
-        description: description
-          ? await foundry.applications.ux.TextEditor.implementation.enrichHTML(description, {
+      const enrichedDescription = description
+        ? await foundry.applications.ux.TextEditor.implementation.enrichHTML(description, {
           secrets: game.user.isGM,
           documents: true,
           links: true,
@@ -80,7 +79,10 @@ export class NarrativeCanvas {
           embeds: true,
           async: true
         })
-          : ""
+        : "";
+      return {
+        ...overlay,
+        description: foundry.utils.cleanHTML(enrichedDescription)
       };
     }));
     if (renderRequestId !== this._renderRequestId) return;
@@ -90,7 +92,7 @@ export class NarrativeCanvas {
       background: effectiveBackground,
       selectedBackground: state.background || "",
       selectedHandoutImage: state.handoutImage || "",
-      backgroundDescription: enrichedBackgroundDescription,
+      backgroundDescription: safeBackgroundDescription,
       handoutImageOverlays,
       activeActors,
       hasActiveSpeaker: Boolean(state.activeSpeakerId),
@@ -308,7 +310,7 @@ export class NarrativeCanvas {
   async #updateBackgroundDescription(description, duration) {
     const transitionId = ++this._backgroundDescriptionTransitionId;
     let caption = this.stageElement.querySelector(".narrative-background-description");
-    const nextDescription = description || "";
+    const nextDescription = foundry.utils.cleanHTML(description || "");
 
     if (!description) {
       if (!caption) return;

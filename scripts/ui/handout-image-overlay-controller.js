@@ -81,7 +81,7 @@ export class HandoutImageOverlayController {
         overlay.querySelector(".narrative-scene-handout-image-frame").appendChild(description);
       }
       if (description) {
-        description.innerHTML = data.description || "";
+        description.innerHTML = foundry.utils.cleanHTML(data.description || "");
         description.hidden = !data.description;
       }
       if (!isNewOverlay && this.isAnimatingOpacity(overlay)) {
@@ -174,7 +174,7 @@ export class HandoutImageOverlayController {
 
     const description = document.createElement("div");
     description.className = "narrative-scene-handout-image-description";
-    description.innerHTML = data.description || "";
+    description.innerHTML = foundry.utils.cleanHTML(data.description || "");
     description.hidden = !data.description;
     frame.append(image, description);
 
