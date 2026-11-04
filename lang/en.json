@@ -168,6 +168,7 @@
   "NARRATIVE_CANVAS.Dialogue.Toggle": "Toggle dialogue system",
   "NARRATIVE_CANVAS.Dialogue.Speaker": "Speaking actor",
   "NARRATIVE_CANVAS.Dialogue.Narrator": "Narrator",
+  "NARRATIVE_CANVAS.Dialogue.UseSelection": "Use selection as dialogue line",
   "NARRATIVE_CANVAS.Dialogue.Voice": "Read the text aloud with the actor's voice",
   "NARRATIVE_CANVAS.Dialogue.Language": "Language",
   "NARRATIVE_CANVAS.Dialogue.TextPlaceholder": "Enter dialogue line…",

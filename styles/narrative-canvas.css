@@ -2578,6 +2578,47 @@ body.acd-nc-active {
     animation: nc-speaker-glow-pulse 1.8s ease-in-out infinite;
 }
 
+.acd-nc .journal-page-body,
+.acd-nc .journal-page-body * {
+    -webkit-user-select: text !important;
+    user-select: text !important;
+}
+
+.acd-nc .journal-page-body {
+    cursor: text;
+}
+
+.nc-selection-menu {
+    position: fixed;
+    z-index: 100000;
+    min-width: 200px;
+    padding: 4px;
+    background: rgba(22, 22, 26, 0.98);
+    border: 1px solid #444;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+}
+
+.nc-selection-menu button {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: #e0e0e0;
+    cursor: pointer;
+    text-align: left;
+}
+
+.nc-selection-menu button:hover,
+.nc-selection-menu button:focus-visible {
+    background: rgba(122, 104, 66, 0.55);
+    color: #fff;
+}
+
 @keyframes nc-speaker-glow-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.65; }

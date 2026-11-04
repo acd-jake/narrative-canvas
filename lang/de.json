@@ -168,6 +168,7 @@
   "NARRATIVE_CANVAS.Dialogue.Toggle": "Dialogsystem ein-/ausschalten",
   "NARRATIVE_CANVAS.Dialogue.Speaker": "Sprechender Akteur",
   "NARRATIVE_CANVAS.Dialogue.Narrator": "Erzähler",
+  "NARRATIVE_CANVAS.Dialogue.UseSelection": "Auswahl in Dialogzeile übernehmen",
   "NARRATIVE_CANVAS.Dialogue.Voice": "Text mit der Stimme des Akteurs vorlesen",
   "NARRATIVE_CANVAS.Dialogue.Language": "Sprache",
   "NARRATIVE_CANVAS.Dialogue.TextPlaceholder": "Dialogzeile eingeben …",

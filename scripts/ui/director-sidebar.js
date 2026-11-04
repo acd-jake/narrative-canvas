@@ -4,6 +4,7 @@ import { NarrativeSettings } from "../services/settings.js";
 import { ResizableSectionController } from "./resizable-section-controller.js";
 import { ResizablePanelController } from "./resizable-panel-controller.js";
 import { JournalViewerFontSizeController } from "./journal-viewer-font-size-controller.js";
+import { JournalSelectionMenu } from "./journal-selection-menu.js";
 import { NarrativeLogger } from "../services/logger.js";
 import { stopOtherSceneAudio } from "../services/scene-audio-exclusivity.js";
 
@@ -42,6 +43,7 @@ export class DirectorSidebar {
   #panelWidth = 350;
   #panelResizeController = null;
   #journalViewerFontSizeController = new JournalViewerFontSizeController();
+  #journalSelectionMenu = null;
   #layoutStateSaveTimeout = null;
   #layoutState = null;
   #playlistSoundHook = null;
@@ -56,9 +58,13 @@ export class DirectorSidebar {
    * @param {(volume: number) => void} [options.onVolumeChange]
    * @param {(image: {src: string, title: string}) => void} [options.onJournalImageShow]
    */
-  constructor({ audioMixer, onSceneSelect, onJournalSelect, onVolumeChange, onJournalImageShow }) {
+  constructor({ audioMixer, onSceneSelect, onJournalSelect, onVolumeChange, onJournalImageShow, onDialogueTextSelect, isDialogueEnabled }) {
     this.#audioMixer = audioMixer;
     this.#callbacks = { onSceneSelect, onJournalSelect, onVolumeChange, onJournalImageShow };
+    this.#journalSelectionMenu = new JournalSelectionMenu({
+      isEnabled: () => isDialogueEnabled?.() === true,
+      onUseText: text => onDialogueTextSelect?.(text)
+    });
     this.#layoutState = NarrativeSettings.getDirectorLayoutState() || {};
     const savedPanelWidthRatio = this.#layoutState.panelWidthRatios.sidebar;
     if (savedPanelWidthRatio) this.#panelWidth = savedPanelWidthRatio * window.innerWidth;
@@ -95,6 +101,7 @@ export class DirectorSidebar {
       });
     }
     this.#audioControlsRoot = null;
+    this.#journalSelectionMenu?.close();
     this.#element = null;
   }
 
@@ -184,6 +191,7 @@ export class DirectorSidebar {
     this.#destroyPanelResizeController();
     this.#element = newElement;
     this.#journalViewerFontSizeController.mount(this.#element);
+    this.#journalSelectionMenu?.mount(this.#element);
     this.#bindListeners(this.#element);
     this.#updateCollapseState();
     this.#applySceneFilters();

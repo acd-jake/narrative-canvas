@@ -19,6 +19,7 @@ export class NarrativeDirector extends NarrativeCanvas {
     this.imageControls = new DirectorImageControls();
     this.automaticPlaylist = null;
     this.automaticPlaylistSound = null;
+    this.dialogueEnabled = false;
     this.audioMixer = new PlaylistAudioMixer({ globalVolume: 0.5 });
     this.toolbar = new DirectorCanvasToolbar({
       onVisibilityChange: (visible) => this.callbacks.onVisibilityChange(visible),
@@ -38,7 +39,9 @@ export class NarrativeDirector extends NarrativeCanvas {
       },
       onJournalSelect: (journalId) => this.callbacks.onJournalSelect?.(journalId),
       onJournalImageShow: (image) => this.callbacks.onJournalImageShow?.(image),
-      onVolumeChange: (volume) => this.callbacks.onVolumeChange?.(volume)
+      onVolumeChange: (volume) => this.callbacks.onVolumeChange?.(volume),
+      isDialogueEnabled: () => this.dialogueEnabled,
+      onDialogueTextSelect: text => this.carousel.insertDialogueText(text)
     });
     this.carousel = new DirectorActorCarousel({
       onActorStageToggle: (actorId) => this.callbacks.onActorStageToggle?.(actorId),
@@ -142,6 +145,7 @@ export class NarrativeDirector extends NarrativeCanvas {
 
   /** @override */
   async _onPrepareElements(stageElement, context) {
+    this.dialogueEnabled = context.dialogueSystemEnabled === true;
     this.audioMixer.setSceneTracks(context.currentSceneData?.tracks ?? []);
     await this.setAudioMuted(Boolean(context.audioMuted));
     const uiLayer = document.createElement("div");
@@ -172,6 +176,7 @@ export class NarrativeDirector extends NarrativeCanvas {
 
   /** @override */
   async _onUpdateElements(context) {
+    this.dialogueEnabled = context.dialogueSystemEnabled === true;
     this.audioMixer.setSceneTracks(context.currentSceneData?.tracks ?? []);
     await this.setAudioMuted(Boolean(context.audioMuted));
     this.sidebar?.update(context);
