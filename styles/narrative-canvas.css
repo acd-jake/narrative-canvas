@@ -502,7 +502,7 @@ body.acd-nc-active {
         bottom: 0;
         left: 0;
         z-index: 2;
-        padding: 10px 18px;
+        padding: 6px 11px;
         border-style: solid;
         border-color: transparent;
         border-width: var(--nc-theme-actor-name-frame-width, 0);
@@ -513,7 +513,7 @@ body.acd-nc-active {
         background: var(--nc-theme-actor-name-background, rgba(16, 16, 20, 0.88));
         color: var(--nc-theme-actor-name-color, #f0f0f3);
         font-family: var(--nc-theme-actor-name-font-family, "Signika", sans-serif);
-        font-size: var(--nc-theme-actor-name-font-size, 1.05rem);
+        font-size: calc(var(--nc-theme-actor-name-font-size, 1.05rem) * 0.6);
         font-style: var(--nc-theme-actor-name-font-style, normal);
         font-weight: var(--nc-theme-actor-name-font-weight, normal);
         letter-spacing: var(--nc-theme-actor-name-letter-spacing, normal);
@@ -985,6 +985,11 @@ body.acd-nc-active {
     bottom: calc(160px + var(--nc-dialogue-carousel-raise) + var(--nc-dialogue-line-space));
 }
 
+.acd-nc.has-dialogue-system .narrative-dialogue-line.is-narration {
+    top: 50%;
+    bottom: auto;
+}
+
     .narrative-director-ui-layer .narrative-director-actors-bar.has-dialogue-controls {
         bottom: 0;
         transform: none;
@@ -1141,6 +1146,24 @@ body.acd-nc-active {
                 align-items: center;
                 gap: 4px;
                 color: #c8c8c8;
+            }
+
+            .dialogue-voice-toggle {
+                flex: 0 0 34px;
+                height: 30px;
+                padding: 0;
+                justify-content: center;
+                border: 1px solid #444;
+                border-radius: 4px;
+                background: rgba(255, 255, 255, 0.05);
+                color: #aaa;
+                cursor: pointer;
+
+                &.is-active {
+                    border-color: #e0b84c;
+                    background: #38342a;
+                    color: #fff;
+                }
             }
 
             .dialogue-speed-slider {

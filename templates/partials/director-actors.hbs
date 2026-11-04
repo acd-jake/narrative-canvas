@@ -60,10 +60,9 @@
             {{/each}}
         </select>
         {{#if hasTalkingActors}}
-            <label class="dialogue-voice-toggle" title="{{localize 'NARRATIVE_CANVAS.Dialogue.Voice'}}">
-                <input type="checkbox" class="dialogue-voice" {{#if dialogueVoice}}checked{{/if}} aria-label="{{localize 'NARRATIVE_CANVAS.Dialogue.Voice'}}" />
+            <button type="button" class="dialogue-voice-toggle {{#if dialogueVoice}}is-active{{/if}}" aria-pressed="{{#if dialogueVoice}}true{{else}}false{{/if}}" title="{{localize 'NARRATIVE_CANVAS.Dialogue.Voice'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Dialogue.Voice'}}">
                 <i class="fas fa-microphone" aria-hidden="true"></i>
-            </label>
+            </button>
         {{/if}}
         {{#if dialogueLanguages}}
             <select class="dialogue-language" title="{{localize 'NARRATIVE_CANVAS.Dialogue.Language'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Dialogue.Language'}}">

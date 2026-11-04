@@ -47,7 +47,7 @@ export class ResizablePanelController {
     handle.tabIndex = 0;
     if (initialOverflowOffset !== 0) this.#onOverflow(initialOverflowOffset);
     if (initialWidth !== null) {
-      this.#resizeTo(initialWidth);
+      this.#resizeTo(initialWidth, { expandIfCollapsed: false });
       if (initialWidth < this.#minWidth && !this.#getIsCollapsed()) this.#onToggle();
     } else {
       const currentWidth = panel.getBoundingClientRect().width;
@@ -134,7 +134,7 @@ export class ResizablePanelController {
     if (requestedWidth < this.#minWidth && !this.#getIsCollapsed()) this.#onToggle();
   };
 
-  #resizeTo(requestedWidth) {
+  #resizeTo(requestedWidth, { expandIfCollapsed = true } = {}) {
     if (requestedWidth < this.#minWidth) {
       const minimumWidth = this.#getMinimumWidth();
       const overflowOffset = this.#edge === "right"
@@ -145,7 +145,7 @@ export class ResizablePanelController {
       return;
     }
 
-    if (this.#getIsCollapsed()) this.#onToggle();
+    if (expandIfCollapsed && this.#getIsCollapsed()) this.#onToggle();
     const minWidth = this.#getMinimumWidth();
     const maxWidth = Math.max(minWidth, this.#getMaxWidth());
     const nextWidth = Math.max(minWidth, Math.min(maxWidth, requestedWidth));

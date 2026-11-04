@@ -232,28 +232,32 @@ export class DirectorActorCarousel {
     this.#syncDialogueSpeaker(sceneActors.map(actor => ({ id: actor.id })), activeSpeakerId);
     const select = form.querySelector(".dialogue-speaker");
     if (select && select.value !== this.#dialogueSpeakerId) select.value = this.#dialogueSpeakerId;
-    if (enabled) this.#layoutDialogueControls();
-    else {
-      this.#element.style.left = "";
-      this.#element.style.width = "";
-    }
+    this.#layoutDialogueControls();
   }
 
-  /** Spans the carousel (with its dialogue row) exactly between the left and right panels. */
+  /** Keeps the carousel inside the gap between the panels; in dialogue mode it fills that gap. */
   #layoutDialogueControls() {
     const bar = this.#element;
     const form = bar?.querySelector(".director-dialogue-controls");
     const layer = bar?.closest(".narrative-director-ui-layer");
-    if (!form || !layer || form.hidden) return;
+    if (!form || !layer) return;
 
+    const inset = 25;
     const layerRect = layer.getBoundingClientRect();
     const leftPanel = layer.querySelector(".narrative-director-sidebar");
     const rightPanel = layer.querySelector(".narrative-director-image-controls");
-    const left = Math.max(layerRect.left, leftPanel?.getBoundingClientRect().right ?? layerRect.left);
-    const right = Math.min(layerRect.right, rightPanel?.getBoundingClientRect().left ?? layerRect.right);
+    const left = Math.max(layerRect.left, leftPanel?.getBoundingClientRect().right ?? layerRect.left) + inset;
+    const right = Math.min(layerRect.right, rightPanel?.getBoundingClientRect().left ?? layerRect.right) - inset;
+    const available = Math.max(0, right - left);
 
-    bar.style.left = `${left - layerRect.left}px`;
-    bar.style.width = `${Math.max(0, right - left)}px`;
+    bar.style.maxWidth = `${available}px`;
+    if (form.hidden) {
+      bar.style.left = `${(left + right) / 2 - layerRect.left}px`;
+      bar.style.width = "";
+    } else {
+      bar.style.left = `${left - layerRect.left}px`;
+      bar.style.width = `${available}px`;
+    }
   }
 
   #startLayoutTracking() {
@@ -301,8 +305,12 @@ export class DirectorActorCarousel {
     });
 
     // The voice toggle only selects the mode; speech starts when a line is sent.
-    form.querySelector(".dialogue-voice")?.addEventListener("change", event => {
-      this.#dialogueVoice = event.target.checked;
+    form.querySelector(".dialogue-voice-toggle")?.addEventListener("click", event => {
+      event.preventDefault();
+      this.#dialogueVoice = !this.#dialogueVoice;
+      const button = event.currentTarget;
+      button.classList.toggle("is-active", this.#dialogueVoice);
+      button.setAttribute("aria-pressed", String(this.#dialogueVoice));
     });
 
     form.querySelector(".dialogue-language")?.addEventListener("change", event => {
