@@ -1215,7 +1215,7 @@ export class DirectorSidebar {
     application.bringToTop?.();
     const canvas = document.getElementById("narrative-canvas-director")
       ?? document.getElementById("narrative-player-display");
-    const canvasZIndex = Number.parseInt(canvas ? getComputedStyle(canvas).zIndex : "10000", 10) || 10000;
+    const canvasZIndex = Number.parseInt(canvas ? getComputedStyle(canvas).zIndex : "900", 10) || 900;
     windowElement.style.setProperty("z-index", String(canvasZIndex + 1), "important");
   }
 

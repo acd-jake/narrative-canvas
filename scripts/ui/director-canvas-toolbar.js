@@ -1,4 +1,5 @@
 import { ThemeCatalog } from "../services/themes/theme-catalog.js";
+import { NarrativeSettings } from "../services/settings.js";
 
 /**
  * Owns the director's canvas-level visibility and playback actions.
@@ -77,7 +78,24 @@ export class DirectorCanvasToolbar {
       { id: "", label: "NARRATIVE_CANVAS.Director.ThemeModuleDefault" },
       ...ThemeCatalog.getEntries()
     ].map(({ id, label }) => ({ id, label: game.i18n.localize(label), selected: id === selectedId }));
-    return { ...context, themeOptions };
+    return {
+      ...context,
+      themeOptions,
+      characterSheetsFeature: NarrativeSettings.isCharacterSheetFeatureEnabled(),
+      characterSheetsReleased: NarrativeSettings.areCharacterSheetsReleased()
+    };
+  }
+
+  async #toggleCharacterSheets(button) {
+    const released = !NarrativeSettings.areCharacterSheetsReleased();
+    await game.settings.set("narrative-canvas", NarrativeSettings.SETTING_CHARACTER_SHEETS_RELEASED, released);
+    button.classList.toggle("is-active", released);
+    button.setAttribute("aria-pressed", String(released));
+    const label = game.i18n.localize(released
+      ? "NARRATIVE_CANVAS.Director.DisableCharacterSheets"
+      : "NARRATIVE_CANVAS.Director.EnableCharacterSheets");
+    button.title = label;
+    button.setAttribute("aria-label", label);
   }
 
   async #handleClick(event) {
@@ -109,6 +127,9 @@ export class DirectorCanvasToolbar {
         break;
       case "toggle-dialogue":
         this.#callbacks.onDialogueToggle?.();
+        break;
+      case "toggle-character-sheets":
+        await this.#toggleCharacterSheets(button);
         break;
       case "select-theme":
         this.#callbacks.onThemeSelect(button.dataset.themeId);

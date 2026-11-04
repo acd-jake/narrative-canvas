@@ -26,6 +26,11 @@
     <button type="button" class="{{#if dialogueSystemEnabled}}is-active{{/if}}" data-canvas-action="toggle-dialogue" aria-pressed="{{#if dialogueSystemEnabled}}true{{else}}false{{/if}}" title="{{localize 'NARRATIVE_CANVAS.Dialogue.Toggle'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Dialogue.Toggle'}}">
         <i class="fas fa-comments" aria-hidden="true"></i>
     </button>
+    {{#if characterSheetsFeature}}
+    <button type="button" class="{{#if characterSheetsReleased}}is-active{{/if}}" data-canvas-action="toggle-character-sheets" aria-pressed="{{#if characterSheetsReleased}}true{{else}}false{{/if}}" title="{{#if characterSheetsReleased}}{{localize 'NARRATIVE_CANVAS.Director.DisableCharacterSheets'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.EnableCharacterSheets'}}{{/if}}" aria-label="{{#if characterSheetsReleased}}{{localize 'NARRATIVE_CANVAS.Director.DisableCharacterSheets'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.EnableCharacterSheets'}}{{/if}}">
+        <i class="fas fa-id-card" aria-hidden="true"></i>
+    </button>
+    {{/if}}
     <div class="toolbar-theme-menu">
         <button type="button" aria-haspopup="true" title="{{localize 'NARRATIVE_CANVAS.Labels.SelectTheme'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Labels.SelectTheme'}}">
             <i class="fas fa-palette" aria-hidden="true"></i>

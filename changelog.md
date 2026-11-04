@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-11-04
+
+### Added
+
+- Roll toasts: while the canvas is shown, rolls of actors appear as a chat card in the bottom right corner for 8 seconds (paused while hovered). Visibility follows the roll mode, and with Dice So Nice the card appears once the dice have settled.
+- Module setting **Offer Character Sheets** to enable or disable the character sheet dock altogether.
+- Director toolbar button for the GM to block or release character sheets for players during play. Blocking closes the sheets that players opened on the canvas on all clients; the GM can always show character sheets.
+- System adapters (`scripts/systems/`) that gather game-system specific behavior in one place, with adapters for Pathfinder 2e and Call of Cthulhu 7e. A new system needs only a new adapter class.
+
+### Changed
+
+- The canvas, its overlays and the dock now use z-indexes below 1000, so the Dice So Nice canvas is shown above them.
+- Journal read-aloud classes are provided by the system adapters.
+
+### Fixed
+
+- Character sheets of ApplicationV1 systems (Pathfinder 2e) no longer fail to open on the canvas and are shown above it.
+- The roll modifiers dialog of Pathfinder 2e is shown above the canvas and character sheets.
+- The token dock no longer appears by itself after character sheets are released.
+
 ## [0.10.0] - 2026-11-04
 
 ### Added

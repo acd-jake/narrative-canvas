@@ -19,7 +19,7 @@ body.acd-nc-active {
     left: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
-    z-index: 10000 !important;
+    z-index: 900 !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
@@ -2757,7 +2757,7 @@ body.acd-nc-active {
     .filepicker,
     .window-app.filepicker,
     .window-app.browse {
-        z-index: 10005 !important; /* Stacked securely in front of our z-index 10000 canvas overlay */
+        z-index: 905 !important; /* Stacked securely in front of our z-index 900 canvas overlay */
     }
 }
 
@@ -3486,8 +3486,12 @@ body.acd-nc-active {
     bottom: 0;
     width: 33.333vw;
     height: 100px;
-    z-index: 10002;
+    z-index: 902;
     pointer-events: auto;
+}
+
+.nc-char-dock-zone[hidden] {
+    display: none;
 }
 
 .nc-char-dock {
@@ -3538,5 +3542,46 @@ body.acd-nc-active {
 }
 
 body.acd-nc-active .nc-char-sheet {
-    z-index: 10006 !important;
+    z-index: 906 !important;
+}
+
+/* Dialogs of the game system (e.g. roll modifiers) must stay above sheets and toasts. */
+body.acd-nc-active .nc-raised-window {
+    z-index: 908 !important;
+}
+
+/* Keep the Dice So Nice canvas above the overlay, sheets and roll toasts. */
+body.acd-nc-active #dice-box-canvas {
+    z-index: 1000 !important;
+    pointer-events: none !important;
+}
+
+.nc-roll-toasts {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 907;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 320px;
+    max-height: calc(100vh - 32px);
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.nc-roll-toast {
+    flex: none;
+    pointer-events: all;
+    animation: nc-roll-toast-in 250ms ease-out;
+    transition: opacity 400ms ease;
+
+    &.is-leaving {
+        opacity: 0;
+    }
+}
+
+@keyframes nc-roll-toast-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
 }

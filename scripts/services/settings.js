@@ -1,5 +1,6 @@
 import { JournalBrowser } from "./journal-browser.js";
 import { ThemeCatalog } from "./themes/theme-catalog.js";
+import { SystemAdapters } from "../systems/system-registry.js";
 
 /**
  * Handles module configurations and permissions.
@@ -13,6 +14,9 @@ export class NarrativeSettings {
   static SETTING_ACTOR_IMAGE_HEIGHT = "actorImageHeight";
   static SETTING_THEME = "theme";
   static SETTING_TOASTS = "enableToastNotifications";
+  static SETTING_CHARACTER_SHEETS = "enableCharacterSheets";
+  static SETTING_CHARACTER_SHEETS_RELEASED = "characterSheetsReleased";
+  static CHARACTER_SHEETS_CHANGED_HOOK = "narrativeCanvas.characterSheetsChanged";
   static SETTING_FADE_DURATION = "fadeDuration";
   static SETTING_LOG_LEVEL = "logLevel";
   static SETTING_SCENES_DATA = "configuredScenesDataset";
@@ -25,7 +29,6 @@ export class NarrativeSettings {
   static SETTING_SPOKEN_TO_CHAT = "spokenDialogueToChat";
   static SETTING_READ_ALOUD_PRESET = "readAloudPreset";
   static SETTING_READ_ALOUD_CUSTOM_CLASS = "readAloudCustomClass";
-  static READ_ALOUD_CLASSES = { coc7: "keeper-read-aloud", pf2e: "narrative" };
   static SETTING_DIALOGUE_SPEED = "dialogueSpeedMultiplier";
   static SETTING_DIALOGUE_REVEAL_MODE = "dialogueRevealMode";
   static SETTING_NARRATION_REVEAL_MODE = "narrationRevealMode";
@@ -137,6 +140,25 @@ export class NarrativeSettings {
       config: true,
       type: Boolean,
       default: true
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_CHARACTER_SHEETS, {
+      name: "NARRATIVE_CANVAS.Settings.CharacterSheetsLabel",
+      hint: "NARRATIVE_CANVAS.Settings.CharacterSheetsHint",
+      scope: "world",
+      config: true,
+      type: Boolean,
+      default: true,
+      onChange: () => Hooks.callAll(this.CHARACTER_SHEETS_CHANGED_HOOK)
+    });
+
+    // Runtime switch controlled by the GM toolbar button.
+    game.settings.register("narrative-canvas", this.SETTING_CHARACTER_SHEETS_RELEASED, {
+      scope: "world",
+      config: false,
+      type: Boolean,
+      default: true,
+      onChange: () => Hooks.callAll(this.CHARACTER_SHEETS_CHANGED_HOOK)
     });
 
     game.settings.register("narrative-canvas", this.SETTING_FADE_DURATION, {
@@ -417,7 +439,7 @@ export class NarrativeSettings {
     const preset = game.settings.get("narrative-canvas", this.SETTING_READ_ALOUD_PRESET);
     const raw = preset === "custom"
       ? game.settings.get("narrative-canvas", this.SETTING_READ_ALOUD_CUSTOM_CLASS)
-      : this.READ_ALOUD_CLASSES[preset === "auto" ? game.system.id.toLowerCase() : preset];
+      : SystemAdapters.get(preset === "auto" ? game.system.id : preset).readAloudClass;
     const name = String(raw ?? "").trim().replace(/^\./, "");
     return /^[\w-]+$/.test(name) ? name : "";
   }
@@ -510,6 +532,19 @@ export class NarrativeSettings {
 
   static areToastsEnabled() {
     return game.settings.get("narrative-canvas", this.SETTING_TOASTS);
+  }
+
+  static isCharacterSheetFeatureEnabled() {
+    return game.settings.get("narrative-canvas", this.SETTING_CHARACTER_SHEETS);
+  }
+
+  static areCharacterSheetsReleased() {
+    return game.settings.get("narrative-canvas", this.SETTING_CHARACTER_SHEETS_RELEASED);
+  }
+
+  /** The GM is never affected by the release switch. */
+  static areCharacterSheetsAvailable() {
+    return this.isCharacterSheetFeatureEnabled() && (game.user.isGM || this.areCharacterSheetsReleased());
   }
 
   static getFadeDuration() {

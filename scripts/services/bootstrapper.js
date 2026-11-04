@@ -3,6 +3,7 @@ import { NarrativeSettings } from "./settings.js";
 import { NarrativeControls } from "./controls.js";
 import { NarrativeManager } from "./manager.js";
 import { NarrativeSettingsLayout } from "./settings-layout.js";
+import { SystemAdapters } from "../systems/system-registry.js";
 
 /**
  * Handles the low-level Foundry VTT hook lifecycle and module bootstrapping.
@@ -22,6 +23,7 @@ export class NarrativeBootstrapper {
     });
 
     Hooks.once("ready", () => {
+      SystemAdapters.registerHooks();
       const manager = game.modules.get("narrative-canvas").manager;
       if (manager) {
         if (game.user.isGM) {

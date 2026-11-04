@@ -1,3 +1,6 @@
+import { NarrativeSettings } from "../services/settings.js";
+import { SystemAdapters } from "../systems/system-registry.js";
+
 const HIDE_DELAY_MS = 2000;
 const SHEET_CLASS = "nc-char-sheet";
 
@@ -29,16 +32,38 @@ export class CharacterSheetDock {
     });
     document.body.appendChild(this.element);
 
+    this._hookIds.push([
+      NarrativeSettings.CHARACTER_SHEETS_CHANGED_HOOK,
+      Hooks.on(NarrativeSettings.CHARACTER_SHEETS_CHANGED_HOOK, () => this._applyAvailability())
+    ]);
+    this._applyAvailability();
+
     const onClose = app => {
-      if (app?.document?.id && app.document.id === this._openActorId) this._onSheetClosed();
+      if (this._isOpenSheet(app)) this._onSheetClosed();
     };
     for (const hook of ["closeApplicationV2", "closeApplication"]) {
       this._hookIds.push([hook, Hooks.on(hook, onClose)]);
     }
+
+    // ApplicationV1 replaces its window element on every re-render and render() is not awaitable, so watch the DOM.
+    this._sheetObserver = new MutationObserver(() => this._styleOpenSheet());
+    this._sheetObserver.observe(document.body, { childList: true });
+  }
+
+  _styleOpenSheet() {
+    const sheet = this._openActorId && game.actors.get(this._openActorId)?.sheet;
+    const element = sheet && this._elementOf(sheet);
+    if (!element?.isConnected || element.classList.contains(SHEET_CLASS)) return;
+    element.classList.add(SHEET_CLASS);
+    if (this._sheetPositioned) return;
+    this._sheetPositioned = true;
+    this._centerSheet(sheet);
   }
 
   destroy() {
     clearTimeout(this._hideTimer);
+    this._sheetObserver?.disconnect();
+    this._sheetObserver = null;
     for (const [hook, id] of this._hookIds) Hooks.off(hook, id);
     this._hookIds = [];
     if (this._openActorId) game.actors.get(this._openActorId)?.sheet?.close();
@@ -46,6 +71,17 @@ export class CharacterSheetDock {
     this._pointerInside = false;
     this.element?.remove();
     this.element = null;
+  }
+
+  _applyAvailability() {
+    if (!this.element) return;
+    const available = NarrativeSettings.areCharacterSheetsAvailable();
+    this.element.hidden = !available;
+    // Reset the hover state on every change so the tokens never show up by themselves.
+    clearTimeout(this._hideTimer);
+    this._pointerInside = false;
+    this.element.classList.remove("is-visible");
+    if (!available && this._openActorId) game.actors.get(this._openActorId)?.sheet?.close();
   }
 
   _getActors() {
@@ -91,6 +127,7 @@ export class CharacterSheetDock {
   }
 
   async _toggleSheet(actor) {
+    if (!NarrativeSettings.areCharacterSheetsAvailable()) return;
     if (this._openActorId === actor.id) {
       await actor.sheet.close();
       return;
@@ -101,13 +138,22 @@ export class CharacterSheetDock {
       await game.actors.get(previousId)?.sheet?.close();
     }
     this._openActorId = actor.id;
+    this._sheetPositioned = false;
     this._updateHighlight();
     await actor.sheet.render({ force: true });
-    this._centerSheet(actor.sheet);
+    this._styleOpenSheet();
+  }
+
+  _isOpenSheet(app) {
+    return !!this._openActorId && app === game.actors.get(this._openActorId)?.sheet;
+  }
+
+  _elementOf(sheet) {
+    return SystemAdapters.current().getWindowElement(sheet);
   }
 
   _centerSheet(sheet) {
-    const element = sheet.element;
+    const element = this._elementOf(sheet);
     if (!element) return;
     element.classList.add(SHEET_CLASS);
     const width = element.offsetWidth;

@@ -412,7 +412,7 @@ export class VisualNovelStage {
       width: `${rect.width}px`,
       height: `${rect.height}px`,
       maxWidth: "none",
-      zIndex: "10001",
+      zIndex: "901",
       opacity: "0.85",
       pointerEvents: "none",
       transform: "scale(0.96)",

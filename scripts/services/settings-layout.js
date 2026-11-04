@@ -6,6 +6,7 @@ const SECTIONS = [
     keys: [
       NarrativeSettings.SETTING_PERMISSION,
       NarrativeSettings.SETTING_TOASTS,
+      NarrativeSettings.SETTING_CHARACTER_SHEETS,
       NarrativeSettings.SETTING_LOG_LEVEL
     ]
   },
