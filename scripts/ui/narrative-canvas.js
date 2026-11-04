@@ -4,6 +4,7 @@ import { StageBackgroundController } from "./stage-background.js";
 import { VisualNovelStage } from "./visual-novel-stage.js";
 import { DialogueLineController } from "./dialogue-line.js";
 import { HandoutImageOverlayController } from "./handout-image-overlay-controller.js";
+import { CharacterSheetDock } from "./character-sheet-dock.js";
 
 /**
  * Abstract base class for raw DOM injection overlays, completely detached 
@@ -27,6 +28,7 @@ export class NarrativeCanvas {
     this._renderRequestId = 0;
     this._opacityAnimations = new WeakMap();
     this._backgroundDescriptionTransitionId = 0;
+    this.characterDock = new CharacterSheetDock();
     this.bgController = new StageBackgroundController();
     this.vnStageController = new VisualNovelStage({
       onActorOrderChange: actorIds => this._onActorOrderChange(actorIds)
@@ -150,6 +152,7 @@ export class NarrativeCanvas {
     document.body.appendChild(newStage);
     this.stageElement = newStage;
     this.handoutImageOverlayController.mount(newStage, context.fadeDuration);
+    this.characterDock.mount();
     this._recordContext(context);
     document.body.style.setProperty("--nc-fade-duration", `${context.fadeDuration}ms`);
     document.body.classList.add("acd-nc-active");
@@ -459,6 +462,7 @@ export class NarrativeCanvas {
     const closingStage = this.stageElement;
     this._backgroundDescriptionTransitionId++;
     this.handoutImageOverlayController.destroy();
+    this.characterDock.destroy();
     if (closingStage?.isConnected) {
       await this._animateElementOpacity(closingStage, 0, NarrativeSettings.getFadeDuration());
     }
