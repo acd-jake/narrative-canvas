@@ -25,7 +25,11 @@ Narrative Canvas adds a Theatre of the Mind presentation stage to Foundry Virtua
 - Multiple handout image overlays that the GM can move, resize, and close independently.
 - Selectable themes (Fantasy, Dark Fantasy, Science Fiction, Noir, Cyberpunk, Cosmic Horror, Western, Art Deco) for subtitles, handout images, and actors. Set the default in the module settings or switch temporarily from the Director toolbar. Additional themes are added as directories under `themes/` with a `theme.json` and their images, registered in `module.json`.
 - Journal browsing and the ability to show journal images on the presentation stage.
-- A dialogue system for the Visual Novel overlay: the GM sends dialogue and narrator lines that fade in on the stage. Optional integrations read lines aloud with Talking Actors and select a language with Polyglot. Text selections and read-aloud sections of journals can be sent to the dialogue input.
+- A dialogue system for the Visual Novel overlay, toggled from the Director toolbar. The GM picks the speaker (or the narrator when no actor is the active speaker) and sends lines that appear in the theme's subtitle look: actor lines fade in character by character with the speaker's name on the top edge, narrator lines fade in paragraph by paragraph without a name. Long text is height-limited and scrolls automatically. A click on a line fades it out early for everyone.
+- Dialogue speed is adjustable and saved per user. The active speaker is shown larger and their highlight pulses while a line is displayed.
+- Optional **Talking Actors** integration reads lines aloud (`/talk`, or `/narrate` for the narrator) while the canvas is released to the players; the Live badge shows whether lines would currently be read aloud, and a setting controls whether they also appear in the chat.
+- Optional **Polyglot** integration to pick the language of a line; players who do not know it see scrambled text.
+- Text selections and read-aloud sections of journals (for example `keeper-read-aloud` in Call of Cthulhu 7e or `narrative` in Pathfinder 2e; configurable in the module settings) can be sent to the dialogue input.
 - Automatic background and audio playback when a scene is activated or the Canvas is reopened with an active scene.
 - Scenes can automatically start one PlaylistSound or an entire playlist. Starting a scene track or playlist stops other active scene audio.
 - Scene audio uses existing Foundry Playlist and PlaylistSound documents. Foundry synchronizes playlist and individual-track playback with connected players.
@@ -39,6 +43,7 @@ Narrative Canvas adds a Theatre of the Mind presentation stage to Foundry Virtua
 
 - Foundry Virtual Tabletop 14 or later within the module's supported version range.
 - No specific game system is required.
+- Optional: [ACD Talking Actors](https://github.com/acd-jake/acd-talking-actors) to read dialogue lines aloud and [Polyglot](https://foundryvtt.com/packages/polyglot) for dialogue languages. Without them, only the corresponding dialogue controls are missing.
 
 ## Architecture
 
@@ -49,6 +54,9 @@ Runtime responsibilities are separated by role:
 - `scripts/services/director-actions.js` maps Director actions to state and scene operations.
 - `scripts/services/scene-asset-resolver.js` resolves Foundry drag data into scene asset operations.
 - `scripts/services/scene-repository.js` owns scene data access and mutation; reads normalize a copy of the stored data.
+- `scripts/services/settings-layout.js` groups the module settings into sections in the settings window.
+- `scripts/ui/dialogue-line.js` displays dialogue and narrator lines on the stage, including reveal animation and autoscroll.
+- `scripts/ui/journal-selection-menu.js` sends selected journal text and read-aloud sections to the dialogue input.
 
 ## Development
 
@@ -98,7 +106,11 @@ Narrative Canvas erweitert Foundry Virtual Tabletop um eine Präsentationsfläch
 - Mehrere Handout-Bildüberlagerungen, die unabhängig voneinander verschoben, skaliert und geschlossen werden können.
 - Auswählbare Themes (Fantasy, Dark Fantasy, Science Fiction, Noir, Cyberpunk, Kosmischer Horror, Western, Art Déco) für Untertitel, Handout-Bilder und Akteure. Das Standard-Theme wird in den Moduleinstellungen festgelegt und lässt sich über die Regie-Werkzeugleiste temporär umschalten. Weitere Themes entstehen als Verzeichnis unter `themes/` mit einer `theme.json` und den Bilddateien und werden in `module.json` eingetragen.
 - Journal-Navigation und die Möglichkeit, Journal-Bilder direkt auf der Präsentationsfläche anzuzeigen.
-- Ein Dialogsystem für das VisualNovel-Overlay: Die Spielleitung sendet Dialog- und Erzählerzeilen, die auf der Bühne eingeblendet werden. Optionale Anbindungen lesen Zeilen mit Talking Actors vor und wählen mit Polyglot eine Sprache. Textauswahlen und Vorlesetexte aus Journalen lassen sich in die Eingabezeile übernehmen.
+- Ein Dialogsystem für das VisualNovel-Overlay, das über die Regie-Werkzeugleiste ein- und ausgeschaltet wird. Die Spielleitung wählt den Sprecher (oder den Erzähler, wenn kein Akteur aktiver Sprecher ist) und sendet Zeilen im Untertitel-Look des Themes: Akteurzeilen blenden zeichenweise ein und zeigen den Sprechernamen am oberen Rand, Erzählerzeilen blenden absatzweise und ohne Namen ein. Langer Text ist in der Höhe begrenzt und scrollt automatisch. Ein Klick auf eine Zeile blendet sie vorzeitig für alle aus.
+- Die Einblendgeschwindigkeit ist einstellbar und wird pro Nutzer gespeichert. Der aktive Sprecher wird größer dargestellt, und sein Glow pulsiert, solange eine Zeile angezeigt wird.
+- Optionale Anbindung an **Talking Actors**: Zeilen werden vorgelesen (`/talk`, für den Erzähler `/narrate`), solange der Canvas für die Spielenden freigegeben ist. Das Live-Badge zeigt, ob gerade vorgelesen würde, und eine Einstellung legt fest, ob die Zeilen zusätzlich im Chat erscheinen.
+- Optionale Anbindung an **Polyglot** zur Wahl der Sprache einer Zeile; Spielende, die sie nicht beherrschen, sehen verschleierten Text.
+- Textauswahlen und Vorlesetexte aus Journalen (zum Beispiel `keeper-read-aloud` bei Call of Cthulhu 7e oder `narrative` bei Pathfinder 2e; in den Moduleinstellungen konfigurierbar) lassen sich in die Eingabezeile übernehmen.
 - Automatische Wiedergabe von Hintergründen und Audio beim Aktivieren einer Szene oder beim erneuten Öffnen des Canvas mit aktiver Szene.
 - Szenen können einen einzelnen PlaylistSound oder eine ganze Playlist automatisch starten. Beim Starten eines Szenen-Tracks oder einer Playlist wird anderes aktives Szenen-Audio gestoppt.
 - Synchronisierte Wiedergabe einzelner Audiospuren einschließlich Lautstärke, Stummschaltung, Pause und Stopp. Auch Spielende, die während einer laufenden Spur beitreten, erhalten deren Wiedergabe. Foundry-Playlists verwenden die native Synchronisierung von Foundry.
@@ -112,6 +124,7 @@ Narrative Canvas erweitert Foundry Virtual Tabletop um eine Präsentationsfläch
 
 - Foundry Virtual Tabletop 14 oder eine neuere Version innerhalb des vom Modul unterstützten Versionsbereichs.
 - Es ist kein bestimmtes Spielsystem erforderlich.
+- Optional: [ACD Talking Actors](https://github.com/acd-jake/acd-talking-actors) zum Vorlesen von Dialogzeilen und [Polyglot](https://foundryvtt.com/packages/polyglot) für Dialogsprachen. Ohne sie fehlen nur die jeweiligen Bedienelemente des Dialogsystems.
 
 ## Architektur
 
@@ -122,6 +135,9 @@ Die Laufzeitverantwortlichkeiten sind nach Aufgaben getrennt:
 - `scripts/services/director-actions.js` ordnet Regieaktionen Zustands- und Szenenoperationen zu.
 - `scripts/services/scene-asset-resolver.js` löst Foundry-Drag-Daten in Szenen-Asset-Aktionen auf.
 - `scripts/services/scene-repository.js` verwaltet den Szenendatenzugriff und Änderungen; beim Lesen wird eine Kopie der gespeicherten Daten normalisiert.
+- `scripts/services/settings-layout.js` gliedert die Moduleinstellungen im Einstellungsfenster in Abschnitte.
+- `scripts/ui/dialogue-line.js` zeigt Dialog- und Erzählerzeilen auf der Bühne an, einschließlich Einblendanimation und Autoscroll.
+- `scripts/ui/journal-selection-menu.js` übergibt markierten Journaltext und Vorlesetexte an die Dialog-Eingabezeile.
 
 ## Entwicklung
 

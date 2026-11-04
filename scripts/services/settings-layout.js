@@ -33,6 +33,24 @@ const SECTIONS = [
       NarrativeSettings.SETTING_UNKNOWN_SPEAKER,
       NarrativeSettings.SETTING_SPOKEN_TO_CHAT
     ]
+  },
+  {
+    label: "NARRATIVE_CANVAS.Settings.Sections.DialogueDisplay",
+    keys: [
+      NarrativeSettings.SETTING_DIALOGUE_TEXT_SCALE,
+      NarrativeSettings.SETTING_NARRATION_TEXT_SCALE,
+      NarrativeSettings.SETTING_NARRATION_MAX_HEIGHT
+    ]
+  },
+  {
+    label: "NARRATIVE_CANVAS.Settings.Sections.DialogueTiming",
+    keys: [
+      NarrativeSettings.SETTING_DIALOGUE_REVEAL_SPEED,
+      NarrativeSettings.SETTING_NARRATION_PARAGRAPH_SECONDS,
+      NarrativeSettings.SETTING_DIALOGUE_SCROLL_SPEED,
+      NarrativeSettings.SETTING_NARRATION_HOLD_BASE,
+      NarrativeSettings.SETTING_NARRATION_HOLD_PER_LINE
+    ]
   }
 ];
 

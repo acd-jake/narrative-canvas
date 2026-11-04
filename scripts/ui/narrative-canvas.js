@@ -32,7 +32,8 @@ export class NarrativeCanvas {
       onActorOrderChange: actorIds => this._onActorOrderChange(actorIds)
     });
     this.dialogueLineController = new DialogueLineController({
-      onDismiss: () => this._onDialogueDismiss()
+      onDismiss: () => this._onDialogueDismiss(),
+      onBusyChange: busy => this._onDialogueBusyChange(busy)
     });
     this.handoutImageOverlayController = new HandoutImageOverlayController({
       animateOpacity: (element, opacity, duration) => this._animateElementOpacity(element, opacity, duration),
@@ -131,6 +132,7 @@ export class NarrativeCanvas {
     newStage.style.setProperty("--nc-custom-bg", context.customBgColor || "#000000");
     newStage.style.setProperty("--nc-fade-duration", `${context.fadeDuration}ms`);
     newStage.style.setProperty("--nc-vn-actor-image-height", `${context.actorImageHeight}vh`);
+    this.#applyDialogueStyle(newStage);
     ThemeManager.applyTo(newStage);
     newStage.style.opacity = "0";
     const newNotice = newStage.querySelector(".narrative-visibility-notice");
@@ -158,6 +160,14 @@ export class NarrativeCanvas {
       this._resizeHandler = this._handleWindowResize.bind(this);
       window.addEventListener("resize", this._resizeHandler);
     }
+  }
+
+  #applyDialogueStyle(stage) {
+    // 100% is one third larger than the theme's font size.
+    const baseScale = 4 / 3;
+    stage.style.setProperty("--nc-dialogue-text-scale", String(NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_DIALOGUE_TEXT_SCALE) / 100 * baseScale));
+    stage.style.setProperty("--nc-narration-text-scale", String(NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_TEXT_SCALE) / 100 * baseScale));
+    stage.style.setProperty("--nc-narration-max-height", `${NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_MAX_HEIGHT)}vh`);
   }
 
   /**
@@ -238,6 +248,7 @@ export class NarrativeCanvas {
     const fadeDuration = context.fadeDuration;
     this.stageElement.style.setProperty("--nc-fade-duration", `${fadeDuration}ms`);
     this.stageElement.style.setProperty("--nc-vn-actor-image-height", `${context.actorImageHeight}vh`);
+    this.#applyDialogueStyle(this.stageElement);
     ThemeManager.applyTo(this.stageElement);
     document.body.style.setProperty("--nc-fade-duration", `${fadeDuration}ms`);
 
@@ -397,6 +408,8 @@ export class NarrativeCanvas {
   _onActorOrderChange(actorIds) {}
 
   _onDialogueDismiss() {}
+
+  _onDialogueBusyChange(busy) {}
 
   applyHandoutImageLayout(layout) {
     this.handoutImageOverlayController.applyLayout(layout);

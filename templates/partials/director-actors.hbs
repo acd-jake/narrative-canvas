@@ -77,7 +77,8 @@
         </button>
         <label class="dialogue-speed" title="{{localize 'NARRATIVE_CANVAS.Dialogue.Speed'}}">
             <i class="fas fa-gauge-high" aria-hidden="true"></i>
-            <input type="range" class="dialogue-speed-slider" min="5" max="150" step="5" value="{{dialogueSpeed}}" aria-label="{{localize 'NARRATIVE_CANVAS.Dialogue.Speed'}}" />
+            <input type="range" class="dialogue-speed-slider" min="0" max="100" step="1" value="{{dialogueSpeedSlider}}" aria-label="{{localize 'NARRATIVE_CANVAS.Dialogue.Speed'}}" />
+            <output class="dialogue-speed-value">{{dialogueSpeedLabel}}</output>
         </label>
     </form>
 </div>

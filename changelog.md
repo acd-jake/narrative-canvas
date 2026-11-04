@@ -13,7 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Dialogue system, toggled from the Director toolbar. A control row below the actor carousel lets the GM pick the speaker (synchronized with the active speaker, or the narrator when there is none), enter a line, send it with the button or Enter (Shift+Enter inserts a line break), and set the reveal speed, which is saved per user.
 - Dialogue lines on the Visual Novel overlay with the theme's subtitle look. Text fades in character by character and fades out as a whole; the speaker's name is shown on the top edge, or an unknown-speaker label (configurable in the module settings) when the name is hidden. The GM can click a line to fade it out early for everyone.
-- Narrator lines without a name, shown from the middle of the screen, fading in as a whole and staying visible longer the longer the text is.
+- Narrator lines without a name, shown vertically centered on the screen, fading in paragraph by paragraph and staying visible longer the longer the text is.
+- Dialogue lines have a maximum height (about four lines for actors, 66% of the canvas height for the narrator). Longer text scrolls smoothly so that it reaches the end when the last line is written, before the hold time starts.
+- Module settings for dialogue text sizes, the narrator line's maximum height, reveal speed of characters and paragraphs, scroll speed, and the narrator's hold time (base duration plus time per line). The speed slider in the input area is a multiplier from ×0.5 to ×5 that scales reveal speed and, more gently, scroll speed.
 - Optional **Talking Actors** integration: a voice toggle reads lines aloud with `/talk` (or `/narrate` for the narrator) only while the canvas is released to the players. The Live badge shows whether lines would currently be read aloud.
 - Optional **Polyglot** integration: a language selector for dialogue lines (the default language for the narrator); players who do not know the language see scrambled text.
 - Journal Viewer: selected text can be sent to the dialogue input from a context menu, and read-aloud sections get a button to send their text. The CSS class that marks read-aloud sections is selectable per game system (Call of Cthulhu 7e, Pathfinder 2e) or custom in the module settings.
@@ -28,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Actor name plates on the Visual Novel overlay are 60% of their previous text size.
 - The speaker toggle in the carousel moved to the middle of the lower tile edge.
 - The release archive now includes the changelog.
+- Only one dialogue or narrator line is shown at a time: the send button and Enter stay locked until the current line has completely faded out.
 - New actors on the Visual Novel overlay are added alternately on the left and right: on the right when an odd number of actors is already shown, otherwise on the left.
 - The module settings are grouped into General, Appearance, Journal and Dialogue system sections.
 

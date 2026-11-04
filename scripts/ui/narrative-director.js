@@ -51,8 +51,12 @@ export class NarrativeDirector extends NarrativeCanvas {
       onActorToggleName: (actorId) => this.callbacks.onActorToggleName?.(actorId),
       onVisualNovelOverlayVisibilityToggle: () => this.callbacks.onVisualNovelOverlayVisibilityToggle?.(),
       onActorOrderChange: actorIds => this.callbacks.onActorOrderChange?.(actorIds),
-      onDialogueSend: line => this.callbacks.onDialogueSend?.(line),
+      onDialogueSend: line => {
+        if (this.dialogueLineController.isBusy) return;
+        this.callbacks.onDialogueSend?.(line);
+      },
       onDialogueSpeedChange: speed => this.callbacks.onDialogueSpeedChange?.(speed),
+      onDialogueSpeedLive: speed => this.callbacks.onDialogueSpeedLive?.(speed),
       onDialogueVoiceChange: voice => this.callbacks.onDialogueVoiceChange?.(voice)
     });
     this._setupGlobalDelegatedListeners();
@@ -206,6 +210,10 @@ export class NarrativeDirector extends NarrativeCanvas {
 
   _onDialogueDismiss() {
     this.callbacks.onDialogueDismiss?.();
+  }
+
+  _onDialogueBusyChange(busy) {
+    this.carousel?.setDialogueBusy(busy);
   }
 
   /**

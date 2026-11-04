@@ -26,7 +26,30 @@ export class NarrativeSettings {
   static SETTING_READ_ALOUD_PRESET = "readAloudPreset";
   static SETTING_READ_ALOUD_CUSTOM_CLASS = "readAloudCustomClass";
   static READ_ALOUD_CLASSES = { coc7: "keeper-read-aloud", pf2e: "narrative" };
-  static SETTING_DIALOGUE_SPEED = "dialogueSpeed";
+  static SETTING_DIALOGUE_SPEED = "dialogueSpeedMultiplier";
+  static SETTING_DIALOGUE_TEXT_SCALE = "dialogueTextScale";
+  static SETTING_NARRATION_TEXT_SCALE = "narrationTextScale";
+  static SETTING_NARRATION_MAX_HEIGHT = "narrationMaxHeight";
+  static SETTING_DIALOGUE_REVEAL_SPEED = "dialogueRevealSpeed";
+  static SETTING_NARRATION_PARAGRAPH_SECONDS = "narrationParagraphSeconds";
+  static SETTING_DIALOGUE_SCROLL_SPEED = "dialogueScrollSpeed";
+  static SETTING_NARRATION_HOLD_BASE = "narrationHoldBase";
+  static SETTING_NARRATION_HOLD_PER_LINE = "narrationHoldPerLine";
+
+  static DIALOGUE_SPEED_MIN = 0.5;
+  static DIALOGUE_SPEED_MAX = 5;
+
+  /** World-wide numeric dialogue settings: [key, default, min, max, step, i18n stem]. */
+  static DIALOGUE_NUMBER_SETTINGS = [
+    ["dialogueTextScale", 100, 50, 200, 5, "DialogueTextScale"],
+    ["narrationTextScale", 100, 50, 200, 5, "NarrationTextScale"],
+    ["narrationMaxHeight", 66, 30, 90, 1, "NarrationMaxHeight"],
+    ["dialogueRevealSpeed", 40, 5, 200, 5, "DialogueRevealSpeed"],
+    ["narrationParagraphSeconds", 3.5, 0.5, 6, 0.1, "NarrationParagraphSeconds"],
+    ["dialogueScrollSpeed", 100, 25, 400, 5, "DialogueScrollSpeed"],
+    ["narrationHoldBase", 2, 0, 20, 0.5, "NarrationHoldBase"],
+    ["narrationHoldPerLine", 0.8, 0, 5, 0.1, "NarrationHoldPerLine"]
+  ];
 
   /**
    * Registers all settings within Foundry VTT.
@@ -220,8 +243,21 @@ export class NarrativeSettings {
       scope: "client",
       config: false,
       type: Number,
-      default: 40
+      default: 1
     });
+
+    for (const [key, defaultValue, min, max, step, stem] of this.DIALOGUE_NUMBER_SETTINGS) {
+      game.settings.register("narrative-canvas", key, {
+        name: `NARRATIVE_CANVAS.Settings.${stem}Label`,
+        hint: `NARRATIVE_CANVAS.Settings.${stem}Hint`,
+        scope: "world",
+        config: true,
+        type: Number,
+        range: { min, max, step },
+        default: defaultValue,
+        onChange: () => game.modules?.get("narrative-canvas")?.manager?.refreshView()
+      });
+    }
 
     game.settings.register("narrative-canvas", this.SETTING_DIRECTOR_LAYOUT_STATE, {
       scope: "client",
@@ -364,14 +400,39 @@ export class NarrativeSettings {
     return /^[\w-]+$/.test(name) ? name : "";
   }
 
-  /** @returns {number} Characters revealed per second. */
-  static getDialogueSpeed() {
-    const speed = Number(game.settings.get("narrative-canvas", this.SETTING_DIALOGUE_SPEED));
-    return Number.isFinite(speed) ? Math.max(5, Math.min(200, speed)) : 40;
+  /** @returns {number} A numeric dialogue setting clamped to its allowed range. */
+  static getDialogueNumber(key) {
+    const [, defaultValue, min, max] = this.DIALOGUE_NUMBER_SETTINGS.find(entry => entry[0] === key);
+    const value = Number(game.settings.get("narrative-canvas", key));
+    return Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : defaultValue;
   }
 
-  static async setDialogueSpeed(speed) {
-    await game.settings.set("narrative-canvas", this.SETTING_DIALOGUE_SPEED, speed);
+  /** @returns {number} The user's speed multiplier for dialogue reveal and scrolling. */
+  static getDialogueSpeedMultiplier() {
+    const value = Number(game.settings.get("narrative-canvas", this.SETTING_DIALOGUE_SPEED));
+    return Number.isFinite(value)
+      ? Math.max(this.DIALOGUE_SPEED_MIN, Math.min(this.DIALOGUE_SPEED_MAX, value))
+      : 1;
+  }
+
+  static async setDialogueSpeedMultiplier(multiplier) {
+    await game.settings.set("narrative-canvas", this.SETTING_DIALOGUE_SPEED, multiplier);
+  }
+
+  /** Maps a 0-100 slider position logarithmically to the multiplier range. */
+  static sliderToSpeedMultiplier(position) {
+    const ratio = this.DIALOGUE_SPEED_MAX / this.DIALOGUE_SPEED_MIN;
+    const value = this.DIALOGUE_SPEED_MIN * ratio ** (Math.max(0, Math.min(100, Number(position))) / 100);
+    return Math.round(value * 100) / 100;
+  }
+
+  static speedMultiplierToSlider(multiplier) {
+    const ratio = this.DIALOGUE_SPEED_MAX / this.DIALOGUE_SPEED_MIN;
+    return Math.round(100 * Math.log(multiplier / this.DIALOGUE_SPEED_MIN) / Math.log(ratio));
+  }
+
+  static formatSpeedMultiplier(multiplier) {
+    return `\u00d7${multiplier < 1 ? multiplier.toFixed(2) : multiplier.toFixed(1)}`;
   }
 
   static getDirectorLayoutState() {

@@ -998,6 +998,25 @@ body.acd-nc-active {
 .acd-nc.has-dialogue-system .narrative-dialogue-line.is-narration {
     top: 50%;
     bottom: auto;
+    transform: translateY(-50%);
+}
+
+.acd-nc .narrative-dialogue-text {
+    position: relative;
+    overflow: hidden;
+    max-height: calc(4 * 1.35 * var(--nc-theme-dialogue-text-font-size, var(--nc-theme-subtitle-font-size, 1.15rem)) * var(--nc-dialogue-text-scale, 1));
+}
+
+.acd-nc .narrative-dialogue-line.is-narration .narrative-dialogue-text {
+    max-height: calc(var(--nc-narration-max-height, 66vh) - 20px);
+}
+
+.acd-nc .narrative-narration-paragraph {
+    display: block;
+}
+
+.acd-nc .narrative-narration-paragraph + .narrative-narration-paragraph {
+    margin-top: 0.7em;
 }
 
     .narrative-director-ui-layer .narrative-director-actors-bar.has-dialogue-controls {
@@ -1081,7 +1100,7 @@ body.acd-nc-active {
             white-space: pre-line;
             color: var(--nc-theme-dialogue-text-color, var(--nc-theme-subtitle-color, #fff));
             font-family: var(--nc-theme-dialogue-text-font-family, var(--nc-theme-subtitle-font-family, "Signika", sans-serif));
-            font-size: var(--nc-theme-dialogue-text-font-size, var(--nc-theme-subtitle-font-size, 1.15rem));
+            font-size: calc(var(--nc-theme-dialogue-text-font-size, var(--nc-theme-subtitle-font-size, 1.15rem)) * var(--nc-dialogue-text-scale, 1));
             font-style: var(--nc-theme-dialogue-text-font-style, var(--nc-theme-subtitle-font-style, normal));
             font-weight: var(--nc-theme-dialogue-text-font-weight, var(--nc-theme-subtitle-font-weight, normal));
             letter-spacing: var(--nc-theme-dialogue-text-letter-spacing, var(--nc-theme-subtitle-letter-spacing, normal));
@@ -1096,7 +1115,7 @@ body.acd-nc-active {
         &.is-narration .narrative-dialogue-text {
             color: var(--nc-theme-narration-text-color, var(--nc-theme-dialogue-text-color, var(--nc-theme-subtitle-color, #fff)));
             font-family: var(--nc-theme-narration-text-font-family, var(--nc-theme-dialogue-text-font-family, var(--nc-theme-subtitle-font-family, "Signika", sans-serif)));
-            font-size: var(--nc-theme-narration-text-font-size, var(--nc-theme-dialogue-text-font-size, 1.15rem));
+            font-size: calc(var(--nc-theme-narration-text-font-size, var(--nc-theme-dialogue-text-font-size, 1.15rem)) * var(--nc-narration-text-scale, 1));
             font-style: var(--nc-theme-narration-text-font-style, italic);
             font-weight: var(--nc-theme-narration-text-font-weight, normal);
             letter-spacing: var(--nc-theme-narration-text-letter-spacing, var(--nc-theme-dialogue-text-letter-spacing, normal));
@@ -1190,11 +1209,22 @@ body.acd-nc-active {
                 width: 90px;
             }
 
+            .dialogue-speed-value {
+                min-width: 3.2em;
+                font-size: 0.8rem;
+                text-align: right;
+            }
+
             .dialogue-send {
                 flex: 0 0 34px;
                 height: 30px;
                 padding: 0;
                 cursor: pointer;
+
+                &:disabled {
+                    cursor: not-allowed;
+                    opacity: 0.4;
+                }
             }
         }
     }

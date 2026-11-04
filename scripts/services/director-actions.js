@@ -179,8 +179,10 @@ export class NarrativeDirectorActions {
         dialogueSystemEnabled: !this.getState().dialogueSystemEnabled,
         dialogueLine: null
       }),
-      onDialogueSend: ({ speakerId, text, voice, language }) => this.#sendDialogueLine({ speakerId, text, voice, language }),
-      onDialogueSpeedChange: speed => NarrativeSettings.setDialogueSpeed(speed),
+      onDialogueSend: ({ speakerId, text, voice, language, speedFactor }) =>
+        this.#sendDialogueLine({ speakerId, text, voice, language, speedFactor }),
+      onDialogueSpeedChange: multiplier => NarrativeSettings.setDialogueSpeedMultiplier(multiplier),
+      onDialogueSpeedLive: multiplier => this.#applyLiveSpeed(multiplier),
       onDialogueVoiceChange: dialogueVoice => this.handleDisplayUpdate({ dialogueVoice: dialogueVoice === true }),
       onDialogueDismiss: () => {
         const line = this.getState().dialogueLine;
@@ -253,7 +255,30 @@ export class NarrativeDirectorActions {
     else activeList.unshift(actor);
   }
 
-  #sendDialogueLine({ speakerId, text, voice, language }) {
+  #speedLiveTimer = null;
+  #speedLivePending = null;
+
+  /** Passes a changed speed multiplier on to the line that is being shown, at most every 120 ms. */
+  #applyLiveSpeed(multiplier) {
+    this.#speedLivePending = multiplier;
+    if (this.#speedLiveTimer !== null) return;
+
+    const flush = () => {
+      const value = this.#speedLivePending;
+      this.#speedLivePending = null;
+      const line = this.getState().dialogueLine;
+      if (value !== null && line && !line.dismissed) {
+        this.handleDisplayUpdate({ dialogueLine: { ...line, speedFactor: value } });
+      }
+    };
+    flush();
+    this.#speedLiveTimer = setTimeout(() => {
+      this.#speedLiveTimer = null;
+      flush();
+    }, 120);
+  }
+
+  #sendDialogueLine({ speakerId, text, voice, language, speedFactor }) {
     const line = String(text ?? "").trim();
     if (!line) return;
 
@@ -280,7 +305,7 @@ export class NarrativeDirectorActions {
         isNarrator,
         speakerName: isNarrator ? "" : (mayShowName ? actor.name : NarrativeSettings.getUnknownSpeakerName()),
         text: line,
-        speed: NarrativeSettings.getDialogueSpeed(),
+        speedFactor: speedFactor ?? NarrativeSettings.getDialogueSpeedMultiplier(),
         language: activeLanguage
       }
     });

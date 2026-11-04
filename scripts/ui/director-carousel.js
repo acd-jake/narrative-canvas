@@ -13,6 +13,9 @@ export class DirectorActorCarousel {
   #dialogueLanguage = "";
   #dialogueSpeakerId = "";
   #stopLayoutTracking = null;
+  #dialogueBusy = false;
+  #busyConfirmed = false;
+  #busyFallbackTimer = null;
 
   /**
    * @param {object} callbacks
@@ -82,7 +85,8 @@ export class DirectorActorCarousel {
         hasTalkingActors,
         dialogueVoice: this.#dialogueVoice,
         dialogueLanguages: dialogueLanguages.length ? dialogueLanguages : null,
-        dialogueSpeed: NarrativeSettings.getDialogueSpeed()
+        dialogueSpeedSlider: NarrativeSettings.speedMultiplierToSlider(NarrativeSettings.getDialogueSpeedMultiplier()),
+        dialogueSpeedLabel: NarrativeSettings.formatSpeedMultiplier(NarrativeSettings.getDialogueSpeedMultiplier())
       }
     );
     const parser = new DOMParser();
@@ -346,23 +350,63 @@ export class DirectorActorCarousel {
       this.#dialogueLanguage = event.target.value;
     });
 
-    form.querySelector(".dialogue-speed-slider")?.addEventListener("change", event => {
-      this.#callbacks.onDialogueSpeedChange?.(Number(event.target.value));
+    const speedSlider = form.querySelector(".dialogue-speed-slider");
+    const speedOutput = form.querySelector(".dialogue-speed-value");
+    speedSlider?.addEventListener("input", () => {
+      const multiplier = NarrativeSettings.sliderToSpeedMultiplier(speedSlider.value);
+      if (speedOutput) speedOutput.textContent = NarrativeSettings.formatSpeedMultiplier(multiplier);
+      this.#callbacks.onDialogueSpeedLive?.(multiplier);
+    });
+    speedSlider?.addEventListener("change", () => {
+      this.#callbacks.onDialogueSpeedChange?.(NarrativeSettings.sliderToSpeedMultiplier(speedSlider.value));
     });
 
     form.addEventListener("submit", event => {
       event.preventDefault();
       event.stopPropagation();
       const text = textInput?.value.trim();
-      if (!text) return;
+      if (!text || this.#dialogueBusy) return;
+
+      // Lock right away; the stage confirms once the line is shown.
+      this.#lockForSend();
       this.#callbacks.onDialogueSend?.({
         speakerId: speakerSelect.value,
         text,
         voice: this.#dialogueVoice,
-        language: this.#dialogueLanguage
+        language: this.#dialogueLanguage,
+        speedFactor: speedSlider ? NarrativeSettings.sliderToSpeedMultiplier(speedSlider.value) : undefined
       });
       textInput.value = "";
     });
+    this.#applyDialogueBusy();
+  }
+
+  /** Called by the stage: a line is being shown (true) or has completely faded out (false). */
+  setDialogueBusy(busy) {
+    clearTimeout(this.#busyFallbackTimer);
+    this.#busyFallbackTimer = null;
+    this.#busyConfirmed = busy;
+    this.#dialogueBusy = busy;
+    this.#applyDialogueBusy();
+  }
+
+  #lockForSend() {
+    this.#dialogueBusy = true;
+    this.#busyConfirmed = false;
+    this.#applyDialogueBusy();
+    clearTimeout(this.#busyFallbackTimer);
+    this.#busyFallbackTimer = setTimeout(() => {
+      if (!this.#busyConfirmed) this.setDialogueBusy(false);
+    }, 3000);
+  }
+
+  #applyDialogueBusy() {
+    const form = this.#element?.querySelector(".director-dialogue-controls");
+    if (!form) return;
+
+    form.classList.toggle("is-busy", this.#dialogueBusy);
+    const sendButton = form.querySelector(".dialogue-send");
+    if (sendButton) sendButton.disabled = this.#dialogueBusy;
   }
 
   #bindListeners(element) {
