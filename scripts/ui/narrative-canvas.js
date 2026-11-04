@@ -31,7 +31,9 @@ export class NarrativeCanvas {
     this.vnStageController = new VisualNovelStage({
       onActorOrderChange: actorIds => this._onActorOrderChange(actorIds)
     });
-    this.dialogueLineController = new DialogueLineController();
+    this.dialogueLineController = new DialogueLineController({
+      onDismiss: () => this._onDialogueDismiss()
+    });
     this.handoutImageOverlayController = new HandoutImageOverlayController({
       animateOpacity: (element, opacity, duration) => this._animateElementOpacity(element, opacity, duration),
       fadeOutAndRemove: (element, duration) => this._fadeOutAndRemove(element, duration),
@@ -354,6 +356,8 @@ export class NarrativeCanvas {
   _onHandoutImageClose(overlayId) {}
 
   _onActorOrderChange(actorIds) {}
+
+  _onDialogueDismiss() {}
 
   applyHandoutImageLayout(layout) {
     this.handoutImageOverlayController.applyLayout(layout);

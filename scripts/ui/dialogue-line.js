@@ -1,6 +1,9 @@
 const HOLD_MS = 2200;
 const FADE_OUT_MS = 700;
 const CHAR_FADE_MS = 350;
+const NARRATION_FADE_IN_MS = 1800;
+const NARRATION_HOLD_BASE_MS = 2500;
+const NARRATION_HOLD_PER_CHAR_MS = 50;
 const MAX_LINE_AGE_MS = 30000;
 
 /**
@@ -12,6 +15,13 @@ export class DialogueLineController {
   #element = null;
   #lastLineId = null;
   #timers = [];
+  #onDismiss;
+  #isGM = false;
+
+  /** @param {{onDismiss?: () => void}} [options] */
+  constructor({ onDismiss } = {}) {
+    this.#onDismiss = onDismiss;
+  }
 
   /**
    * @param {HTMLElement} stageElement
@@ -37,10 +47,28 @@ export class DialogueLineController {
     if (!this.#element?.isConnected) this.#element = this.#createElement(stageElement);
 
     const line = context.dialogueLine;
-    if (!line || line.id === this.#lastLineId) return;
+    this.#isGM = context.isGM === true;
+    if (!line) return;
+    if (line.id === this.#lastLineId) {
+      if (line.dismissed) this.#dismiss();
+      return;
+    }
     this.#lastLineId = line.id;
-    if (Date.now() - (line.ts ?? 0) > MAX_LINE_AGE_MS) return;
+    if (line.dismissed || Date.now() - (line.ts ?? 0) > MAX_LINE_AGE_MS) return;
     this.#play(line, context.isGM === true);
+  }
+
+  /** Starts the fade-out ahead of time. */
+  #dismiss() {
+    const element = this.#element;
+    if (!element?.classList.contains("is-visible") || element.classList.contains("is-fading-out")) return;
+
+    this.#clearTimers();
+    element.classList.add("is-fading-out");
+    this.#timers.push(setTimeout(() => {
+      element.classList.remove("is-visible", "is-fading-out");
+      element.querySelector(".narrative-dialogue-text")?.replaceChildren();
+    }, FADE_OUT_MS));
   }
 
   #createElement(stageElement) {
@@ -48,6 +76,11 @@ export class DialogueLineController {
     element.className = "narrative-dialogue-line";
     element.innerHTML = `<div class="narrative-dialogue-speaker"></div><div class="narrative-dialogue-text"></div>`;
     stageElement.appendChild(element);
+    element.addEventListener("click", () => {
+      if (!this.#isGM) return;
+      this.#dismiss();
+      this.#onDismiss?.();
+    });
     return element;
   }
 
@@ -81,9 +114,13 @@ export class DialogueLineController {
     const delay = 1000 / Math.max(1, Number(line.speed) || 40);
     let charIndex = 0;
 
-    const words = text.split(/(\s+)/);
+    const words = text.split(/(\n|[^\S\n]+)/);
     for (const word of words) {
       if (!word) continue;
+      if (word === "\n") {
+        textEl.appendChild(document.createElement("br"));
+        continue;
+      }
       if (/^\s+$/.test(word)) {
         textEl.appendChild(document.createTextNode(" "));
         continue;
@@ -117,21 +154,21 @@ export class DialogueLineController {
     }, revealMs + HOLD_MS + FADE_OUT_MS));
   }
 
-  /** Narration fades in as a whole; the longer the text, the slower the fade. */
+  /** Narration fades in over a fixed time; the longer the text, the longer it stays fully visible. */
   #playNarration(element, textEl, text) {
-    const fadeInMs = Math.min(8000, Math.max(1200, text.length * 45));
+    const holdMs = NARRATION_HOLD_BASE_MS + text.length * NARRATION_HOLD_PER_CHAR_MS;
     textEl.textContent = text;
     void textEl.offsetHeight;
-    textEl.style.animation = `nc-dialogue-char-in ${fadeInMs}ms ease-in both`;
+    textEl.style.animation = `nc-dialogue-char-in ${NARRATION_FADE_IN_MS}ms ease-in both`;
     element.classList.add("is-visible");
 
     this.#timers.push(setTimeout(() => {
       element.classList.add("is-fading-out");
-    }, fadeInMs + HOLD_MS + text.length * 15));
+    }, NARRATION_FADE_IN_MS + holdMs));
     this.#timers.push(setTimeout(() => {
       element.classList.remove("is-visible", "is-fading-out");
       textEl.replaceChildren();
-    }, fadeInMs + HOLD_MS + text.length * 15 + FADE_OUT_MS));
+    }, NARRATION_FADE_IN_MS + holdMs + FADE_OUT_MS));
   }
 
   /** Scrambles the text for clients that do not know the line's Polyglot language. */

@@ -190,6 +190,7 @@ export class DirectorSidebar {
     this.#destroyResizableSections();
     this.#destroyPanelResizeController();
     this.#element = newElement;
+    this.#element.classList.toggle("is-dialogue-active", context.dialogueSystemEnabled === true);
     this.#journalViewerFontSizeController.mount(this.#element);
     this.#journalSelectionMenu?.mount(this.#element);
     this.#bindListeners(this.#element);
@@ -204,6 +205,7 @@ export class DirectorSidebar {
    * @param {object} context
    */
   update(context = {}) {
+    this.#element?.classList.toggle("is-dialogue-active", context.dialogueSystemEnabled === true);
     if (!this.#element) return;
     this.#activeSceneId = context.activeSceneId ?? this.#activeSceneId;
     this.#audioMuted = Boolean(context.audioMuted);

@@ -985,6 +985,11 @@ body.acd-nc-active {
     bottom: calc(160px + var(--nc-dialogue-carousel-raise) + var(--nc-dialogue-line-space));
 }
 
+.acd-nc.director-view .narrative-dialogue-line.is-visible:not(.is-fading-out) {
+    cursor: pointer;
+    pointer-events: auto;
+}
+
 .acd-nc.has-dialogue-system .narrative-dialogue-line.is-narration {
     top: 50%;
     bottom: auto;
@@ -1068,6 +1073,7 @@ body.acd-nc-active {
         }
 
         .narrative-dialogue-text {
+            white-space: pre-line;
             color: var(--nc-theme-dialogue-text-color, var(--nc-theme-subtitle-color, #fff));
             font-family: var(--nc-theme-dialogue-text-font-family, var(--nc-theme-subtitle-font-family, "Signika", sans-serif));
             font-size: var(--nc-theme-dialogue-text-font-size, var(--nc-theme-subtitle-font-size, 1.15rem));
@@ -1125,9 +1131,18 @@ body.acd-nc-active {
             }
 
             select,
-            input[type="text"] {
+            input[type="text"],
+            textarea {
                 height: 30px;
                 min-width: 0;
+            }
+
+            textarea {
+                box-sizing: border-box;
+                padding: 4px 6px;
+                line-height: 1.25;
+                resize: none;
+                overflow-y: auto;
             }
 
             .dialogue-speaker,
@@ -2586,6 +2601,38 @@ body.acd-nc-active {
 
 .acd-nc .journal-page-body {
     cursor: text;
+}
+
+.nc-read-aloud-target {
+    position: relative;
+}
+
+.nc-read-aloud-button {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: none;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.is-dialogue-active .nc-read-aloud-button {
+    display: grid;
+}
+
+.nc-read-aloud-button:hover,
+.nc-read-aloud-button:focus-visible {
+    opacity: 1;
+    background: rgba(122, 104, 66, 0.85);
 }
 
 .nc-selection-menu {

@@ -203,6 +203,10 @@ export class NarrativeDirector extends NarrativeCanvas {
     this.callbacks.onActorOrderChange?.(actorIds);
   }
 
+  _onDialogueDismiss() {
+    this.callbacks.onDialogueDismiss?.();
+  }
+
   /**
    * Event Delegation Pattern to guarantee buttons stay responsive after asynchronous re-renders.
    * @private

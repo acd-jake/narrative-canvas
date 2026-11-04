@@ -309,6 +309,13 @@ export class DirectorActorCarousel {
     const speakerSelect = form.querySelector(".dialogue-speaker");
     const textInput = form.querySelector(".dialogue-text");
 
+    // Enter sends, Shift+Enter inserts a line break.
+    textInput?.addEventListener("keydown", event => {
+      if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+      event.preventDefault();
+      form.requestSubmit();
+    });
+
     speakerSelect?.addEventListener("change", () => {
       // Picking the narrator switches the current speaker off; picking an actor makes them the speaker.
       const target = speakerSelect.value || this.#dialogueSpeakerId;

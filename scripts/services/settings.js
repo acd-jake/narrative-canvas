@@ -22,6 +22,9 @@ export class NarrativeSettings {
   static SETTING_DIRECTOR_LAYOUT_STATE = "directorLayoutState";
   static SETTING_JOURNAL_ROOT_FOLDER = "journalRootFolder";
   static SETTING_UNKNOWN_SPEAKER = "unknownSpeakerName";
+  static SETTING_READ_ALOUD_PRESET = "readAloudPreset";
+  static SETTING_READ_ALOUD_CUSTOM_CLASS = "readAloudCustomClass";
+  static READ_ALOUD_CLASSES = { coc7: "keeper-read-aloud", pf2e: "narrative" };
   static SETTING_DIALOGUE_SPEED = "dialogueSpeed";
 
   /**
@@ -177,6 +180,32 @@ export class NarrativeSettings {
       default: ""
     });
 
+    game.settings.register("narrative-canvas", this.SETTING_READ_ALOUD_PRESET, {
+      name: "NARRATIVE_CANVAS.Settings.ReadAloudPresetLabel",
+      hint: "NARRATIVE_CANVAS.Settings.ReadAloudPresetHint",
+      scope: "world",
+      config: true,
+      type: String,
+      default: "auto",
+      choices: {
+        auto: "NARRATIVE_CANVAS.Settings.ReadAloudPresets.Auto",
+        coc7: "NARRATIVE_CANVAS.Settings.ReadAloudPresets.Coc7",
+        pf2e: "NARRATIVE_CANVAS.Settings.ReadAloudPresets.Pf2e",
+        custom: "NARRATIVE_CANVAS.Settings.ReadAloudPresets.Custom"
+      },
+      onChange: () => game.modules?.get("narrative-canvas")?.manager?.refreshView()
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_READ_ALOUD_CUSTOM_CLASS, {
+      name: "NARRATIVE_CANVAS.Settings.ReadAloudCustomClassLabel",
+      hint: "NARRATIVE_CANVAS.Settings.ReadAloudCustomClassHint",
+      scope: "world",
+      config: true,
+      type: String,
+      default: "",
+      onChange: () => game.modules?.get("narrative-canvas")?.manager?.refreshView()
+    });
+
     game.settings.register("narrative-canvas", this.SETTING_DIALOGUE_SPEED, {
       scope: "client",
       config: false,
@@ -308,6 +337,16 @@ export class NarrativeSettings {
   static getUnknownSpeakerName() {
     const configured = game.settings.get("narrative-canvas", this.SETTING_UNKNOWN_SPEAKER);
     return configured?.trim() || game.i18n.localize("NARRATIVE_CANVAS.Dialogue.UnknownSpeaker");
+  }
+
+  /** @returns {string} CSS class marking read-aloud blocks in journals; empty if none is configured. */
+  static getReadAloudClass() {
+    const preset = game.settings.get("narrative-canvas", this.SETTING_READ_ALOUD_PRESET);
+    const raw = preset === "custom"
+      ? game.settings.get("narrative-canvas", this.SETTING_READ_ALOUD_CUSTOM_CLASS)
+      : this.READ_ALOUD_CLASSES[preset === "auto" ? game.system.id : preset];
+    const name = String(raw ?? "").trim().replace(/^\./, "");
+    return /^[\w-]+$/.test(name) ? name : "";
   }
 
   /** @returns {number} Characters revealed per second. */

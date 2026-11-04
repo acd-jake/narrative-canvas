@@ -181,6 +181,10 @@ export class NarrativeDirectorActions {
       }),
       onDialogueSend: ({ speakerId, text, voice, language }) => this.#sendDialogueLine({ speakerId, text, voice, language }),
       onDialogueSpeedChange: speed => NarrativeSettings.setDialogueSpeed(speed),
+      onDialogueDismiss: () => {
+        const line = this.getState().dialogueLine;
+        if (line && !line.dismissed) this.handleDisplayUpdate({ dialogueLine: { ...line, dismissed: true } });
+      },
       onCloseAllHandouts: () => this.handleDisplayUpdate({ handoutImage: "", handoutImageOverlays: [] }),
       onBackgroundReset: () => this.handleDisplayUpdate({ background: "" }),
       onThemeSelect: themeId => this.handleDisplayUpdate({ themeOverrideId: themeId }),
@@ -289,7 +293,7 @@ export class NarrativeDirectorActions {
         Hooks.off("preCreateChatMessage", hookId);
       });
     }
-    const command = `${commandPrefix} ${text}`;
+    const command = `${commandPrefix} ${text.replace(/\s*\n\s*/g, " ")}`;
     NarrativeLogger.debug("Sending dialogue line to Talking Actors", { command });
     ui.chat?.processMessage?.(command)?.catch?.(error => NarrativeLogger.error("Talking Actors command failed", error));
   }
