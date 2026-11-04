@@ -211,132 +211,130 @@ export class DialogueLineController {
     const { text, font } = this.#resolveText(line, isGM);
     if (font) textEl.style.font = font;
 
-    const timing = this.#getTiming(line);
-    if (line.isNarrator) {
-      this.#playNarration(element, textEl, text, timing, line);
-      return;
-    }
-
-    const delay = 1000 / Math.max(1, timing.charsPerSecond);
-    let charIndex = 0;
-    let afterBreak = false;
-
-    const words = text.split(/(\n|[^\S\n]+)/);
-    for (const word of words) {
-      if (!word) continue;
-      if (word === "\n") {
-        textEl.appendChild(document.createElement("br"));
-        // A short pause at each paragraph break, scaled by the writing speed.
-        if (!afterBreak && charIndex > 0) charIndex += DIALOGUE_PARAGRAPH_PAUSE_CHARS;
-        afterBreak = true;
-        continue;
-      }
-      afterBreak = false;
-      if (/^\s+$/.test(word)) {
-        textEl.appendChild(document.createTextNode(" "));
-        continue;
-      }
-      const wordEl = document.createElement("span");
-      wordEl.className = "narrative-dialogue-word";
-      for (const char of word) {
-        const charEl = document.createElement("span");
-        charEl.className = "narrative-dialogue-char";
-        charEl.textContent = char;
-        charEl.style.animationDelay = `${Math.round(charIndex * delay)}ms`;
-        wordEl.appendChild(charEl);
-        charIndex++;
-      }
-      textEl.appendChild(wordEl);
-    }
-
-    // Restart the transition after the content swap.
-    void element.offsetHeight;
-    element.classList.add("is-visible");
-    this.#stage?.classList.add("is-speaking");
-
-    const revealMs = charIndex * delay + CHAR_FADE_MS;
-    // The box is full once that share of the text has been revealed.
-    const fillMs = revealMs * (textEl.clientHeight / Math.max(1, textEl.scrollHeight));
-    const overflows = textEl.scrollHeight - textEl.clientHeight > 1;
-    this.#autoScroll(textEl, fillMs, revealMs, timing.scrollFactor);
-    this.#active = {
-      id: line.id,
-      textEl,
-      isNarrator: false,
-      baseFactor: timing.factor,
-      factor: timing.factor,
-      revealMs,
-      fillMs: overflows ? fillMs : null,
-      holdMs: HOLD_MS
-    };
-    this.#scheduleEnd(element, textEl, revealMs + HOLD_MS);
+    this.#playText(line, text, element, textEl, this.#getTiming(line));
   }
 
-  /** Narration fades in line by line at a comfortable reading speed and holds for a base time plus a time per line. */
-  #playNarration(element, textEl, text, timing, line) {
+  /**
+   * Reveals the text character by character, line by line or paragraph by paragraph (module setting).
+   * Each unit takes as long as it takes to write or read it, with a short pause after each paragraph.
+   */
+  #playText(line, text, element, textEl, timing) {
+    const isNarrator = line.isNarrator === true;
+    const mode = NarrativeSettings.getRevealMode(isNarrator);
+    const cps = Math.max(1, isNarrator ? timing.readingCharsPerSecond : timing.charsPerSecond);
+    const pauseMs = (isNarrator ? NARRATION_PARAGRAPH_PAUSE_CHARS : DIALOGUE_PARAGRAPH_PAUSE_CHARS) / cps * 1000;
+
     const words = [];
     const paragraphs = text.split(/\n+/).map(part => part.trim()).filter(Boolean);
     for (const [index, paragraph] of paragraphs.entries()) {
       if (index > 0) {
-        const gap = document.createElement("span");
-        gap.className = "narrative-narration-gap";
-        textEl.appendChild(gap);
+        if (isNarrator) {
+          const gap = document.createElement("span");
+          gap.className = "narrative-narration-gap";
+          textEl.appendChild(gap);
+        } else {
+          textEl.appendChild(document.createElement("br"));
+        }
       }
       for (const [wordIndex, word] of paragraph.split(/\s+/).entries()) {
         if (wordIndex > 0) textEl.appendChild(document.createTextNode(" "));
         const wordEl = document.createElement("span");
-        wordEl.textContent = word;
+        wordEl.className = "narrative-dialogue-word";
+        const chars = [];
+        if (mode === "char") {
+          for (const char of word) {
+            const charEl = document.createElement("span");
+            charEl.className = "narrative-dialogue-char";
+            charEl.textContent = char;
+            wordEl.appendChild(charEl);
+            chars.push(charEl);
+          }
+        } else {
+          wordEl.textContent = word;
+        }
         textEl.appendChild(wordEl);
-        words.push({ el: wordEl, paragraph: index });
+        words.push({ el: wordEl, chars, length: word.length, paragraph: index });
       }
     }
 
     // Group the words by the visual line they were laid out on.
-    const lines = [];
-    for (const { el: wordEl, paragraph } of words) {
-      const top = wordEl.offsetTop;
-      const current = lines[lines.length - 1];
+    const rows = [];
+    for (const word of words) {
+      const top = word.el.offsetTop;
+      const bottom = top + word.el.offsetHeight;
+      const current = rows[rows.length - 1];
       if (current && Math.abs(top - current.top) < 3) {
-        current.words.push(wordEl);
-        current.chars += wordEl.textContent.length + 1;
+        current.words.push(word);
+        current.length += word.length + 1;
+        current.bottom = Math.max(current.bottom, bottom);
       } else {
-        lines.push({ top, bottom: top + wordEl.offsetHeight, words: [wordEl], chars: wordEl.textContent.length, paragraph });
+        rows.push({ top, bottom, words: [word], length: word.length, paragraph: word.paragraph });
       }
     }
 
-    // Each line takes as long to appear as it takes to read.
+    // Units that are revealed one after the other.
+    let units;
+    if (mode === "char") {
+      units = rows.flatMap(row => row.words.flatMap(word => word.chars.map(el => (
+        { els: [el], length: 1, paragraph: word.paragraph, bottom: row.bottom }
+      ))));
+    } else if (mode === "line") {
+      units = rows.map(row => ({
+        els: row.words.map(word => word.el), length: row.length, paragraph: row.paragraph, bottom: row.bottom
+      }));
+    } else {
+      units = [];
+      for (const row of rows) {
+        const last = units[units.length - 1];
+        if (last && last.paragraph === row.paragraph) {
+          last.els.push(...row.words.map(word => word.el));
+          last.length += row.length;
+          last.bottom = Math.max(last.bottom, row.bottom);
+        } else {
+          units.push({
+            els: row.words.map(word => word.el), length: row.length, paragraph: row.paragraph, bottom: row.bottom
+          });
+        }
+      }
+    }
+
     let startMs = 0;
     let revealMs = 0;
-    for (const [rowIndex, row] of lines.entries()) {
-      const readMs = Math.max(MIN_NARRATION_LINE_MS, row.chars / timing.readingCharsPerSecond * 1000);
-      const fadeMs = Math.min(MAX_NARRATION_FADE_MS, readMs);
-      row.startMs = startMs;
-      for (const wordEl of row.words) {
-        wordEl.style.animation = `nc-dialogue-char-in ${fadeMs}ms ease-in ${startMs}ms both`;
+    for (const [unitIndex, unit] of units.entries()) {
+      const unitMs = mode === "char" ? 1000 / cps : Math.max(MIN_NARRATION_LINE_MS, unit.length / cps * 1000);
+      const fadeMs = mode === "char" ? CHAR_FADE_MS : Math.min(MAX_NARRATION_FADE_MS, unitMs);
+      unit.startMs = startMs;
+      for (const el of unit.els) {
+        el.style.animation = `nc-dialogue-char-in ${fadeMs}ms ease-in ${Math.round(startMs)}ms both`;
       }
       revealMs = startMs + fadeMs;
-      startMs += readMs;
-      if (lines[rowIndex + 1] && lines[rowIndex + 1].paragraph !== row.paragraph) {
-        startMs += NARRATION_PARAGRAPH_PAUSE_CHARS / timing.readingCharsPerSecond * 1000;
-      }
+      startMs += unitMs;
+      if (units[unitIndex + 1] && units[unitIndex + 1].paragraph !== unit.paragraph) startMs += pauseMs;
     }
 
+    // Restart the transition after the content swap.
     void textEl.offsetHeight;
     element.classList.add("is-visible");
+    if (!isNarrator) this.#stage?.classList.add("is-speaking");
 
-    // Scrolling starts when the first line that no longer fits begins to fade in.
-    const overflowRow = lines.find(row => row.bottom > textEl.clientHeight);
-    const fillMs = overflowRow ? overflowRow.startMs : null;
+    // Scrolling starts when the first unit that no longer fits begins to appear.
+    const overflowUnit = units.find(unit => unit.bottom > textEl.clientHeight);
+    const fillMs = overflowUnit ? overflowUnit.startMs : null;
     if (fillMs !== null) this.#autoScroll(textEl, fillMs, revealMs, timing.scrollFactor);
 
-    const holdMs = 1000 * (
-      NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_HOLD_BASE)
-      + NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_HOLD_PER_LINE) * Math.max(1, lines.length)
-    );
+    // Only the lines that are visible in the box at the end count, not the whole text.
+    const lastBottom = rows.length ? rows[rows.length - 1].bottom : 0;
+    const visibleRows = rows.filter(row => row.top >= lastBottom - textEl.clientHeight - 1).length;
+    const holdMs = isNarrator
+      ? 1000 * (
+        NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_HOLD_BASE)
+        + NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_HOLD_PER_LINE) * Math.max(1, visibleRows)
+      )
+      : HOLD_MS;
     this.#active = {
       id: line.id,
       textEl,
-      isNarrator: true,
+      isNarrator,
       baseFactor: timing.factor,
       factor: timing.factor,
       revealMs,

@@ -27,6 +27,9 @@ export class NarrativeSettings {
   static SETTING_READ_ALOUD_CUSTOM_CLASS = "readAloudCustomClass";
   static READ_ALOUD_CLASSES = { coc7: "keeper-read-aloud", pf2e: "narrative" };
   static SETTING_DIALOGUE_SPEED = "dialogueSpeedMultiplier";
+  static SETTING_DIALOGUE_REVEAL_MODE = "dialogueRevealMode";
+  static SETTING_NARRATION_REVEAL_MODE = "narrationRevealMode";
+  static REVEAL_MODES = ["char", "line", "paragraph"];
   static SETTING_DIALOGUE_TEXT_SCALE = "dialogueTextScale";
   static SETTING_NARRATION_TEXT_SCALE = "narrationTextScale";
   static SETTING_NARRATION_MAX_HEIGHT = "narrationMaxHeight";
@@ -246,6 +249,25 @@ export class NarrativeSettings {
       default: 1
     });
 
+    for (const [key, defaultMode, stem] of [
+      [this.SETTING_DIALOGUE_REVEAL_MODE, "char", "DialogueRevealMode"],
+      [this.SETTING_NARRATION_REVEAL_MODE, "line", "NarrationRevealMode"]
+    ]) {
+      game.settings.register("narrative-canvas", key, {
+        name: `NARRATIVE_CANVAS.Settings.${stem}Label`,
+        hint: `NARRATIVE_CANVAS.Settings.${stem}Hint`,
+        scope: "world",
+        config: true,
+        type: String,
+        default: defaultMode,
+        choices: {
+          char: "NARRATIVE_CANVAS.Settings.RevealModes.Char",
+          line: "NARRATIVE_CANVAS.Settings.RevealModes.Line",
+          paragraph: "NARRATIVE_CANVAS.Settings.RevealModes.Paragraph"
+        }
+      });
+    }
+
     for (const [key, defaultValue, min, max, step, stem] of this.DIALOGUE_NUMBER_SETTINGS) {
       game.settings.register("narrative-canvas", key, {
         name: `NARRATIVE_CANVAS.Settings.${stem}Label`,
@@ -405,6 +427,13 @@ export class NarrativeSettings {
     const [, defaultValue, min, max] = this.DIALOGUE_NUMBER_SETTINGS.find(entry => entry[0] === key);
     const value = Number(game.settings.get("narrative-canvas", key));
     return Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : defaultValue;
+  }
+
+  /** @returns {"char"|"line"|"paragraph"} How dialogue or narrator text is revealed. */
+  static getRevealMode(isNarrator) {
+    const key = isNarrator ? this.SETTING_NARRATION_REVEAL_MODE : this.SETTING_DIALOGUE_REVEAL_MODE;
+    const mode = game.settings.get("narrative-canvas", key);
+    return this.REVEAL_MODES.includes(mode) ? mode : (isNarrator ? "line" : "char");
   }
 
   /** @returns {number} The user's speed multiplier for dialogue reveal and scrolling. */

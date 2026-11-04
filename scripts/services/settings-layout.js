@@ -45,6 +45,8 @@ const SECTIONS = [
   {
     label: "NARRATIVE_CANVAS.Settings.Sections.DialogueTiming",
     keys: [
+      NarrativeSettings.SETTING_DIALOGUE_REVEAL_MODE,
+      NarrativeSettings.SETTING_NARRATION_REVEAL_MODE,
       NarrativeSettings.SETTING_DIALOGUE_REVEAL_SPEED,
       NarrativeSettings.SETTING_NARRATION_READING_SPEED,
       NarrativeSettings.SETTING_DIALOGUE_SCROLL_SPEED,
