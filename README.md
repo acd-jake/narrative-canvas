@@ -23,8 +23,9 @@ Narrative Canvas adds a Theatre of the Mind presentation stage to Foundry Virtua
 - Director controls to clear all staged actors, hide the Visual Novel overlay from players while keeping a dimmed GM preview, and reorder actors by dragging them on the stage.
 - Drag to reorder scenes, background and handout images, actors, and audio entries in the Scene Configurator. Playlist entries move as a group.
 - Multiple handout image overlays that the GM can move, resize, and close independently.
-- Selectable themes (Fantasy, Dark Fantasy, Science Fiction, Noir) for subtitles, handout images, and actors. Set the default in the module settings or switch temporarily from the Director toolbar. Additional themes are added as directories under `themes/` with a `theme.json` and their images, registered in `module.json`.
+- Selectable themes (Fantasy, Dark Fantasy, Science Fiction, Noir, Cyberpunk, Cosmic Horror, Western, Art Deco) for subtitles, handout images, and actors. Set the default in the module settings or switch temporarily from the Director toolbar. Additional themes are added as directories under `themes/` with a `theme.json` and their images, registered in `module.json`.
 - Journal browsing and the ability to show journal images on the presentation stage.
+- A dialogue system for the Visual Novel overlay: the GM sends dialogue and narrator lines that fade in on the stage. Optional integrations read lines aloud with Talking Actors and select a language with Polyglot. Text selections and read-aloud sections of journals can be sent to the dialogue input.
 - Automatic background and audio playback when a scene is activated or the Canvas is reopened with an active scene.
 - Scenes can automatically start one PlaylistSound or an entire playlist. Starting a scene track or playlist stops other active scene audio.
 - Scene audio uses existing Foundry Playlist and PlaylistSound documents. Foundry synchronizes playlist and individual-track playback with connected players.
@@ -72,7 +73,7 @@ After installation, open your world, go to **Manage Modules**, enable **Narrativ
 
 ### Manual installation
 
-Download `module.zip` from the [latest GitHub release](https://github.com/acd-jake/narrative-canvas/releases) and extract it into Foundry's `Data/modules` directory. Make sure the `narrative-canvas` folder contains `module.json` at its root. The release archive includes the built-in theme definitions and frame artwork. Then enable the module in **Manage Modules** and reload your world.
+Download `module.zip` from the [latest GitHub release](https://github.com/acd-jake/narrative-canvas/releases) and extract it into Foundry's `Data/modules` directory. Make sure the `narrative-canvas` folder contains `module.json` at its root. The release archive includes the built-in theme definitions and frame artwork, and the changelog. Then enable the module in **Manage Modules** and reload your world.
 
 ## Learn More
 
@@ -95,8 +96,9 @@ Narrative Canvas erweitert Foundry Virtual Tabletop um eine Präsentationsfläch
 - Regie-Steuerungen, um alle Bühnenakteure zu entfernen, das VisualNovel-Overlay für Spielende auszublenden und es für die Spielleitung abgedimmt vorzubereiten sowie Akteure direkt auf der Bühne per Drag-and-drop umzusortieren.
 - Szenen, Hintergrund- und Handout-Bilder, Akteure sowie Audioeinträge lassen sich im Szeneneditor per Drag-and-drop sortieren. Playlist-Einträge werden als Gruppe verschoben.
 - Mehrere Handout-Bildüberlagerungen, die unabhängig voneinander verschoben, skaliert und geschlossen werden können.
-- Auswählbare Themes (Fantasy, Dark Fantasy, Science Fiction, Noir) für Untertitel, Handout-Bilder und Akteure. Das Standard-Theme wird in den Moduleinstellungen festgelegt und lässt sich über die Regie-Werkzeugleiste temporär umschalten. Weitere Themes entstehen als Verzeichnis unter `themes/` mit einer `theme.json` und den Bilddateien und werden in `module.json` eingetragen.
+- Auswählbare Themes (Fantasy, Dark Fantasy, Science Fiction, Noir, Cyberpunk, Kosmischer Horror, Western, Art Déco) für Untertitel, Handout-Bilder und Akteure. Das Standard-Theme wird in den Moduleinstellungen festgelegt und lässt sich über die Regie-Werkzeugleiste temporär umschalten. Weitere Themes entstehen als Verzeichnis unter `themes/` mit einer `theme.json` und den Bilddateien und werden in `module.json` eingetragen.
 - Journal-Navigation und die Möglichkeit, Journal-Bilder direkt auf der Präsentationsfläche anzuzeigen.
+- Ein Dialogsystem für das VisualNovel-Overlay: Die Spielleitung sendet Dialog- und Erzählerzeilen, die auf der Bühne eingeblendet werden. Optionale Anbindungen lesen Zeilen mit Talking Actors vor und wählen mit Polyglot eine Sprache. Textauswahlen und Vorlesetexte aus Journalen lassen sich in die Eingabezeile übernehmen.
 - Automatische Wiedergabe von Hintergründen und Audio beim Aktivieren einer Szene oder beim erneuten Öffnen des Canvas mit aktiver Szene.
 - Szenen können einen einzelnen PlaylistSound oder eine ganze Playlist automatisch starten. Beim Starten eines Szenen-Tracks oder einer Playlist wird anderes aktives Szenen-Audio gestoppt.
 - Synchronisierte Wiedergabe einzelner Audiospuren einschließlich Lautstärke, Stummschaltung, Pause und Stopp. Auch Spielende, die während einer laufenden Spur beitreten, erhalten deren Wiedergabe. Foundry-Playlists verwenden die native Synchronisierung von Foundry.
@@ -144,7 +146,7 @@ Während der Testentwicklung kann `npm run test:watch` verwendet werden.
 
 ### Manuelle Installation
 
-Lade `module.zip` aus dem [neuesten GitHub-Release](https://github.com/acd-jake/narrative-canvas/releases) herunter und entpacke die Datei in Foundrys Verzeichnis `Data/modules`. Der Ordner `narrative-canvas` muss die Datei `module.json` direkt im Stammverzeichnis enthalten. Das Release-Archiv enthält auch die mitgelieferten Theme-Definitionen und Rahmenbilder. Aktiviere danach das Modul unter **Manage Modules** und lade die Welt neu.
+Lade `module.zip` aus dem [neuesten GitHub-Release](https://github.com/acd-jake/narrative-canvas/releases) herunter und entpacke die Datei in Foundrys Verzeichnis `Data/modules`. Der Ordner `narrative-canvas` muss die Datei `module.json` direkt im Stammverzeichnis enthalten. Das Release-Archiv enthält auch die mitgelieferten Theme-Definitionen und Rahmenbilder sowie das Changelog. Aktiviere danach das Modul unter **Manage Modules** und lade die Welt neu.
 
 ## Weitere Informationen
 

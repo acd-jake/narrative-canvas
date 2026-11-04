@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8] - 2026-11-04
+
+### Added
+
+- Dialogue system, toggled from the Director toolbar. A control row below the actor carousel lets the GM pick the speaker (synchronized with the active speaker, or the narrator when there is none), enter a line, send it with the button or Enter (Shift+Enter inserts a line break), and set the reveal speed, which is saved per user.
+- Dialogue lines on the Visual Novel overlay with the theme's subtitle look. Text fades in character by character and fades out as a whole; the speaker's name is shown on the top edge, or an unknown-speaker label (configurable in the module settings) when the name is hidden. The GM can click a line to fade it out early for everyone.
+- Narrator lines without a name, shown from the middle of the screen, fading in as a whole and staying visible longer the longer the text is.
+- Optional **Talking Actors** integration: a voice toggle reads lines aloud with `/talk` (or `/narrate` for the narrator) only while the canvas is released to the players. The Live badge shows whether lines would currently be read aloud.
+- Optional **Polyglot** integration: a language selector for dialogue lines (the default language for the narrator); players who do not know the language see scrambled text.
+- Journal Viewer: selected text can be sent to the dialogue input from a context menu, and read-aloud sections get a button to send their text. The CSS class that marks read-aloud sections is selectable per game system (Call of Cthulhu 7e, Pathfinder 2e) or custom in the module settings.
+- Theme elements `dialogueText`, `dialogueSpeaker` and `narrationText` to style dialogue lines per theme.
+- A module setting to choose whether dialogue lines that are read aloud are also posted to the chat.
+- Four additional themes: Cyberpunk, Cosmic Horror, Western and Art Deco.
+- The active speaker is shown larger in the carousel (+15%) and on the Visual Novel overlay (+25%); the speaker highlight pulses while a dialogue line is shown.
+
+### Changed
+
+- The actor carousel is limited to the space between the Director sidebars; with the dialogue system active it spans that space and the actor list stays centered. Dialogue lines for the GM use the same span.
+- Actor name plates on the Visual Novel overlay are 60% of their previous text size.
+- The speaker toggle in the carousel moved to the middle of the lower tile edge.
+- The release archive now includes the changelog.
+- New actors on the Visual Novel overlay are added alternately on the left and right: on the right when an odd number of actors is already shown, otherwise on the left.
+- The module settings are grouped into General, Appearance, Journal and Dialogue system sections.
+
+### Fixed
+
+- Collapsed Director panels no longer expand on their own when the Canvas state updates.
+
 ## [0.7] - 2026-11-03
 
 ### Added

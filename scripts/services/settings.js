@@ -22,6 +22,7 @@ export class NarrativeSettings {
   static SETTING_DIRECTOR_LAYOUT_STATE = "directorLayoutState";
   static SETTING_JOURNAL_ROOT_FOLDER = "journalRootFolder";
   static SETTING_UNKNOWN_SPEAKER = "unknownSpeakerName";
+  static SETTING_SPOKEN_TO_CHAT = "spokenDialogueToChat";
   static SETTING_READ_ALOUD_PRESET = "readAloudPreset";
   static SETTING_READ_ALOUD_CUSTOM_CLASS = "readAloudCustomClass";
   static READ_ALOUD_CLASSES = { coc7: "keeper-read-aloud", pf2e: "narrative" };
@@ -178,6 +179,15 @@ export class NarrativeSettings {
       config: true,
       type: String,
       default: ""
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_SPOKEN_TO_CHAT, {
+      name: "NARRATIVE_CANVAS.Settings.SpokenToChatLabel",
+      hint: "NARRATIVE_CANVAS.Settings.SpokenToChatHint",
+      scope: "world",
+      config: true,
+      type: Boolean,
+      default: true
     });
 
     game.settings.register("narrative-canvas", this.SETTING_READ_ALOUD_PRESET, {
@@ -339,12 +349,17 @@ export class NarrativeSettings {
     return configured?.trim() || game.i18n.localize("NARRATIVE_CANVAS.Dialogue.UnknownSpeaker");
   }
 
+  /** @returns {boolean} Whether dialogue lines read aloud are also posted to the chat. */
+  static shouldPostSpokenDialogueToChat() {
+    return game.settings.get("narrative-canvas", this.SETTING_SPOKEN_TO_CHAT) !== false;
+  }
+
   /** @returns {string} CSS class marking read-aloud blocks in journals; empty if none is configured. */
   static getReadAloudClass() {
     const preset = game.settings.get("narrative-canvas", this.SETTING_READ_ALOUD_PRESET);
     const raw = preset === "custom"
       ? game.settings.get("narrative-canvas", this.SETTING_READ_ALOUD_CUSTOM_CLASS)
-      : this.READ_ALOUD_CLASSES[preset === "auto" ? game.system.id : preset];
+      : this.READ_ALOUD_CLASSES[preset === "auto" ? game.system.id.toLowerCase() : preset];
     const name = String(raw ?? "").trim().replace(/^\./, "");
     return /^[\w-]+$/.test(name) ? name : "";
   }

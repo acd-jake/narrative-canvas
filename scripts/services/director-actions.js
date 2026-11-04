@@ -78,7 +78,7 @@ export class NarrativeDirectorActions {
           activeList.splice(existingIndex, 1);
           if (activeSpeakerId === actorId) activeSpeakerId = null;
         } else {
-          activeList.push({
+          this.#addToStage(activeList, {
             id: actorData.id,
             name: actorData.name,
             img: actorData.img,
@@ -120,7 +120,7 @@ export class NarrativeDirectorActions {
           if (!activeList.some(actor => actor.id === actorId)) {
             const actorData = state.currentSceneData?.actors.find(actor => actor.id === actorId);
             if (actorData) {
-              activeList.push({
+              this.#addToStage(activeList, {
                 id: actorData.id,
                 name: actorData.name,
                 img: actorData.img,
@@ -247,6 +247,12 @@ export class NarrativeDirectorActions {
     };
   }
 
+  /** Adds an actor on the right when an odd number is staged, otherwise on the left. */
+  #addToStage(activeList, actor) {
+    if (activeList.length % 2 === 1) activeList.push(actor);
+    else activeList.unshift(actor);
+  }
+
   #sendDialogueLine({ speakerId, text, voice, language }) {
     const line = String(text ?? "").trim();
     if (!line) return;
@@ -286,7 +292,8 @@ export class NarrativeDirectorActions {
 
   /** Reads the line aloud via a Talking Actors chat command (`/talk {id}` or `/narrate`), tagging the chat message with the Polyglot language. */
   #talk(commandPrefix, text, language) {
-    if (language) {
+    const postToChat = NarrativeSettings.shouldPostSpokenDialogueToChat();
+    if (language && postToChat) {
       const userId = game.user.id;
       const timeout = setTimeout(() => Hooks.off("preCreateChatMessage", hookId), 5000);
       const hookId = Hooks.on("preCreateChatMessage", (message, data, options, senderId) => {
@@ -297,7 +304,12 @@ export class NarrativeDirectorActions {
       });
     }
     const command = `${commandPrefix} ${text.replace(/\s*\n\s*/g, " ")}`;
-    NarrativeLogger.debug("Sending dialogue line to Talking Actors", { command });
+    NarrativeLogger.debug("Sending dialogue line to Talking Actors", { command, postToChat });
+    const processor = game.acdTalkingActors?.chatProcessor;
+    if (!postToChat && processor) {
+      processor.processChatMessage(ui.chat, command, { speaker: ChatMessage.getSpeaker(), user: game.user.id }, false);
+      return;
+    }
     ui.chat?.processMessage?.(command)?.catch?.(error => NarrativeLogger.error("Talking Actors command failed", error));
   }
 
