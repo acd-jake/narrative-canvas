@@ -52,7 +52,8 @@ export class NarrativeDirector extends NarrativeCanvas {
       onVisualNovelOverlayVisibilityToggle: () => this.callbacks.onVisualNovelOverlayVisibilityToggle?.(),
       onActorOrderChange: actorIds => this.callbacks.onActorOrderChange?.(actorIds),
       onDialogueSend: line => this.callbacks.onDialogueSend?.(line),
-      onDialogueSpeedChange: speed => this.callbacks.onDialogueSpeedChange?.(speed)
+      onDialogueSpeedChange: speed => this.callbacks.onDialogueSpeedChange?.(speed),
+      onDialogueVoiceChange: voice => this.callbacks.onDialogueVoiceChange?.(voice)
     });
     this._setupGlobalDelegatedListeners();
   }

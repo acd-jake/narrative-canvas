@@ -101,6 +101,7 @@ export class NarrativeCanvas {
       activeActors,
       hasActiveSpeaker: Boolean(state.activeSpeakerId),
       isGM: game.user.isGM,
+      dialogueVoiceState: this._getDialogueVoiceState(state),
       customBgColor: NarrativeSettings.getBackgroundColor(),
       fadeDuration: NarrativeSettings.getFadeDuration(),
       actorImageHeight: NarrativeSettings.getActorImageHeight()
@@ -132,6 +133,8 @@ export class NarrativeCanvas {
     newStage.style.setProperty("--nc-vn-actor-image-height", `${context.actorImageHeight}vh`);
     ThemeManager.applyTo(newStage);
     newStage.style.opacity = "0";
+    const newNotice = newStage.querySelector(".narrative-visibility-notice");
+    if (newNotice) this.#updateVoiceStatus(newNotice, context.dialogueVoiceState);
 
     // Initialize background controller and visual novel character layer
     this.bgController.mount(newStage, context.background);
@@ -155,6 +158,41 @@ export class NarrativeCanvas {
       this._resizeHandler = this._handleWindowResize.bind(this);
       window.addEventListener("resize", this._resizeHandler);
     }
+  }
+
+  /**
+   * Tells whether dialogue lines would currently be read aloud (GM badge only).
+   * @returns {""|"on"|"off"|"blocked"}
+   */
+  _getDialogueVoiceState(state) {
+    if (!game.user.isGM || state.dialogueSystemEnabled !== true) return "";
+    if (!game.modules.get("acd-talking-actors")?.active) return "";
+    if (state.dialogueVoice !== true) return "off";
+    return state.playerViewActive === true ? "on" : "blocked";
+  }
+
+  #updateVoiceStatus(notice, voiceState) {
+    let status = notice.querySelector(".visibility-voice-status");
+    if (!voiceState) {
+      status?.remove();
+      return;
+    }
+
+    if (!status) {
+      status = document.createElement("span");
+      status.className = "visibility-voice-status";
+      status.innerHTML = `<i aria-hidden="true"></i><span class="visibility-voice-label"></span>`;
+      notice.appendChild(status);
+    }
+    const labels = {
+      on: "NARRATIVE_CANVAS.Status.VoiceOn",
+      off: "NARRATIVE_CANVAS.Status.VoiceOff",
+      blocked: "NARRATIVE_CANVAS.Status.VoiceBlocked"
+    };
+    status.className = `visibility-voice-status is-${voiceState}`;
+    status.querySelector("i").className = `fas ${voiceState === "on" ? "fa-microphone" : "fa-microphone-slash"}`;
+    status.querySelector(".visibility-voice-label").textContent = game.i18n.localize(labels[voiceState]);
+    status.title = game.i18n.localize(`${labels[voiceState]}Tooltip`);
   }
 
   /**
@@ -229,6 +267,7 @@ export class NarrativeCanvas {
       );
       visibilityNotice.title = visibilityTooltip;
       visibilityNotice.dataset.tooltip = visibilityTooltip;
+      this.#updateVoiceStatus(visibilityNotice, context.dialogueVoiceState);
     }
 
     // 3. Update dialogue and handout layers in-place

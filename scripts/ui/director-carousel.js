@@ -56,6 +56,7 @@ export class DirectorActorCarousel {
     this.#syncDialogueSpeaker(actors, activeSpeakerId);
 
     const hasTalkingActors = game.modules.get("acd-talking-actors")?.active === true;
+    this.#dialogueVoice = context.dialogueVoice === true;
     const polyglotLanguages = game.modules.get("polyglot")?.active
       ? game.polyglot?.languageProvider?.languages ?? {}
       : {};
@@ -230,6 +231,10 @@ export class DirectorActorCarousel {
     this.#element.classList.toggle("has-dialogue-controls", enabled);
 
     this.#syncDialogueSpeaker(sceneActors.map(actor => ({ id: actor.id })), activeSpeakerId);
+    this.#dialogueVoice = context.dialogueVoice === true;
+    const voiceButton = form.querySelector(".dialogue-voice-toggle");
+    voiceButton?.classList.toggle("is-active", this.#dialogueVoice);
+    voiceButton?.setAttribute("aria-pressed", String(this.#dialogueVoice));
     const select = form.querySelector(".dialogue-speaker");
     if (select && select.value !== this.#dialogueSpeakerId) select.value = this.#dialogueSpeakerId;
     this.#layoutDialogueControls();
@@ -249,6 +254,11 @@ export class DirectorActorCarousel {
     const left = Math.max(layerRect.left, leftPanel?.getBoundingClientRect().right ?? layerRect.left) + inset;
     const right = Math.min(layerRect.right, rightPanel?.getBoundingClientRect().left ?? layerRect.right) - inset;
     const available = Math.max(0, right - left);
+
+    // The dialogue line lives in the stage next to the UI layer and shares this span.
+    const stage = layer.parentElement;
+    stage?.style.setProperty("--nc-dialogue-left", `${left - layerRect.left}px`);
+    stage?.style.setProperty("--nc-dialogue-right", `${layerRect.right - right}px`);
 
     bar.style.maxWidth = `${available}px`;
     if (form.hidden) {
@@ -329,6 +339,7 @@ export class DirectorActorCarousel {
       const button = event.currentTarget;
       button.classList.toggle("is-active", this.#dialogueVoice);
       button.setAttribute("aria-pressed", String(this.#dialogueVoice));
+      this.#callbacks.onDialogueVoiceChange?.(this.#dialogueVoice);
     });
 
     form.querySelector(".dialogue-language")?.addEventListener("change", event => {

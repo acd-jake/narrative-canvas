@@ -30,6 +30,7 @@ export class NarrativeManager {
       handout: null,
       isVisualNovelOverlayVisible: true,
       dialogueSystemEnabled: false,
+      dialogueVoice: false,
       dialogueLine: null,
 
       activeSceneId: "",

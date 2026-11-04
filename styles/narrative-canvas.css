@@ -985,6 +985,11 @@ body.acd-nc-active {
     bottom: calc(160px + var(--nc-dialogue-carousel-raise) + var(--nc-dialogue-line-space));
 }
 
+.acd-nc.director-view .narrative-dialogue-line {
+    left: var(--nc-dialogue-left, 0);
+    right: var(--nc-dialogue-right, 0);
+}
+
 .acd-nc.director-view .narrative-dialogue-line.is-visible:not(.is-fading-out) {
     cursor: pointer;
     pointer-events: auto;
@@ -2601,6 +2606,30 @@ body.acd-nc-active {
 
 .acd-nc .journal-page-body {
     cursor: text;
+}
+
+.acd-nc .visibility-voice-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 6px;
+    padding-left: 12px;
+    border-left: 1px solid rgba(255, 255, 255, 0.35);
+    font-size: 0.85em;
+    font-weight: normal;
+}
+
+.acd-nc .visibility-voice-status.is-on i {
+    color: #fff;
+}
+
+.acd-nc .visibility-voice-status.is-off,
+.acd-nc .visibility-voice-status.is-blocked {
+    opacity: 0.75;
+}
+
+.acd-nc .visibility-voice-status.is-blocked i {
+    color: #e0b84c;
 }
 
 .nc-read-aloud-target {

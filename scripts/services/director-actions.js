@@ -181,6 +181,7 @@ export class NarrativeDirectorActions {
       }),
       onDialogueSend: ({ speakerId, text, voice, language }) => this.#sendDialogueLine({ speakerId, text, voice, language }),
       onDialogueSpeedChange: speed => NarrativeSettings.setDialogueSpeed(speed),
+      onDialogueVoiceChange: dialogueVoice => this.handleDisplayUpdate({ dialogueVoice: dialogueVoice === true }),
       onDialogueDismiss: () => {
         const line = this.getState().dialogueLine;
         if (line && !line.dismissed) this.handleDisplayUpdate({ dialogueLine: { ...line, dismissed: true } });
@@ -260,7 +261,9 @@ export class NarrativeDirectorActions {
     const requestedLanguage = isNarrator ? defaultLanguage : language;
     const activeLanguage = requestedLanguage && languages?.[requestedLanguage] ? requestedLanguage : "";
 
-    if (voice && game.modules.get("acd-talking-actors")?.active) {
+    // Speech only makes sense while the canvas is released to the players.
+    const state = this.getState();
+    if (voice && state.playerViewActive === true && game.modules.get("acd-talking-actors")?.active) {
       this.#talk(isNarrator ? "/narrate" : `/talk {${actor.id}}`, line, activeLanguage);
     }
 
