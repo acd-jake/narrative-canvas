@@ -2,6 +2,7 @@ import { NarrativeSettings } from "../services/settings.js";
 import { ThemeManager } from "../services/themes/theme-manager.js";
 import { StageBackgroundController } from "./stage-background.js";
 import { VisualNovelStage } from "./visual-novel-stage.js";
+import { DialogueLineController } from "./dialogue-line.js";
 import { HandoutImageOverlayController } from "./handout-image-overlay-controller.js";
 
 /**
@@ -30,6 +31,7 @@ export class NarrativeCanvas {
     this.vnStageController = new VisualNovelStage({
       onActorOrderChange: actorIds => this._onActorOrderChange(actorIds)
     });
+    this.dialogueLineController = new DialogueLineController();
     this.handoutImageOverlayController = new HandoutImageOverlayController({
       animateOpacity: (element, opacity, duration) => this._animateElementOpacity(element, opacity, duration),
       fadeOutAndRemove: (element, duration) => this._fadeOutAndRemove(element, duration),
@@ -133,6 +135,7 @@ export class NarrativeCanvas {
     this.bgController.mount(newStage, context.background);
     this.vnStageController.mount(newStage);
     this.vnStageController.update(context);
+    this.dialogueLineController.update(newStage, context);
 
     await this._onPrepareElements(newStage, context);
     if (renderRequestId !== this._renderRequestId) return;
@@ -201,6 +204,7 @@ export class NarrativeCanvas {
     // 1. Update background and actor layers
     this.bgController.update(context.background, fadeDuration);
     this.vnStageController.update({ ...context, fadeDuration });
+    this.dialogueLineController.update(this.stageElement, context);
     await Promise.all([
       this.#updateBackgroundDescription(context.backgroundDescription, fadeDuration),
       this.handoutImageOverlayController.update(context.handoutImageOverlays, fadeDuration)

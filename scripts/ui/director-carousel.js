@@ -1,3 +1,5 @@
+import { NarrativeSettings } from "../services/settings.js";
+
 /**
  * Controller for the Director Actor Carousel displayed at the bottom of the Narrative Canvas.
  * Allows the GM to stage actors on the Visual Novel overlay, designate an active speaker,
@@ -7,6 +9,10 @@ export class DirectorActorCarousel {
   #callbacks;
   #element = null;
   #lastDataSourceId = "";
+  #dialogueVoice = false;
+  #dialogueLanguage = "";
+  #dialogueSpeakerId = "";
+  #stopLayoutTracking = null;
 
   /**
    * @param {object} callbacks
@@ -44,7 +50,24 @@ export class DirectorActorCarousel {
       img: actor.img,
       showName: actor.showName !== false,
       isOnStage: activeIds.has(actor.id),
-      isSpeaker: activeSpeakerId === actor.id
+      isSpeaker: activeSpeakerId === actor.id,
+      isDialogueSpeaker: false
+    }));
+    this.#syncDialogueSpeaker(actors, activeSpeakerId);
+
+    const hasTalkingActors = game.modules.get("acd-talking-actors")?.active === true;
+    const polyglotLanguages = game.modules.get("polyglot")?.active
+      ? game.polyglot?.languageProvider?.languages ?? {}
+      : {};
+    const languageEntries = Object.entries(polyglotLanguages);
+    if (!polyglotLanguages[this.#dialogueLanguage]) {
+      const defaultLanguage = game.polyglot?.languageProvider?.defaultLanguage;
+      this.#dialogueLanguage = polyglotLanguages[defaultLanguage] ? defaultLanguage : (languageEntries[0]?.[0] ?? "");
+    }
+    const dialogueLanguages = languageEntries.map(([id, language]) => ({
+      id,
+      label: language?.label ?? id,
+      selected: id === this.#dialogueLanguage
     }));
 
     const htmlString = await foundry.applications.handlebars.renderTemplate(
@@ -52,7 +75,13 @@ export class DirectorActorCarousel {
       {
         actors,
         hasActiveActors: activeIds.size > 0,
-        isVisualNovelOverlayVisible
+        isVisualNovelOverlayVisible,
+        dialogueSystemEnabled: context.dialogueSystemEnabled === true,
+        dialogueSpeakerId: this.#dialogueSpeakerId,
+        hasTalkingActors,
+        dialogueVoice: this.#dialogueVoice,
+        dialogueLanguages: dialogueLanguages.length ? dialogueLanguages : null,
+        dialogueSpeed: NarrativeSettings.getDialogueSpeed()
       }
     );
     const parser = new DOMParser();
@@ -132,6 +161,8 @@ export class DirectorActorCarousel {
     const clearButton = this.#element.querySelector(".btn-carousel-clear-stage");
     if (clearButton) clearButton.disabled = activeIds.size === 0;
 
+    this.#updateDialogueControls(context, sceneActors, activeSpeakerId);
+
     this.#element.querySelectorAll(".actor-carousel-card").forEach(card => {
       const actorId = card.dataset.actorId;
       const isOnStage = activeIds.has(actorId);
@@ -184,8 +215,123 @@ export class DirectorActorCarousel {
     });
   }
 
+  /** The dialogue speaker mirrors the active speaker; no active speaker means the narrator (empty id). */
+  #syncDialogueSpeaker(actors, activeSpeakerId) {
+    this.#dialogueSpeakerId = actors.some(actor => actor.id === activeSpeakerId) ? activeSpeakerId : "";
+    for (const actor of actors) actor.isDialogueSpeaker = actor.id === this.#dialogueSpeakerId;
+  }
+
+  #updateDialogueControls(context, sceneActors, activeSpeakerId) {
+    const form = this.#element?.querySelector(".director-dialogue-controls");
+    if (!form) return;
+
+    const enabled = context.dialogueSystemEnabled === true;
+    form.hidden = !enabled;
+    this.#element.classList.toggle("has-dialogue-controls", enabled);
+
+    this.#syncDialogueSpeaker(sceneActors.map(actor => ({ id: actor.id })), activeSpeakerId);
+    const select = form.querySelector(".dialogue-speaker");
+    if (select && select.value !== this.#dialogueSpeakerId) select.value = this.#dialogueSpeakerId;
+    if (enabled) this.#layoutDialogueControls();
+    else {
+      this.#element.style.left = "";
+      this.#element.style.width = "";
+    }
+  }
+
+  /** Spans the carousel (with its dialogue row) exactly between the left and right panels. */
+  #layoutDialogueControls() {
+    const bar = this.#element;
+    const form = bar?.querySelector(".director-dialogue-controls");
+    const layer = bar?.closest(".narrative-director-ui-layer");
+    if (!form || !layer || form.hidden) return;
+
+    const layerRect = layer.getBoundingClientRect();
+    const leftPanel = layer.querySelector(".narrative-director-sidebar");
+    const rightPanel = layer.querySelector(".narrative-director-image-controls");
+    const left = Math.max(layerRect.left, leftPanel?.getBoundingClientRect().right ?? layerRect.left);
+    const right = Math.min(layerRect.right, rightPanel?.getBoundingClientRect().left ?? layerRect.right);
+
+    bar.style.left = `${left - layerRect.left}px`;
+    bar.style.width = `${Math.max(0, right - left)}px`;
+  }
+
+  #startLayoutTracking() {
+    this.#stopLayoutTracking?.();
+    this.#stopLayoutTracking = null;
+
+    const bar = this.#element;
+    const layer = bar?.closest(".narrative-director-ui-layer");
+    if (!layer) return;
+
+    const update = () => this.#layoutDialogueControls();
+    const resizeObserver = new ResizeObserver(update);
+    const mutationObserver = new MutationObserver(update);
+    resizeObserver.observe(layer);
+    resizeObserver.observe(bar);
+    for (const selector of [".narrative-director-sidebar", ".narrative-director-image-controls"]) {
+      const panel = layer.querySelector(selector);
+      if (!panel) continue;
+      resizeObserver.observe(panel);
+      mutationObserver.observe(panel, { attributes: true, attributeFilter: ["style", "class"] });
+    }
+    layer.addEventListener("transitionend", update);
+    update();
+
+    this.#stopLayoutTracking = () => {
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+      layer.removeEventListener("transitionend", update);
+    };
+  }
+
+  #bindDialogueListeners(element) {
+    const form = element.querySelector(".director-dialogue-controls");
+    if (!form) return;
+    this.#element?.classList.toggle("has-dialogue-controls", !form.hidden);
+    requestAnimationFrame(() => this.#startLayoutTracking());
+
+    const speakerSelect = form.querySelector(".dialogue-speaker");
+    const textInput = form.querySelector(".dialogue-text");
+
+    speakerSelect?.addEventListener("change", () => {
+      // Picking the narrator switches the current speaker off; picking an actor makes them the speaker.
+      const target = speakerSelect.value || this.#dialogueSpeakerId;
+      if (target) this.#callbacks.onActorSpeakerToggle?.(target);
+    });
+
+    // The voice toggle only selects the mode; speech starts when a line is sent.
+    form.querySelector(".dialogue-voice")?.addEventListener("change", event => {
+      this.#dialogueVoice = event.target.checked;
+    });
+
+    form.querySelector(".dialogue-language")?.addEventListener("change", event => {
+      this.#dialogueLanguage = event.target.value;
+    });
+
+    form.querySelector(".dialogue-speed-slider")?.addEventListener("change", event => {
+      this.#callbacks.onDialogueSpeedChange?.(Number(event.target.value));
+    });
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      const text = textInput?.value.trim();
+      if (!text) return;
+      this.#callbacks.onDialogueSend?.({
+        speakerId: speakerSelect.value,
+        text,
+        voice: this.#dialogueVoice,
+        language: this.#dialogueLanguage
+      });
+      textInput.value = "";
+    });
+  }
+
   #bindListeners(element) {
     if (!element) return;
+
+    this.#bindDialogueListeners(element);
 
     element.querySelector(".btn-carousel-toggle-player-visibility")?.addEventListener("click", event => {
       event.preventDefault();

@@ -51,4 +51,34 @@
             <i class="fas fa-chevron-right"></i>
         </button>
     </div>
+
+    <form class="director-dialogue-controls" {{#unless dialogueSystemEnabled}}hidden{{/unless}} autocomplete="off">
+        <select class="dialogue-speaker" title="{{localize 'NARRATIVE_CANVAS.Dialogue.Speaker'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Dialogue.Speaker'}}">
+            <option value="" {{#unless dialogueSpeakerId}}selected{{/unless}}>{{localize 'NARRATIVE_CANVAS.Dialogue.Narrator'}}</option>
+            {{#each actors}}
+                <option value="{{this.id}}" {{#if this.isDialogueSpeaker}}selected{{/if}}>{{this.name}}</option>
+            {{/each}}
+        </select>
+        {{#if hasTalkingActors}}
+            <label class="dialogue-voice-toggle" title="{{localize 'NARRATIVE_CANVAS.Dialogue.Voice'}}">
+                <input type="checkbox" class="dialogue-voice" {{#if dialogueVoice}}checked{{/if}} aria-label="{{localize 'NARRATIVE_CANVAS.Dialogue.Voice'}}" />
+                <i class="fas fa-microphone" aria-hidden="true"></i>
+            </label>
+        {{/if}}
+        {{#if dialogueLanguages}}
+            <select class="dialogue-language" title="{{localize 'NARRATIVE_CANVAS.Dialogue.Language'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Dialogue.Language'}}">
+                {{#each dialogueLanguages}}
+                    <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                {{/each}}
+            </select>
+        {{/if}}
+        <input type="text" class="dialogue-text" placeholder="{{localize 'NARRATIVE_CANVAS.Dialogue.TextPlaceholder'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Dialogue.TextPlaceholder'}}" />
+        <button type="submit" class="dialogue-send" title="{{localize 'NARRATIVE_CANVAS.Dialogue.Send'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Dialogue.Send'}}">
+            <i class="fas fa-paper-plane" aria-hidden="true"></i>
+        </button>
+        <label class="dialogue-speed" title="{{localize 'NARRATIVE_CANVAS.Dialogue.Speed'}}">
+            <i class="fas fa-gauge-high" aria-hidden="true"></i>
+            <input type="range" class="dialogue-speed-slider" min="5" max="150" step="5" value="{{dialogueSpeed}}" aria-label="{{localize 'NARRATIVE_CANVAS.Dialogue.Speed'}}" />
+        </label>
+    </form>
 </div>

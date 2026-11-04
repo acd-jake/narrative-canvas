@@ -960,6 +960,203 @@ body.acd-nc-active {
     }
 
     /* ==========================================================================
+       Dialogue System
+       ========================================================================== */
+    /* Plain selectors on purpose: the block is no longer inside the .acd-nc nesting scope. */
+.acd-nc {
+    --nc-dialogue-line-space: 76px;
+    --nc-dialogue-controls-height: 50px;
+    --nc-dialogue-carousel-raise: calc(var(--nc-dialogue-controls-height) + 1px - 20px);
+}
+
+.acd-nc.has-dialogue-system .narrative-dialogue-line {
+    bottom: 20px;
+}
+
+.acd-nc.player-view.has-dialogue-system .narrative-visual-novel-stage {
+    bottom: calc(20px + var(--nc-dialogue-line-space));
+}
+
+.acd-nc.director-view.has-dialogue-system .narrative-dialogue-line {
+    bottom: calc(160px + var(--nc-dialogue-carousel-raise) + 8px);
+}
+
+.acd-nc.director-view.has-dialogue-system .narrative-visual-novel-stage {
+    bottom: calc(160px + var(--nc-dialogue-carousel-raise) + var(--nc-dialogue-line-space));
+}
+
+    .narrative-director-ui-layer .narrative-director-actors-bar.has-dialogue-controls {
+        bottom: 0;
+        transform: none;
+        max-width: none;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding-bottom: 0;
+        border-bottom: 0;
+        border-radius: 8px 8px 0 0;
+
+        .actors-carousel-track {
+            flex: 0 1 auto;
+            min-width: 0;
+        }
+
+        .carousel-nav-control {
+            flex: 0 0 auto;
+        }
+    }
+
+    .narrative-dialogue-line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        z-index: 3;
+        box-sizing: border-box;
+        min-height: 2.6em;
+        padding: 10px 24px;
+        border-style: solid;
+        border-color: transparent;
+        border-width: var(--nc-theme-subtitle-frame-width, 0);
+        border-image-source: var(--nc-theme-subtitle-frame-image, none);
+        border-image-slice: var(--nc-theme-subtitle-frame-slice, 0);
+        border-image-outset: var(--nc-theme-subtitle-frame-outset, 0);
+        border-image-repeat: var(--nc-theme-subtitle-frame-repeat, stretch);
+        background: var(--nc-theme-subtitle-background, rgba(0, 0, 0, 0.76));
+        color: var(--nc-theme-subtitle-color, #fff);
+        font-family: var(--nc-theme-subtitle-font-family, "Signika", sans-serif);
+        font-size: var(--nc-theme-subtitle-font-size, 1.15rem);
+        font-style: var(--nc-theme-subtitle-font-style, normal);
+        font-weight: var(--nc-theme-subtitle-font-weight, normal);
+        letter-spacing: var(--nc-theme-subtitle-letter-spacing, normal);
+        text-transform: var(--nc-theme-subtitle-text-transform, none);
+        line-height: 1.35;
+        text-align: center;
+        text-shadow: var(--nc-theme-subtitle-text-shadow, 0 2px 3px #000);
+        opacity: 0;
+        pointer-events: none;
+
+        &.is-visible {
+            opacity: 1;
+        }
+
+        &.is-fading-out {
+            opacity: 0;
+            transition: opacity 700ms ease-in-out;
+        }
+
+        .narrative-dialogue-speaker {
+            position: absolute;
+            top: 0;
+            left: 24px;
+            transform: translateY(-60%);
+            padding: 1px 12px;
+            background: var(--nc-theme-dialogue-speaker-background, rgba(0, 0, 0, 0.76));
+            border-radius: 4px 4px 0 0;
+            color: var(--nc-theme-dialogue-speaker-color, rgba(255, 255, 255, 0.65));
+            font-family: var(--nc-theme-dialogue-speaker-font-family, inherit);
+            font-weight: var(--nc-theme-dialogue-speaker-font-weight, normal);
+            font-style: var(--nc-theme-dialogue-speaker-font-style, italic);
+            font-size: var(--nc-theme-dialogue-speaker-font-size, 0.85rem);
+            letter-spacing: var(--nc-theme-dialogue-speaker-letter-spacing, 0.04em);
+            text-transform: var(--nc-theme-dialogue-speaker-text-transform, none);
+            text-shadow: var(--nc-theme-dialogue-speaker-text-shadow, none);
+            white-space: nowrap;
+        }
+
+        .narrative-dialogue-text {
+            color: var(--nc-theme-dialogue-text-color, var(--nc-theme-subtitle-color, #fff));
+            font-family: var(--nc-theme-dialogue-text-font-family, var(--nc-theme-subtitle-font-family, "Signika", sans-serif));
+            font-size: var(--nc-theme-dialogue-text-font-size, var(--nc-theme-subtitle-font-size, 1.15rem));
+            font-style: var(--nc-theme-dialogue-text-font-style, var(--nc-theme-subtitle-font-style, normal));
+            font-weight: var(--nc-theme-dialogue-text-font-weight, var(--nc-theme-subtitle-font-weight, normal));
+            letter-spacing: var(--nc-theme-dialogue-text-letter-spacing, var(--nc-theme-subtitle-letter-spacing, normal));
+            text-transform: var(--nc-theme-dialogue-text-text-transform, var(--nc-theme-subtitle-text-transform, none));
+            text-shadow: var(--nc-theme-dialogue-text-text-shadow, var(--nc-theme-subtitle-text-shadow, 0 2px 3px #000));
+        }
+
+        .narrative-dialogue-speaker:empty {
+            display: none;
+        }
+
+        &.is-narration .narrative-dialogue-text {
+            color: var(--nc-theme-narration-text-color, var(--nc-theme-dialogue-text-color, var(--nc-theme-subtitle-color, #fff)));
+            font-family: var(--nc-theme-narration-text-font-family, var(--nc-theme-dialogue-text-font-family, var(--nc-theme-subtitle-font-family, "Signika", sans-serif)));
+            font-size: var(--nc-theme-narration-text-font-size, var(--nc-theme-dialogue-text-font-size, 1.15rem));
+            font-style: var(--nc-theme-narration-text-font-style, italic);
+            font-weight: var(--nc-theme-narration-text-font-weight, normal);
+            letter-spacing: var(--nc-theme-narration-text-letter-spacing, var(--nc-theme-dialogue-text-letter-spacing, normal));
+            text-transform: var(--nc-theme-narration-text-text-transform, none);
+            text-shadow: var(--nc-theme-narration-text-text-shadow, var(--nc-theme-dialogue-text-text-shadow, 0 2px 3px #000));
+        }
+
+        .narrative-dialogue-word {
+            display: inline-block;
+            white-space: nowrap;
+        }
+
+        .narrative-dialogue-char {
+            opacity: 0;
+            animation: nc-dialogue-char-in 350ms ease-out forwards;
+        }
+    }
+
+    .narrative-canvas-toolbar button.is-active {
+        border-color: #e0b84c;
+        background: #38342a;
+    }
+
+    .narrative-director-actors-bar {
+        .director-dialogue-controls {
+            flex: 0 0 100%;
+            height: var(--nc-dialogue-controls-height);
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0;
+            border-top: 1px solid #444;
+
+            &[hidden] {
+                display: none;
+            }
+
+            select,
+            input[type="text"] {
+                height: 30px;
+                min-width: 0;
+            }
+
+            .dialogue-speaker,
+            .dialogue-language {
+                flex: 0 1 140px;
+            }
+
+            .dialogue-text {
+                flex: 1 1 auto;
+            }
+
+            .dialogue-voice-toggle,
+            .dialogue-speed {
+                display: flex;
+                flex: 0 0 auto;
+                align-items: center;
+                gap: 4px;
+                color: #c8c8c8;
+            }
+
+            .dialogue-speed-slider {
+                width: 90px;
+            }
+
+            .dialogue-send {
+                flex: 0 0 34px;
+                height: 30px;
+                padding: 0;
+                cursor: pointer;
+            }
+        }
+    }
+
+    /* ==========================================================================
        Director Interface Additions
        ========================================================================== */
     .narrative-director-audio-sidebar {
@@ -2338,6 +2535,11 @@ body.acd-nc-active {
 
         }
     }
+
+@keyframes nc-dialogue-char-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 
 @keyframes nc-pulse {
     0% { opacity: 0.6; }

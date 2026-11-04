@@ -107,6 +107,9 @@ export class DirectorCanvasToolbar {
       case "close-handouts":
         this.#callbacks.onCloseAllHandouts();
         break;
+      case "toggle-dialogue":
+        this.#callbacks.onDialogueToggle?.();
+        break;
       case "select-theme":
         this.#callbacks.onThemeSelect(button.dataset.themeId);
         break;

@@ -21,6 +21,8 @@ export class NarrativeSettings {
   static SETTING_JOURNAL_VIEWER_STATE = "journalViewerState";
   static SETTING_DIRECTOR_LAYOUT_STATE = "directorLayoutState";
   static SETTING_JOURNAL_ROOT_FOLDER = "journalRootFolder";
+  static SETTING_UNKNOWN_SPEAKER = "unknownSpeakerName";
+  static SETTING_DIALOGUE_SPEED = "dialogueSpeed";
 
   /**
    * Registers all settings within Foundry VTT.
@@ -166,6 +168,22 @@ export class NarrativeSettings {
       default: {}
     });
 
+    game.settings.register("narrative-canvas", this.SETTING_UNKNOWN_SPEAKER, {
+      name: "NARRATIVE_CANVAS.Settings.UnknownSpeakerLabel",
+      hint: "NARRATIVE_CANVAS.Settings.UnknownSpeakerHint",
+      scope: "world",
+      config: true,
+      type: String,
+      default: ""
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_DIALOGUE_SPEED, {
+      scope: "client",
+      config: false,
+      type: Number,
+      default: 40
+    });
+
     game.settings.register("narrative-canvas", this.SETTING_DIRECTOR_LAYOUT_STATE, {
       scope: "client",
       config: false,
@@ -284,6 +302,22 @@ export class NarrativeSettings {
       journalId: typeof state?.journalId === "string" ? state.journalId : "",
       pageId: typeof state?.pageId === "string" ? state.pageId : ""
     });
+  }
+
+  /** @returns {string} Label shown when the speaker's name must stay hidden. */
+  static getUnknownSpeakerName() {
+    const configured = game.settings.get("narrative-canvas", this.SETTING_UNKNOWN_SPEAKER);
+    return configured?.trim() || game.i18n.localize("NARRATIVE_CANVAS.Dialogue.UnknownSpeaker");
+  }
+
+  /** @returns {number} Characters revealed per second. */
+  static getDialogueSpeed() {
+    const speed = Number(game.settings.get("narrative-canvas", this.SETTING_DIALOGUE_SPEED));
+    return Number.isFinite(speed) ? Math.max(5, Math.min(200, speed)) : 40;
+  }
+
+  static async setDialogueSpeed(speed) {
+    await game.settings.set("narrative-canvas", this.SETTING_DIALOGUE_SPEED, speed);
   }
 
   static getDirectorLayoutState() {

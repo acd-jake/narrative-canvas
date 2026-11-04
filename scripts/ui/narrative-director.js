@@ -28,6 +28,7 @@ export class NarrativeDirector extends NarrativeCanvas {
       onBackgroundReset: () => this.callbacks.onBackgroundReset(),
       onThemeSelect: themeId => this.callbacks.onThemeSelect?.(themeId),
       onShutdown: () => this.callbacks.onShutdown(),
+      onDialogueToggle: () => this.callbacks.onDialogueToggle?.(),
       onStopAllAudio: () => this.stopAllAudio()
     });
     this.sidebar = new DirectorSidebar({
@@ -46,7 +47,9 @@ export class NarrativeDirector extends NarrativeCanvas {
       onActorSpeakerToggle: (actorId) => this.callbacks.onActorSpeakerToggle?.(actorId),
       onActorToggleName: (actorId) => this.callbacks.onActorToggleName?.(actorId),
       onVisualNovelOverlayVisibilityToggle: () => this.callbacks.onVisualNovelOverlayVisibilityToggle?.(),
-      onActorOrderChange: actorIds => this.callbacks.onActorOrderChange?.(actorIds)
+      onActorOrderChange: actorIds => this.callbacks.onActorOrderChange?.(actorIds),
+      onDialogueSend: line => this.callbacks.onDialogueSend?.(line),
+      onDialogueSpeedChange: speed => this.callbacks.onDialogueSpeedChange?.(speed)
     });
     this._setupGlobalDelegatedListeners();
   }

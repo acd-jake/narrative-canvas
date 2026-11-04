@@ -13,6 +13,33 @@
       "textShadow": "0 2px 3px #000",
       "frame": { "image": "frame.svg", "slice": "34", "width": "28px", "outset": "0", "repeat": "stretch" }
     },
+    "dialogueText": {
+      "color": "#f6ecd2",
+      "fontFamily": "\"Amiri\", \"Palatino Linotype\", serif",
+      "fontSize": "1.3rem",
+      "fontStyle": "normal",
+      "fontWeight": "normal",
+      "letterSpacing": "0.03em",
+      "textTransform": "none",
+      "textShadow": "0 2px 3px #000"
+    },
+    "narrationText": {
+      "color": "#e4d6b0",
+      "fontStyle": "italic",
+      "letterSpacing": "0.04em",
+      "textShadow": "0 2px 4px #000"
+    },
+    "dialogueSpeaker": {
+      "color": "#d9c48f",
+      "background": "rgba(40, 28, 14, 0.92)",
+      "fontFamily": "\"Amiri\", \"Palatino Linotype\", serif",
+      "fontSize": "0.9rem",
+      "fontStyle": "italic",
+      "fontWeight": "normal",
+      "letterSpacing": "0.05em",
+      "textTransform": "none",
+      "textShadow": "none"
+    },
     "handoutCaption": {
       "color": "#f6ecd2",
       "background": "rgba(40, 28, 14, 0.9)",

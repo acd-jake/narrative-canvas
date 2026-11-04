@@ -13,6 +13,34 @@
       "textShadow": "0 0 8px rgba(53, 208, 255, 0.8)",
       "frame": { "image": "frame.svg", "slice": "36", "width": "26px", "outset": "0", "repeat": "stretch" }
     },
+    "dialogueText": {
+      "color": "#d8f6ff",
+      "fontFamily": "\"Roboto Condensed\", \"Signika\", sans-serif",
+      "fontSize": "1.2rem",
+      "fontStyle": "normal",
+      "fontWeight": "normal",
+      "letterSpacing": "0.06em",
+      "textTransform": "none",
+      "textShadow": "0 0 8px rgba(53, 208, 255, 0.8)"
+    },
+    "narrationText": {
+      "color": "#9fd8ea",
+      "fontStyle": "normal",
+      "letterSpacing": "0.12em",
+      "textTransform": "uppercase",
+      "textShadow": "0 0 10px rgba(53, 208, 255, 0.6)"
+    },
+    "dialogueSpeaker": {
+      "color": "#35d0ff",
+      "background": "rgba(4, 16, 24, 0.9)",
+      "fontFamily": "\"Roboto Condensed\", \"Signika\", sans-serif",
+      "fontSize": "0.85rem",
+      "fontStyle": "normal",
+      "fontWeight": "normal",
+      "letterSpacing": "0.16em",
+      "textTransform": "uppercase",
+      "textShadow": "none"
+    },
     "handoutCaption": {
       "color": "#d8f6ff",
       "background": "rgba(4, 16, 24, 0.88)",

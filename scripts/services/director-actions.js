@@ -1,4 +1,6 @@
 import { NarrativeSceneRepository } from "./scene-repository.js";
+import { NarrativeSettings } from "./settings.js";
+import { NarrativeLogger } from "./logger.js";
 
 /**
  * @typedef {object} NarrativeDirectorActionDependencies
@@ -173,6 +175,12 @@ export class NarrativeDirectorActions {
         });
       },
       onDialogueTrigger: dialogue => this.handleDisplayUpdate({ activeDialogue: dialogue }),
+      onDialogueToggle: () => this.handleDisplayUpdate({
+        dialogueSystemEnabled: !this.getState().dialogueSystemEnabled,
+        dialogueLine: null
+      }),
+      onDialogueSend: ({ speakerId, text, voice, language }) => this.#sendDialogueLine({ speakerId, text, voice, language }),
+      onDialogueSpeedChange: speed => NarrativeSettings.setDialogueSpeed(speed),
       onCloseAllHandouts: () => this.handleDisplayUpdate({ handoutImage: "", handoutImageOverlays: [] }),
       onBackgroundReset: () => this.handleDisplayUpdate({ background: "" }),
       onThemeSelect: themeId => this.handleDisplayUpdate({ themeOverrideId: themeId }),
@@ -232,6 +240,58 @@ export class NarrativeDirectorActions {
       onReopenPlayers: () => this.reopenPlayerCanvases(),
       onShutdown: () => this.toggleCanvasState(false)
     };
+  }
+
+  #sendDialogueLine({ speakerId, text, voice, language }) {
+    const line = String(text ?? "").trim();
+    if (!line) return;
+
+    const actor = this.getState().currentSceneData?.actors?.find(item => item.id === speakerId);
+    const isNarrator = !actor;
+    const mayShowName = Boolean(actor) && actor.showName !== false;
+    const languages = this.#getPolyglotLanguages();
+    const defaultLanguage = languages?.[game.polyglot?.languageProvider?.defaultLanguage]
+      ? game.polyglot.languageProvider.defaultLanguage
+      : "";
+    const requestedLanguage = isNarrator ? defaultLanguage : language;
+    const activeLanguage = requestedLanguage && languages?.[requestedLanguage] ? requestedLanguage : "";
+
+    if (voice && game.modules.get("acd-talking-actors")?.active) {
+      this.#talk(isNarrator ? "/narrate" : `/talk {${actor.id}}`, line, activeLanguage);
+    }
+
+    return this.handleDisplayUpdate({
+      dialogueLine: {
+        id: foundry.utils.randomID(),
+        ts: Date.now(),
+        isNarrator,
+        speakerName: isNarrator ? "" : (mayShowName ? actor.name : NarrativeSettings.getUnknownSpeakerName()),
+        text: line,
+        speed: NarrativeSettings.getDialogueSpeed(),
+        language: activeLanguage
+      }
+    });
+  }
+
+  #getPolyglotLanguages() {
+    return game.modules.get("polyglot")?.active ? game.polyglot?.languageProvider?.languages ?? null : null;
+  }
+
+  /** Reads the line aloud via a Talking Actors chat command (`/talk {id}` or `/narrate`), tagging the chat message with the Polyglot language. */
+  #talk(commandPrefix, text, language) {
+    if (language) {
+      const userId = game.user.id;
+      const timeout = setTimeout(() => Hooks.off("preCreateChatMessage", hookId), 5000);
+      const hookId = Hooks.on("preCreateChatMessage", (message, data, options, senderId) => {
+        if (senderId !== userId) return;
+        message.updateSource({ "flags.polyglot.language": language });
+        clearTimeout(timeout);
+        Hooks.off("preCreateChatMessage", hookId);
+      });
+    }
+    const command = `${commandPrefix} ${text}`;
+    NarrativeLogger.debug("Sending dialogue line to Talking Actors", { command });
+    ui.chat?.processMessage?.(command)?.catch?.(error => NarrativeLogger.error("Talking Actors command failed", error));
   }
 
   #refreshSceneHandoutOverlays(sceneData) {
