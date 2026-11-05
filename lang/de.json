@@ -218,6 +218,8 @@
   "NARRATIVE_CANVAS.Dialogue.UseReadAloud": "Vorlesetext in Dialogzeile übernehmen",
   "NARRATIVE_CANVAS.Dialogue.UseSelection": "Auswahl in Dialogzeile übernehmen",
   "NARRATIVE_CANVAS.Dialogue.UseQuote": "Wörtliche Rede in Dialogzeile übernehmen",
+  "NARRATIVE_CANVAS.Dialogue.SendToNarration": "Direkt in die Erzählzeile senden",
+  "NARRATIVE_CANVAS.Dialogue.SendReadAloudToNarration": "Vorlesetext direkt in die Erzählzeile senden",
   "NARRATIVE_CANVAS.Dialogue.UseSelectionWithDirection": "Auswahl mit Regieanweisung übernehmen",
   "NARRATIVE_CANVAS.Dialogue.UseQuoteWithDirection": "Wörtliche Rede mit Regieanweisung übernehmen",
   "NARRATIVE_CANVAS.Dialogue.Voice": "Text mit der Stimme des Akteurs vorlesen",

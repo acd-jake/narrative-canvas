@@ -38,6 +38,7 @@ export class JournalSelectionMenu {
   #isEnabled;
   #isVoiceEnabled;
   #onUseText;
+  #onSendNarration;
   #menu = null;
   #closeController = null;
   #observer = null;
@@ -48,9 +49,10 @@ export class JournalSelectionMenu {
    * @param {() => boolean} options.isEnabled
    * @param {(text: string) => void} options.onUseText
    */
-  constructor({ isEnabled, isVoiceEnabled, onUseText }) {
+  constructor({ isEnabled, isVoiceEnabled, onUseText, onSendNarration }) {
     this.#isEnabled = isEnabled;
     this.#isVoiceEnabled = isVoiceEnabled;
+    this.#onSendNarration = onSendNarration;
     this.#onUseText = onUseText;
   }
 
@@ -84,7 +86,9 @@ export class JournalSelectionMenu {
       event.preventDefault();
       event.stopPropagation();
       const text = normalizeText(button.parentElement?.innerText);
-      if (text) this.#onUseText(text);
+      if (!text) return;
+      if (button.classList.contains("nc-read-aloud-send-button")) this.#onSendNarration?.(text);
+      else this.#onUseText(text);
     });
     root.addEventListener("contextmenu", event => {
       if (!(event.target instanceof Element) || !event.target.closest(".journal-page-body")) return;
@@ -99,7 +103,7 @@ export class JournalSelectionMenu {
         const text = voiceButton.dataset.quote ?? normalizeText(voiceButton.parentElement?.innerText);
         if (!text) return;
         const direction = this.#isVoiceEnabled?.() ? voiceButton.dataset.contextDirection || "" : "";
-        this.#open(event.clientX, event.clientY, text, direction);
+        this.#open(event.clientX, event.clientY, text, direction, !voiceButton.classList.contains(QUOTE_BUTTON_CLASS));
         return;
       }
 
@@ -111,7 +115,7 @@ export class JournalSelectionMenu {
       const direction = this.#isVoiceEnabled?.()
         ? findPrecedingDirection(range.startContainer, range.startOffset)
         : "";
-      this.#open(event.clientX, event.clientY, text, direction);
+      this.#open(event.clientX, event.clientY, text, direction, true);
     });
   }
 
@@ -139,6 +143,14 @@ export class JournalSelectionMenu {
       button.contentEditable = "false";
       button.innerHTML = `<i class="fas fa-comment-dots" aria-hidden="true"></i>`;
       block.appendChild(button);
+
+      const sendLabel = game.i18n.localize("NARRATIVE_CANVAS.Dialogue.SendReadAloudToNarration");
+      const sendButton = button.cloneNode(false);
+      sendButton.className = "nc-read-aloud-button nc-read-aloud-send-button";
+      sendButton.title = sendLabel;
+      sendButton.setAttribute("aria-label", sendLabel);
+      sendButton.innerHTML = `<i class="fas fa-scroll" aria-hidden="true"></i>`;
+      block.appendChild(sendButton);
     });
   }
 
@@ -191,13 +203,13 @@ export class JournalSelectionMenu {
     }
   }
 
-  #open(x, y, text, direction = "") {
+  #open(x, y, text, direction = "", canNarrate = false) {
     this.close();
 
     const menu = document.createElement("div");
     menu.className = "nc-selection-menu";
     menu.setAttribute("role", "menu");
-    const addItem = (icon, labelKey, useDirection) => {
+    const addItem = (icon, labelKey, onClick) => {
       const button = document.createElement("button");
       button.type = "button";
       button.setAttribute("role", "menuitem");
@@ -206,12 +218,15 @@ export class JournalSelectionMenu {
       }`;
       button.addEventListener("click", () => {
         this.close();
-        this.#onUseText(text, useDirection ? direction : "");
+        onClick();
       });
       menu.appendChild(button);
     };
-    addItem("fa-comment-dots", "NARRATIVE_CANVAS.Dialogue.UseSelection", false);
-    if (direction) addItem("fa-masks-theater", "NARRATIVE_CANVAS.Dialogue.UseSelectionWithDirection", true);
+    addItem("fa-comment-dots", "NARRATIVE_CANVAS.Dialogue.UseSelection", () => this.#onUseText(text));
+    if (direction) {
+      addItem("fa-masks-theater", "NARRATIVE_CANVAS.Dialogue.UseSelectionWithDirection", () => this.#onUseText(text, direction));
+    }
+    if (canNarrate) addItem("fa-scroll", "NARRATIVE_CANVAS.Dialogue.SendToNarration", () => this.#onSendNarration?.(text));
     // Keep the text selection alive while the menu is clicked.
     menu.addEventListener("mousedown", event => event.preventDefault());
     document.body.appendChild(menu);

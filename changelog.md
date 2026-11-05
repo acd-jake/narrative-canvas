@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-11-05
+
+### Added
+
+- Journal Viewer: a second button next to the read-aloud button of a read-aloud section, and a context menu entry on that button and on selected text, send the text directly to the narrator line without going through the input field. With voice output possible, the text is also read aloud with `/narrate` through Talking Actors.
+
+### Changed
+
+- Narrator lines: the part of the text that is already shown is centered vertically, so the first line or paragraph appears in the middle. Then the text scrolls as before. Short texts that fit completely end vertically centered, longer texts end at the bottom of the narrator bar.
+- The buttons of read-aloud sections in the Journal Viewer are more transparent and become clearly visible only on hover.
+
+## [0.13.1] - 2026-11-05
+
+### Fixed
+
+- The hover zone of the character sheet dock no longer blocks clicks in the bottom left third of the canvas, for example on the voice toggle of the dialogue controls. The dock now reacts to the pointer without covering the controls and does not open over the Director's actor bar.
+
 ## [0.13.0] - 2026-11-05
 
 ### Added

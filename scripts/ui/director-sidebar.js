@@ -59,13 +59,14 @@ export class DirectorSidebar {
    * @param {(volume: number) => void} [options.onVolumeChange]
    * @param {(image: {src: string, title: string}) => void} [options.onJournalImageShow]
    */
-  constructor({ audioMixer, onSceneSelect, onJournalSelect, onVolumeChange, onJournalImageShow, onDialogueTextSelect, isDialogueEnabled }) {
+  constructor({ audioMixer, onSceneSelect, onJournalSelect, onVolumeChange, onJournalImageShow, onDialogueTextSelect, onNarrationSend, isDialogueEnabled }) {
     this.#audioMixer = audioMixer;
     this.#callbacks = { onSceneSelect, onJournalSelect, onVolumeChange, onJournalImageShow };
     this.#journalSelectionMenu = new JournalSelectionMenu({
       isEnabled: () => isDialogueEnabled?.() === true,
       isVoiceEnabled: () => this.#voiceActive,
-      onUseText: (text, direction) => onDialogueTextSelect?.(text, direction)
+      onUseText: (text, direction) => onDialogueTextSelect?.(text, direction),
+      onSendNarration: text => onNarrationSend?.(text)
     });
     this.#layoutState = NarrativeSettings.getDirectorLayoutState() || {};
     const savedPanelWidthRatio = this.#layoutState.panelWidthRatios.sidebar;

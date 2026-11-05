@@ -1,4 +1,5 @@
 import { NarrativeSettings } from "../services/settings.js";
+import { computeNarrationShiftFrames } from "./narration-layout.js";
 
 const FADE_OUT_MS = 700;
 const CHAR_FADE_MS = 350;
@@ -20,6 +21,7 @@ export class DialogueLineController {
   #timers = [];
   #scrollFrame = null;
   #active = null;
+  #shiftAnimation = null;
   #onDismiss;
   #onBusyChange;
   #busy = false;
@@ -90,6 +92,7 @@ export class DialogueLineController {
     this.#timers.push(setTimeout(() => {
       element.classList.remove("is-visible", "is-fading-out");
       element.querySelector(".narrative-dialogue-text")?.replaceChildren();
+      this.#resetShift();
       this.#setBusy(false);
     }, FADE_OUT_MS));
   }
@@ -105,6 +108,11 @@ export class DialogueLineController {
       this.#onDismiss?.();
     });
     return element;
+  }
+
+  #resetShift() {
+    this.#shiftAnimation?.cancel();
+    this.#shiftAnimation = null;
   }
 
   #clearTimers() {
@@ -145,6 +153,7 @@ export class DialogueLineController {
       element.classList.remove("is-visible", "is-fading-out");
       this.#stage?.classList.remove("is-speaking");
       textEl.replaceChildren();
+      this.#resetShift();
       this.#setBusy(false);
     }, delayMs + FADE_OUT_MS));
   }
@@ -194,6 +203,7 @@ export class DialogueLineController {
   #play(line, isGM) {
     this.#clearTimers();
     this.#active = null;
+    this.#resetShift();
     this.#setBusy(true);
     const element = this.#element;
     const speakerEl = element.querySelector(".narrative-dialogue-speaker");
@@ -320,6 +330,16 @@ export class DialogueLineController {
     const overflowUnit = units.find(unit => unit.bottom > textEl.clientHeight);
     const fillMs = overflowUnit ? overflowUnit.startMs : null;
     if (fillMs !== null) this.#autoScroll(textEl, fillMs, revealMs, timing.scrollFactor);
+
+    if (isNarrator && typeof textEl.animate === "function") {
+      const frames = computeNarrationShiftFrames(units, textEl.clientHeight, revealMs);
+      if (frames.length) {
+        this.#shiftAnimation = textEl.animate(
+          frames.map(frame => ({ offset: frame.offset, transform: `translateY(${frame.shift}px)` })),
+          { duration: Math.max(1, revealMs), easing: "linear", fill: "both" }
+        );
+      }
+    }
 
     // Only the lines that are visible in the box at the end count, not the whole text.
     const lastBottom = rows.length ? rows[rows.length - 1].bottom : 0;

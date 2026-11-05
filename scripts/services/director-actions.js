@@ -181,6 +181,8 @@ export class NarrativeDirectorActions {
       }),
       onDialogueSend: ({ speakerId, text, voice, language, speedFactor }) =>
         this.#sendDialogueLine({ speakerId, text, voice, language, speedFactor }),
+      onNarrationSend: text =>
+        this.#sendDialogueLine({ speakerId: "", text, voice: this.getState().dialogueVoice === true }),
       onDialogueSpeedChange: multiplier => NarrativeSettings.setDialogueSpeedMultiplier(multiplier),
       onDialogueSpeedLive: multiplier => this.#applyLiveSpeed(multiplier),
       onDialogueVoiceChange: dialogueVoice => this.handleDisplayUpdate({ dialogueVoice: dialogueVoice === true }),

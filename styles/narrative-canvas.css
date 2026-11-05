@@ -2677,7 +2677,7 @@ body.acd-nc-active {
     background: rgba(0, 0, 0, 0.35);
     color: #fff;
     cursor: pointer;
-    opacity: 0.45;
+    opacity: 0.3;
     transition: opacity 0.15s ease, background-color 0.15s ease;
 }
 
@@ -2685,8 +2685,16 @@ body.acd-nc-active {
     display: grid;
 }
 
-.nc-read-aloud-button:hover,
-.nc-read-aloud-button:focus-visible {
+.nc-read-aloud-target:hover .nc-read-aloud-button {
+    opacity: 0.55;
+}
+
+.nc-read-aloud-send-button {
+    right: 36px;
+}
+
+.nc-read-aloud-target .nc-read-aloud-button:hover,
+.nc-read-aloud-target .nc-read-aloud-button:focus-visible {
     opacity: 1;
     background: rgba(122, 104, 66, 0.85);
 }
