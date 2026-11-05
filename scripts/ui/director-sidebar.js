@@ -44,6 +44,7 @@ export class DirectorSidebar {
   #panelResizeController = null;
   #journalViewerFontSizeController = new JournalViewerFontSizeController();
   #journalSelectionMenu = null;
+  #voiceActive = false;
   #layoutStateSaveTimeout = null;
   #layoutState = null;
   #playlistSoundHook = null;
@@ -63,7 +64,8 @@ export class DirectorSidebar {
     this.#callbacks = { onSceneSelect, onJournalSelect, onVolumeChange, onJournalImageShow };
     this.#journalSelectionMenu = new JournalSelectionMenu({
       isEnabled: () => isDialogueEnabled?.() === true,
-      onUseText: text => onDialogueTextSelect?.(text)
+      isVoiceEnabled: () => this.#voiceActive,
+      onUseText: (text, direction) => onDialogueTextSelect?.(text, direction)
     });
     this.#layoutState = NarrativeSettings.getDirectorLayoutState() || {};
     const savedPanelWidthRatio = this.#layoutState.panelWidthRatios.sidebar;
@@ -191,6 +193,7 @@ export class DirectorSidebar {
     this.#destroyPanelResizeController();
     this.#element = newElement;
     this.#element.classList.toggle("is-dialogue-active", context.dialogueSystemEnabled === true);
+    this.#toggleVoiceActive(context);
     this.#journalViewerFontSizeController.mount(this.#element);
     this.#journalSelectionMenu?.mount(this.#element);
     this.#bindListeners(this.#element);
@@ -200,12 +203,23 @@ export class DirectorSidebar {
     return newElement;
   }
 
+  /** Stage-direction controls need speech to be possible: dialogue on, voice on, canvas released to the players. */
+  #toggleVoiceActive(context) {
+    const active = context.dialogueSystemEnabled === true && context.dialogueVoice === true
+      && context.playerViewActive === true
+      && game.modules.get("acd-talking-actors")?.active === true;
+    this.#voiceActive = active;
+    this.#element?.classList.toggle("is-dialogue-voice-active", active);
+    if (!active) this.#journalSelectionMenu?.close();
+  }
+
   /**
    * Updates sidebar state in-place when scene or volume changes.
    * @param {object} context
    */
   update(context = {}) {
     this.#element?.classList.toggle("is-dialogue-active", context.dialogueSystemEnabled === true);
+    this.#toggleVoiceActive(context);
     if (!this.#element) return;
     this.#activeSceneId = context.activeSceneId ?? this.#activeSceneId;
     this.#audioMuted = Boolean(context.audioMuted);

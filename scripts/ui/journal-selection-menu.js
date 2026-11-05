@@ -14,12 +14,29 @@ function normalizeText(text) {
 const QUOTE_PATTERN = /„[^„“”]{2,}?[“”]|“[^“”]{2,}”|"[^"]{2,}"|»[^»«]{2,}«|«[^«»]{2,}»/g;
 const QUOTE_BUTTON_CLASS = "nc-quote-button";
 
+/** Text in parentheses directly before the given position, used as Talking Actors stage direction. */
+function findPrecedingDirection(node, offset) {
+  const element = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+  const block = element?.closest("p, li, blockquote, td, .journal-page-body");
+  if (!block) return "";
+
+  const range = document.createRange();
+  try {
+    range.setStart(block, 0);
+    range.setEnd(node, offset);
+  } catch {
+    return "";
+  }
+  return range.toString().match(/\(([^()]+)\)[\s\u00a0:]*$/)?.[1].trim() ?? "";
+}
+
 /**
  * Journal Viewer helpers that send text to the dialogue input: a context menu for the
  * selected text, a button on each read-aloud block and a button behind direct speech.
  */
 export class JournalSelectionMenu {
   #isEnabled;
+  #isVoiceEnabled;
   #onUseText;
   #menu = null;
   #closeController = null;
@@ -31,8 +48,9 @@ export class JournalSelectionMenu {
    * @param {() => boolean} options.isEnabled
    * @param {(text: string) => void} options.onUseText
    */
-  constructor({ isEnabled, onUseText }) {
+  constructor({ isEnabled, isVoiceEnabled, onUseText }) {
     this.#isEnabled = isEnabled;
+    this.#isVoiceEnabled = isVoiceEnabled;
     this.#onUseText = onUseText;
   }
 
@@ -56,7 +74,7 @@ export class JournalSelectionMenu {
       if (quoteButton) {
         event.preventDefault();
         event.stopPropagation();
-        if (quoteButton.dataset.quote) this.#onUseText(quoteButton.dataset.quote);
+        if (quoteButton.dataset.quote) this.#onUseText(quoteButton.dataset.quote, quoteButton.dataset.direction || "");
         return;
       }
 
@@ -70,13 +88,30 @@ export class JournalSelectionMenu {
     });
     root.addEventListener("contextmenu", event => {
       if (!(event.target instanceof Element) || !event.target.closest(".journal-page-body")) return;
+
+      // Keeps the document-level Talking Actors journal menu from opening in this viewer.
+      event.stopPropagation();
       if (!this.#isEnabled()) return;
+
+      const voiceButton = event.target.closest(`.${QUOTE_BUTTON_CLASS}, .nc-read-aloud-button`);
+      if (voiceButton) {
+        event.preventDefault();
+        const text = voiceButton.dataset.quote ?? normalizeText(voiceButton.parentElement?.innerText);
+        if (!text) return;
+        const direction = this.#isVoiceEnabled?.() ? voiceButton.dataset.contextDirection || "" : "";
+        this.#open(event.clientX, event.clientY, text, direction);
+        return;
+      }
 
       const text = normalizeText(window.getSelection()?.toString());
       if (!text) return;
 
       event.preventDefault();
-      this.#open(event.clientX, event.clientY, text);
+      const range = window.getSelection().getRangeAt(0);
+      const direction = this.#isVoiceEnabled?.()
+        ? findPrecedingDirection(range.startContainer, range.startOffset)
+        : "";
+      this.#open(event.clientX, event.clientY, text, direction);
     });
   }
 
@@ -121,6 +156,7 @@ export class JournalSelectionMenu {
     while (walker.nextNode()) textNodes.push(walker.currentNode);
 
     const label = game.i18n.localize("NARRATIVE_CANVAS.Dialogue.UseQuote");
+    const directionLabel = game.i18n.localize("NARRATIVE_CANVAS.Dialogue.UseQuoteWithDirection");
     for (const node of textNodes) {
       const matches = [...node.nodeValue.matchAll(QUOTE_PATTERN)].reverse();
       for (const match of matches) {
@@ -130,39 +166,54 @@ export class JournalSelectionMenu {
           && node.nextSibling?.classList?.contains(QUOTE_BUTTON_CLASS);
         if (!quote || isDecorated) continue;
 
+        const direction = findPrecedingDirection(node, match.index);
         if (end < node.nodeValue.length) node.splitText(end);
         const button = document.createElement("button");
         button.type = "button";
         button.className = QUOTE_BUTTON_CLASS;
         button.dataset.quote = quote;
+        button.dataset.contextDirection = direction;
         button.title = label;
         button.setAttribute("aria-label", label);
         button.contentEditable = "false";
         button.innerHTML = `<i class="fas fa-comment-dots" aria-hidden="true"></i>`;
         node.after(button);
+
+        if (!direction) continue;
+        const directionButton = button.cloneNode(true);
+        directionButton.className = `${QUOTE_BUTTON_CLASS} nc-quote-direction-button`;
+        directionButton.dataset.direction = direction;
+        directionButton.title = `${directionLabel}: (${direction})`;
+        directionButton.setAttribute("aria-label", directionLabel);
+        directionButton.innerHTML = `<i class="fas fa-masks-theater" aria-hidden="true"></i>`;
+        button.after(directionButton);
       }
     }
   }
 
-  #open(x, y, text) {
+  #open(x, y, text, direction = "") {
     this.close();
 
     const menu = document.createElement("div");
     menu.className = "nc-selection-menu";
     menu.setAttribute("role", "menu");
-    const button = document.createElement("button");
-    button.type = "button";
-    button.setAttribute("role", "menuitem");
-    button.innerHTML = `<i class="fas fa-comment-dots" aria-hidden="true"></i> ${
-      Handlebars.escapeExpression(game.i18n.localize("NARRATIVE_CANVAS.Dialogue.UseSelection"))
-    }`;
+    const addItem = (icon, labelKey, useDirection) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("role", "menuitem");
+      button.innerHTML = `<i class="fas ${icon}" aria-hidden="true"></i> ${
+        Handlebars.escapeExpression(game.i18n.localize(labelKey))
+      }`;
+      button.addEventListener("click", () => {
+        this.close();
+        this.#onUseText(text, useDirection ? direction : "");
+      });
+      menu.appendChild(button);
+    };
+    addItem("fa-comment-dots", "NARRATIVE_CANVAS.Dialogue.UseSelection", false);
+    if (direction) addItem("fa-masks-theater", "NARRATIVE_CANVAS.Dialogue.UseSelectionWithDirection", true);
     // Keep the text selection alive while the menu is clicked.
     menu.addEventListener("mousedown", event => event.preventDefault());
-    button.addEventListener("click", () => {
-      this.close();
-      this.#onUseText(text);
-    });
-    menu.appendChild(button);
     document.body.appendChild(menu);
 
     const { width, height } = menu.getBoundingClientRect();

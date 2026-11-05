@@ -279,7 +279,10 @@ export class NarrativeDirectorActions {
   }
 
   #sendDialogueLine({ speakerId, text, voice, language, speedFactor }) {
-    const line = String(text ?? "").trim();
+    // A leading "(…)" is a Talking Actors stage direction: spoken, never displayed.
+    const directionMatch = String(text ?? "").trim().match(/^\(([^()]+)\)\s*([\s\S]+)$/);
+    const direction = directionMatch ? directionMatch[1].trim() : "";
+    const line = directionMatch ? directionMatch[2].trim() : String(text ?? "").trim();
     if (!line) return;
 
     const actor = this.getState().currentSceneData?.actors?.find(item => item.id === speakerId);
@@ -295,7 +298,7 @@ export class NarrativeDirectorActions {
     // Speech only makes sense while the canvas is released to the players.
     const state = this.getState();
     if (voice && state.playerViewActive === true && game.modules.get("acd-talking-actors")?.active) {
-      this.#talk(isNarrator ? "/narrate" : `/talk {${actor.id}}`, line, activeLanguage);
+      this.#talk(isNarrator ? "/narrate" : `/talk {${actor.id}}`, line, activeLanguage, direction);
     }
 
     return this.handleDisplayUpdate({
@@ -316,7 +319,7 @@ export class NarrativeDirectorActions {
   }
 
   /** Reads the line aloud via a Talking Actors chat command (`/talk {id}` or `/narrate`), tagging the chat message with the Polyglot language. */
-  #talk(commandPrefix, text, language) {
+  #talk(commandPrefix, text, language, direction = "") {
     const postToChat = NarrativeSettings.shouldPostSpokenDialogueToChat();
     if (language && postToChat) {
       const userId = game.user.id;
@@ -328,7 +331,7 @@ export class NarrativeDirectorActions {
         Hooks.off("preCreateChatMessage", hookId);
       });
     }
-    const command = `${commandPrefix} ${text.replace(/\s*\n\s*/g, " ")}`;
+    const command = `${commandPrefix} ${direction ? `(${direction}) ` : ""}${text.replace(/\s*\n\s*/g, " ")}`;
     NarrativeLogger.debug("Sending dialogue line to Talking Actors", { command, postToChat });
     const processor = game.acdTalkingActors?.chatProcessor;
     if (!postToChat && processor) {

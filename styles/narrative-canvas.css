@@ -2714,6 +2714,19 @@ body.acd-nc-active {
     display: inline-grid;
 }
 
+.nc-quote-direction-button,
+.is-dialogue-active .nc-quote-direction-button {
+    display: none;
+}
+
+.is-dialogue-active.is-dialogue-voice-active .nc-quote-direction-button {
+    display: inline-grid;
+}
+
+.narrative-director-sidebar .journal-page-body .acd-ta-quote-read-aloud {
+    display: none;
+}
+
 .nc-quote-button:hover,
 .nc-quote-button:focus-visible {
     opacity: 1;

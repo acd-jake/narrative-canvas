@@ -41,7 +41,7 @@ export class NarrativeDirector extends NarrativeCanvas {
       onJournalImageShow: (image) => this.callbacks.onJournalImageShow?.(image),
       onVolumeChange: (volume) => this.callbacks.onVolumeChange?.(volume),
       isDialogueEnabled: () => this.dialogueEnabled,
-      onDialogueTextSelect: text => this.carousel.insertDialogueText(text)
+      onDialogueTextSelect: (text, direction) => this.carousel.insertDialogueText(text, direction)
     });
     this.carousel = new DirectorActorCarousel({
       onActorStageToggle: (actorId) => this.callbacks.onActorStageToggle?.(actorId),

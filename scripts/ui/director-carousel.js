@@ -304,13 +304,14 @@ export class DirectorActorCarousel {
   }
 
   /** Puts text into the dialogue input and focuses it so it can be sent right away. */
-  insertDialogueText(text) {
+  insertDialogueText(text, direction = "") {
     const input = this.#element?.querySelector(".dialogue-text");
     if (!input || input.closest("form")?.hidden) return false;
 
-    input.value = text;
+    const value = direction ? `(${direction}) ${text}` : text;
+    input.value = value;
     input.focus();
-    input.setSelectionRange(text.length, text.length);
+    input.setSelectionRange(value.length, value.length);
     return true;
   }
 
