@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-11-06
+
+### Added
+
+- Module setting "Maximum paragraphs per direct speech" (default 3, 1 to 10) limits over how many consecutive paragraphs a direct speech is detected.
+
+### Changed
+
+- Journal Viewer: direct speech is now detected across line breaks and across several paragraphs, up to the configured maximum.
+
 ## [0.14.1] - 2026-11-05
 
 ### Changed

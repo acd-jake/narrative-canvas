@@ -215,6 +215,8 @@
   "NARRATIVE_CANVAS.Settings.ReadAloudPresets.Custom": "Eigene CSS-Klasse",
   "NARRATIVE_CANVAS.Settings.ReadAloudCustomClassLabel": "Eigene CSS-Klasse für Vorlesetexte",
   "NARRATIVE_CANVAS.Settings.ReadAloudCustomClassHint": "Wird nur bei \"Eigene CSS-Klasse\" verwendet (ohne führenden Punkt).",
+  "NARRATIVE_CANVAS.Settings.QuoteMaxParagraphsLabel": "Maximale Absätze pro wörtlicher Rede",
+  "NARRATIVE_CANVAS.Settings.QuoteMaxParagraphsHint": "Wörtliche Rede darf höchstens über so viele zusammenhängende Absätze im Journal reichen, um erkannt zu werden.",
   "NARRATIVE_CANVAS.Dialogue.UseReadAloud": "Vorlesetext in Dialogzeile übernehmen",
   "NARRATIVE_CANVAS.Dialogue.UseSelection": "Auswahl in Dialogzeile übernehmen",
   "NARRATIVE_CANVAS.Dialogue.UseQuote": "Wörtliche Rede in Dialogzeile übernehmen",

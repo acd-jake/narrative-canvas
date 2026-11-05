@@ -25,7 +25,8 @@ const SECTIONS = [
     keys: [
       NarrativeSettings.SETTING_JOURNAL_ROOT_FOLDER,
       NarrativeSettings.SETTING_READ_ALOUD_PRESET,
-      NarrativeSettings.SETTING_READ_ALOUD_CUSTOM_CLASS
+      NarrativeSettings.SETTING_READ_ALOUD_CUSTOM_CLASS,
+      NarrativeSettings.SETTING_QUOTE_MAX_PARAGRAPHS
     ]
   },
   {

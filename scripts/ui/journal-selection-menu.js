@@ -13,6 +13,15 @@ function normalizeText(text) {
 /** Direct speech in German („…“, »…«), English (“…”, "…") and French («…») quotation marks. */
 const QUOTE_PATTERN = /„[^„“”]{2,}?[“”]|“[^“”]{2,}”|"[^"]{2,}"|»[^»«]{2,}«|«[^«»]{2,}»/g;
 const QUOTE_BUTTON_CLASS = "nc-quote-button";
+const BLOCK_SELECTOR = "p, li, blockquote, td, th, h1, h2, h3, h4, h5, h6, .journal-page-body";
+
+function hasLineBreakBetween(first, second) {
+  if (first.parentElement.closest(BLOCK_SELECTOR) !== second.parentElement.closest(BLOCK_SELECTOR)) return true;
+  const range = document.createRange();
+  range.setStartAfter(first);
+  range.setEndBefore(second);
+  return range.cloneContents().querySelector("br") !== null;
+}
 
 /** Text in parentheses directly before the given position, used as Talking Actors stage direction. */
 function findPrecedingDirection(node, offset) {
@@ -169,16 +178,48 @@ export class JournalSelectionMenu {
 
     const label = game.i18n.localize("NARRATIVE_CANVAS.Dialogue.UseQuote");
     const directionLabel = game.i18n.localize("NARRATIVE_CANVAS.Dialogue.UseQuoteWithDirection");
+    // Speech may continue across line breaks and paragraphs, so text nodes are matched per page body.
+    const blocks = new Map();
     for (const node of textNodes) {
-      const matches = [...node.nodeValue.matchAll(QUOTE_PATTERN)].reverse();
+      const body = node.parentElement.closest(".journal-page-body");
+      if (!blocks.has(body)) blocks.set(body, []);
+      blocks.get(body).push(node);
+    }
+
+    const maxParagraphs = NarrativeSettings.getQuoteMaxParagraphs();
+    for (const nodes of blocks.values()) {
+      let combined = "";
+      const starts = [];
+      nodes.forEach((current, index) => {
+        if (index > 0 && hasLineBreakBetween(nodes[index - 1], current)) combined += "\n";
+        starts.push(combined.length);
+        combined += current.nodeValue;
+      });
+
+      const locate = (position, isEnd) => {
+        for (let i = nodes.length - 1; i >= 0; i--) {
+          const local = position - starts[i];
+          if (isEnd ? local > 0 : local >= 0) return { node: nodes[i], index: i, offset: Math.min(local, nodes[i].nodeValue.length) };
+        }
+        return { node: nodes[0], index: 0, offset: 0 };
+      };
+
+      const matches = [...combined.matchAll(QUOTE_PATTERN)].reverse();
       for (const match of matches) {
-        const quote = match[0].slice(1, -1).trim();
-        const end = match.index + match[0].length;
+        const quote = normalizeText(match[0].slice(1, -1));
+        const start = locate(match.index, false);
+        const last = locate(match.index + match[0].length, true);
+        const paragraphs = new Set(
+          nodes.slice(start.index, last.index + 1).map(n => n.parentElement.closest(BLOCK_SELECTOR))
+        );
+        if (paragraphs.size > maxParagraphs) continue;
+        const node = last.node;
+        const end = last.offset;
         const isDecorated = end === node.nodeValue.length
           && node.nextSibling?.classList?.contains(QUOTE_BUTTON_CLASS);
         if (!quote || isDecorated) continue;
 
-        const direction = findPrecedingDirection(node, match.index);
+        const direction = findPrecedingDirection(start.node, start.offset);
         if (end < node.nodeValue.length) node.splitText(end);
         const button = document.createElement("button");
         button.type = "button";

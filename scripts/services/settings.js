@@ -29,6 +29,7 @@ export class NarrativeSettings {
   static SETTING_SPOKEN_TO_CHAT = "spokenDialogueToChat";
   static SETTING_READ_ALOUD_PRESET = "readAloudPreset";
   static SETTING_READ_ALOUD_CUSTOM_CLASS = "readAloudCustomClass";
+  static SETTING_QUOTE_MAX_PARAGRAPHS = "quoteMaxParagraphs";
   static SETTING_DIALOGUE_SPEED = "dialogueSpeedMultiplier";
   static SETTING_DIALOGUE_REVEAL_MODE = "dialogueRevealMode";
   static SETTING_NARRATION_REVEAL_MODE = "narrationRevealMode";
@@ -264,6 +265,17 @@ export class NarrativeSettings {
       onChange: () => game.modules?.get("narrative-canvas")?.manager?.refreshView()
     });
 
+    game.settings.register("narrative-canvas", this.SETTING_QUOTE_MAX_PARAGRAPHS, {
+      name: "NARRATIVE_CANVAS.Settings.QuoteMaxParagraphsLabel",
+      hint: "NARRATIVE_CANVAS.Settings.QuoteMaxParagraphsHint",
+      scope: "world",
+      config: true,
+      type: Number,
+      range: { min: 1, max: 10, step: 1 },
+      default: 3,
+      onChange: () => game.modules?.get("narrative-canvas")?.manager?.refreshView()
+    });
+
     game.settings.register("narrative-canvas", this.SETTING_DIALOGUE_SPEED, {
       scope: "client",
       config: false,
@@ -442,6 +454,12 @@ export class NarrativeSettings {
       : SystemAdapters.get(preset === "auto" ? game.system.id : preset).readAloudClass;
     const name = String(raw ?? "").trim().replace(/^\./, "");
     return /^[\w-]+$/.test(name) ? name : "";
+  }
+
+  /** @returns {number} Maximum number of consecutive paragraphs a direct speech may span. */
+  static getQuoteMaxParagraphs() {
+    const value = Math.floor(Number(game.settings.get("narrative-canvas", this.SETTING_QUOTE_MAX_PARAGRAPHS)));
+    return Number.isFinite(value) && value >= 1 ? value : 3;
   }
 
   /** @returns {number} A numeric dialogue setting clamped to its allowed range. */

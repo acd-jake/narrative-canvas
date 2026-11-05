@@ -215,6 +215,8 @@
   "NARRATIVE_CANVAS.Settings.ReadAloudPresets.Custom": "Custom CSS class",
   "NARRATIVE_CANVAS.Settings.ReadAloudCustomClassLabel": "Custom CSS class for read-aloud text",
   "NARRATIVE_CANVAS.Settings.ReadAloudCustomClassHint": "Only used with \"Custom CSS class\" (without leading dot).",
+  "NARRATIVE_CANVAS.Settings.QuoteMaxParagraphsLabel": "Maximum paragraphs per direct speech",
+  "NARRATIVE_CANVAS.Settings.QuoteMaxParagraphsHint": "Direct speech is only detected if it spans at most this many consecutive paragraphs in the journal.",
   "NARRATIVE_CANVAS.Dialogue.UseReadAloud": "Use read-aloud text as dialogue line",
   "NARRATIVE_CANVAS.Dialogue.UseSelection": "Use selection as dialogue line",
   "NARRATIVE_CANVAS.Dialogue.UseQuote": "Use quote as dialogue line",
