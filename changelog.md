@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-11-05
+
+### Added
+
+- Talking Actors stage directions: a leading `(…)` in a dialogue or narrator line is passed on to `/talk` and `/narrate` and is not shown on the canvas.
+- Journal Viewer: when direct speech or a selection is directly preceded by a text in parentheses and voice output is possible (dialogue system and voice on, canvas released to the players, Talking Actors active), a second button behind the speech and an extra context menu entry transfer the text together with the stage direction.
+- Journal Viewer: right-clicking the dialogue buttons opens the context menu.
+
+### Changed
+
+- The Talking Actors read-aloud button and context menu are hidden in the Journal Viewer, which has its own read-aloud controls.
+
 ## [0.12.0] - 2026-11-05
 
 ### Added
