@@ -107,22 +107,11 @@
             {{#if activeJournal}}
                 {{#if activeJournal.pages.length}}
                     <div class="journal-toc-carousel">
-                        <button type="button" class="btn-toc-scroll btn-toc-prev" title="&lt;">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <div class="journal-toc-track">
+                        <select class="journal-toc-select">
                             {{#each activeJournal.pages}}
-                                <button type="button" class="journal-toc-badge {{#if (eq ../selectedPageId this.id)}}is-active{{/if}}" data-page-id="{{this.id}}" title="{{this.name}}">
-                                    {{this.name}}
-                                </button>
+                                <option value="{{this.id}}" {{#if (eq ../selectedPageId this.id)}}selected{{/if}}>{{this.name}}</option>
                             {{/each}}
-                        </div>
-                        <button type="button" class="btn-toc-scroll btn-toc-next" title="&gt;">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
-
-                    <div class="journal-viewer-content">
+                        </select>
                         <div class="journal-font-size-controls">
                             <button type="button" data-font-size-change="-1" title="{{localize 'NARRATIVE_CANVAS.Director.DecreaseJournalFontSize'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.DecreaseJournalFontSize'}}">
                                 <i class="fas fa-minus" aria-hidden="true"></i>
@@ -131,6 +120,9 @@
                                 <i class="fas fa-plus" aria-hidden="true"></i>
                             </button>
                         </div>
+                    </div>
+
+                    <div class="journal-viewer-content">
                         {{#if activePage}}
                             <h3 class="journal-page-title">{{activePage.name}}</h3>
                             <div class="journal-page-body">{{{activePage.content}}}</div>

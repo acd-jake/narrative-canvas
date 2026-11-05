@@ -2092,69 +2092,40 @@ body.acd-nc-active {
                 padding: 4px;
                 flex-shrink: 0;
 
-                .btn-toc-scroll {
-                    flex: 0 0 24px;
-                    height: 28px;
-                    background: rgba(255, 255, 255, 0.05);
-                    border: 1px solid #444;
-                    border-radius: 4px;
-                    color: #aaa;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    cursor: pointer;
-                    padding: 0;
-                    transition: background 0.15s, color 0.15s;
-
-                    &:hover {
-                        background: rgba(122, 104, 66, 0.3);
-                        color: #fff;
-                        border-color: #7a6842;
-                    }
-                }
-
-                .journal-toc-track {
+                .journal-toc-select {
                     flex: 1 1 auto;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    overflow-x: auto;
-                    scrollbar-width: none;
-                    cursor: grab;
-                    user-select: none;
-                    padding: 2px;
-
-                    &::-webkit-scrollbar { display: none; }
-                    &.is-dragging { cursor: grabbing; }
+                    min-width: 0;
+                    height: 28px;
+                    font-size: 0.8rem;
                 }
 
-                .journal-toc-badge {
+                .journal-font-size-controls {
                     flex: 0 0 auto;
-                    white-space: nowrap;
-                    max-width: 140px;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    padding: 4px 10px;
-                    font-size: 0.75rem;
-                    border-radius: 12px;
-                    border: 1px solid #444;
-                    background: rgba(255, 255, 255, 0.06);
-                    color: #bbb;
-                    cursor: pointer;
-                    transition: all 0.15s ease;
+                    display: flex;
+                    gap: 3px;
 
-                    &:hover {
-                        background: rgba(255, 255, 255, 0.12);
-                        color: #fff;
-                        border-color: #666;
-                    }
+                    button {
+                        display: grid;
+                        width: 28px;
+                        height: 28px;
+                        place-items: center;
+                        padding: 0;
+                        border: 1px solid #444;
+                        border-radius: 4px;
+                        background: rgba(255, 255, 255, 0.05);
+                        color: #aaa;
+                        cursor: pointer;
 
-                    &.is-active {
-                        background: #7a6842;
-                        color: #fff;
-                        border-color: #9a8458;
-                        font-weight: bold;
-                        box-shadow: 0 0 6px rgba(122, 104, 66, 0.6);
+                        &:hover:not(:disabled),
+                        &:focus-visible {
+                            border-color: #7a6842;
+                            color: #fff;
+                        }
+
+                        &:disabled {
+                            color: #555;
+                            cursor: default;
+                        }
                     }
                 }
             }
@@ -2173,53 +2144,11 @@ body.acd-nc-active {
                 font-size: 0.85rem;
                 line-height: 1.5;
 
-                .journal-font-size-controls {
-                    position: sticky;
-                    top: 0px;
-                    z-index: 2;
-                    display: flex;
-                    width: max-content;
-                    height: 26px;
-                    gap: 3px;
-                    margin-left: auto;
-                    margin-bottom: -26px;
-                    overflow: visible;
-
-                    button {
-                        display: grid;
-                        width: 26px;
-                        height: 26px;
-                        flex: 0 0 26px;
-                        place-items: center;
-                        padding: 0;
-                        border: 1px solid #444;
-                        border-radius: 4px;
-                        background: rgba(10, 10, 14, 0.8);
-                        color: #aaa;
-                        cursor: pointer;
-                        opacity: 0.3;
-                        transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-
-                        &:hover:not(:disabled),
-                        &:focus-visible {
-                            border-color: #7a6842;
-                            color: #fff;
-                            opacity: 1;
-                        }
-
-                        &:disabled {
-                            color: #555;
-                            cursor: default;
-                        }
-                    }
-                }
-
                 .journal-page-title {
                     font-size: 1rem;
                     color: #7a6842;
                     border-bottom: 1px solid #444;
                     padding-bottom: 4px;
-                    padding-right: 60px;
                     margin: 0 0 8px 0;
                 }
 

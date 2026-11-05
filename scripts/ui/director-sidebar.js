@@ -601,7 +601,6 @@ export class DirectorSidebar {
     this.#bindContentLinks(root);
     this.#bindJournalNavigation(root);
     this.#bindJournalControls(root);
-    this.#bindTocScrolling(root);
     this.#bindPageSelection(root);
     this.#addImageOverlayButtons(root);
   }
@@ -1288,17 +1287,14 @@ export class DirectorSidebar {
       return;
     }
 
-    const badgesHtml = activeJournal.pages.map(page => `
-      <button type="button" class="journal-toc-badge ${page.id === this.#selectedPageId ? "is-active" : ""}" data-page-id="${page.id}" title="${Handlebars.escapeExpression(page.name)}">
-        ${Handlebars.escapeExpression(page.name)}
-      </button>
+    const optionsHtml = activeJournal.pages.map(page => `
+      <option value="${page.id}" ${page.id === this.#selectedPageId ? "selected" : ""}>${Handlebars.escapeExpression(page.name)}</option>
     `).join("");
 
     bodyContainer.innerHTML = `
       <div class="journal-toc-carousel">
-        <button type="button" class="btn-toc-scroll btn-toc-prev" title="&lt;"><i class="fas fa-chevron-left"></i></button>
-        <div class="journal-toc-track">${badgesHtml}</div>
-        <button type="button" class="btn-toc-scroll btn-toc-next" title="&gt;"><i class="fas fa-chevron-right"></i></button>
+        <select class="journal-toc-select">${optionsHtml}</select>
+        ${JournalViewerFontSizeController.controlsHtml()}
       </div>
       <div class="journal-viewer-content">
         ${activePage ? `<h3 class="journal-page-title">${Handlebars.escapeExpression(activePage.name)}</h3><div class="journal-page-body">${activePage.content || `<p class="journal-empty-page-hint"><em>${game.i18n.localize("NARRATIVE_CANVAS.Director.EmptyPage")}</em></p>`}</div>` : ""}
@@ -1306,83 +1302,16 @@ export class DirectorSidebar {
     `;
 
     this.#addImageOverlayButtons(bodyContainer);
-    this.#bindTocScrolling(bodyContainer);
-    this.#scrollSelectedPageBadgeIntoView(bodyContainer);
-  }
-
-  #scrollSelectedPageBadgeIntoView(root) {
-    const track = root.querySelector(".journal-toc-track");
-    const badge = track?.querySelector(".journal-toc-badge.is-active");
-    if (!track || !badge) return;
-
-    const trackBounds = track.getBoundingClientRect();
-    const badgeBounds = badge.getBoundingClientRect();
-    if (badgeBounds.left < trackBounds.left) {
-      track.scrollBy({ left: badgeBounds.left - trackBounds.left, behavior: "smooth" });
-    } else if (badgeBounds.right > trackBounds.right) {
-      track.scrollBy({ left: badgeBounds.right - trackBounds.right, behavior: "smooth" });
-    }
-  }
-
-  #bindTocScrolling(root) {
-    const track = root.querySelector(".journal-toc-track");
-    const prevBtn = root.querySelector(".btn-toc-prev");
-    const nextBtn = root.querySelector(".btn-toc-next");
-    if (!track) return;
-
-    prevBtn?.addEventListener("click", (event) => {
-      event.preventDefault();
-      track.scrollBy({ left: -140, behavior: "smooth" });
-    });
-
-    nextBtn?.addEventListener("click", (event) => {
-      event.preventDefault();
-      track.scrollBy({ left: 140, behavior: "smooth" });
-    });
-
-    let isDown = false;
-    let startX = 0;
-    let initialScroll = 0;
-    let isDragging = false;
-
-    track.addEventListener("mousedown", (event) => {
-      if (event.button !== 0) return;
-      isDown = true;
-      isDragging = false;
-      startX = event.pageX;
-      initialScroll = track.scrollLeft;
-    });
-
-    window.addEventListener("mousemove", (event) => {
-      if (!isDown) return;
-      const walk = event.pageX - startX;
-      if (!isDragging && Math.abs(walk) > 6) {
-        isDragging = true;
-        track.classList.add("is-dragging");
-      }
-      if (isDragging) {
-        track.scrollLeft = initialScroll - walk;
-      }
-    });
-
-    window.addEventListener("mouseup", () => {
-      if (!isDown) return;
-      isDown = false;
-      track.classList.remove("is-dragging");
-      if (isDragging) {
-        const preventClick = (e) => {
-          e.stopPropagation();
-          e.preventDefault();
-        };
-        track.addEventListener("click", preventClick, { capture: true, once: true });
-        setTimeout(() => track.removeEventListener("click", preventClick, { capture: true }), 50);
-      }
-      isDragging = false;
-    });
+    this.#journalViewerFontSizeController.apply(bodyContainer);
   }
 
   #bindPageSelection(root) {
     const journalSection = root.querySelector(".sidebar-journal-section") || root;
+    journalSection.addEventListener("change", (event) => {
+      const select = event.target.closest?.(".journal-toc-select");
+      if (select?.value) this.#selectPage(select.value);
+    });
+
     journalSection.addEventListener("click", (event) => {
       const overlayButton = event.target.closest(".btn-journal-image-overlay");
       if (overlayButton) {
@@ -1396,15 +1325,6 @@ export class DirectorSidebar {
         }
         return;
       }
-
-      const badge = event.target.closest(".journal-toc-badge");
-      if (!badge) return;
-
-      event.preventDefault();
-      const pageId = badge.dataset.pageId;
-      if (pageId) {
-        this.#selectPage(pageId);
-      }
     });
   }
 
@@ -1415,13 +1335,8 @@ export class DirectorSidebar {
 
     if (!this.#element) return;
 
-    this.#element.querySelectorAll(".journal-toc-badge").forEach(candidate => {
-      const isActive = candidate.dataset.pageId === pageId;
-      candidate.classList.toggle("is-active", isActive);
-      if (isActive) {
-        candidate.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
-      }
-    });
+    const select = this.#element.querySelector(".journal-toc-select");
+    if (select) select.value = pageId;
 
     const details = await JournalBrowser.getJournalDetails(this.#selectedJournalId);
     const page = details?.pages.find(p => p.id === pageId);
@@ -1433,6 +1348,7 @@ export class DirectorSidebar {
         <div class="journal-page-body">${page.content || `<p class="journal-empty-page-hint"><em>${emptyText}</em></p>`}</div>
       `;
       this.#addImageOverlayButtons(contentContainer);
+      this.#journalViewerFontSizeController.apply(this.#element);
       contentContainer.scrollTop = 0;
     }
   }
