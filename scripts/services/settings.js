@@ -148,7 +148,7 @@ export class NarrativeSettings {
       scope: "world",
       config: true,
       type: Boolean,
-      default: true,
+      default: false,
       onChange: () => Hooks.callAll(this.CHARACTER_SHEETS_CHANGED_HOOK)
     });
 

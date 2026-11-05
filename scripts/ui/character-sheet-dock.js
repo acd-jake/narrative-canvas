@@ -1,5 +1,6 @@
 import { NarrativeSettings } from "../services/settings.js";
 import { SystemAdapters } from "../systems/system-registry.js";
+import { LayerRoot } from "./layer-root.js";
 
 const HIDE_DELAY_MS = 2000;
 const SHEET_CLASS = "nc-char-sheet";
@@ -30,7 +31,7 @@ export class CharacterSheetDock {
       this._pointerInside = false;
       this._scheduleHide();
     });
-    document.body.appendChild(this.element);
+    LayerRoot.append(this.element);
 
     this._hookIds.push([
       NarrativeSettings.CHARACTER_SHEETS_CHANGED_HOOK,

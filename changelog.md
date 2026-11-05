@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.1] - 2026-11-05
+
+### Changed
+
+- The canvas overlay and the dock now live in a single layer container below Foundry's windows and the Dice So Nice canvas, so dialogs, sheets and dice are shown above them without per-window adjustments. Roll toasts stay on top of everything.
+- The **Offer Character Sheets** module setting is marked as experimental and is disabled by default.
+
+### Fixed
+
+- Roll dialogs of game systems (Pathfinder 2e roll modifiers, Call of Cthulhu 7e roll dialog) are shown above the canvas.
+- The Dice So Nice canvas is shown above the narrative canvas.
+
 ## [0.11.0] - 2026-11-04
 
 ### Added
@@ -16,13 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The canvas, its overlays and the dock now use z-indexes below 1000, so the Dice So Nice canvas is shown above them.
 - Journal read-aloud classes are provided by the system adapters.
 
 ### Fixed
 
 - Character sheets of ApplicationV1 systems (Pathfinder 2e) no longer fail to open on the canvas and are shown above it.
-- The roll modifiers dialog of Pathfinder 2e is shown above the canvas and character sheets.
 - The token dock no longer appears by itself after character sheets are released.
 
 ## [0.10.0] - 2026-11-04

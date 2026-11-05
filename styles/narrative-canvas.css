@@ -2749,16 +2749,14 @@ body.acd-nc-active {
 }
 
 /* ==========================================================================
-   Core Utility Layer Elevation for FilePickers
+   Layer root: all module layers live in one element below Foundry's windows
+   (which start at z-index 100) and below Dice So Nice, so no per-window raising is needed.
    ========================================================================== */
-
-/* Force Foundry windows like FilePickers to layer on top of our full-screen block */
-body.acd-nc-active {
-    .filepicker,
-    .window-app.filepicker,
-    .window-app.browse {
-        z-index: 905 !important; /* Stacked securely in front of our z-index 900 canvas overlay */
-    }
+#nc-layer-root {
+    position: fixed;
+    inset: 0;
+    z-index: var(--nc-layer-z, 99);
+    pointer-events: none;
 }
 
 /* ==========================================================================
@@ -3541,26 +3539,11 @@ body.acd-nc-active {
     }
 }
 
-body.acd-nc-active .nc-char-sheet {
-    z-index: 906 !important;
-}
-
-/* Dialogs of the game system (e.g. roll modifiers) must stay above sheets and toasts. */
-body.acd-nc-active .nc-raised-window {
-    z-index: 908 !important;
-}
-
-/* Keep the Dice So Nice canvas above the overlay, sheets and roll toasts. */
-body.acd-nc-active #dice-box-canvas {
-    z-index: 1000 !important;
-    pointer-events: none !important;
-}
-
 .nc-roll-toasts {
     position: fixed;
     right: 16px;
     bottom: 16px;
-    z-index: 907;
+    z-index: 10000;
     display: flex;
     flex-direction: column;
     gap: 8px;

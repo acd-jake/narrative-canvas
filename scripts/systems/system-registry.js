@@ -19,9 +19,4 @@ export class SystemAdapters {
   static current() {
     return this.get(game.system.id);
   }
-
-  /** Registers the hooks of the running system's adapter. */
-  static registerHooks() {
-    this.current().registerHooks();
-  }
 }

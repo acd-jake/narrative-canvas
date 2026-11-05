@@ -6,8 +6,4 @@ export class Pf2eSystemAdapter extends SystemAdapter {
   get readAloudClass() {
     return "narrative";
   }
-
-  get raisedDialogHooks() {
-    return ["renderCheckModifiersDialog", "renderRollModifiersDialog"];
-  }
 }

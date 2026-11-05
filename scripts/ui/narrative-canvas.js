@@ -6,6 +6,7 @@ import { DialogueLineController } from "./dialogue-line.js";
 import { HandoutImageOverlayController } from "./handout-image-overlay-controller.js";
 import { CharacterSheetDock } from "./character-sheet-dock.js";
 import { RollToast } from "./roll-toast.js";
+import { LayerRoot } from "./layer-root.js";
 
 /**
  * Abstract base class for raw DOM injection overlays, completely detached 
@@ -151,7 +152,7 @@ export class NarrativeCanvas {
     await this._onPrepareElements(newStage, context);
     if (renderRequestId !== this._renderRequestId) return;
 
-    document.body.appendChild(newStage);
+    LayerRoot.append(newStage);
     this.stageElement = newStage;
     this.handoutImageOverlayController.mount(newStage, context.fadeDuration);
     this.characterDock.mount();
@@ -480,6 +481,7 @@ export class NarrativeCanvas {
     }
 
     closingStage?.remove();
+    LayerRoot.removeIfEmpty();
 
     if (!document.querySelector("#narrative-player-display, #narrative-canvas-director")) {
       document.body.classList.remove("acd-nc-active");

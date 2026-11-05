@@ -44,7 +44,7 @@
   "NARRATIVE_CANVAS.Settings.JournalRootFolderHint": "Begrenzt den Journalviewer des Regiepults auf diesen Ordner und seine Unterordner.",
   "NARRATIVE_CANVAS.Settings.ToastsLabel": "Toast-Benachrichtigungen erlauben",
   "NARRATIVE_CANVAS.Settings.ToastsHint": "Wenn aktiviert, erhalten Spieler kurze Benachrichtigungen oben rechts, sobald der Erzählmodus startet oder endet.",
-  "NARRATIVE_CANVAS.Settings.CharacterSheetsLabel": "Charakterblätter anbieten",
+  "NARRATIVE_CANVAS.Settings.CharacterSheetsLabel": "Charakterblätter anbieten (Experimentell)",
   "NARRATIVE_CANVAS.Settings.CharacterSheetsHint": "Wenn aktiviert, können Benutzer über eine Leiste auf dem Narrative Canvas ihre Charakterblätter öffnen. Der SL kann dies zusätzlich während des Spiels sperren und freigeben.",
   "NARRATIVE_CANVAS.Director.EnableCharacterSheets": "Charakterblätter für Spieler freigeben",
   "NARRATIVE_CANVAS.Director.DisableCharacterSheets": "Charakterblätter für Spieler sperren (schließt geöffnete Blätter)",
