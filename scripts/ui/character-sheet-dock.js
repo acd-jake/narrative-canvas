@@ -23,14 +23,21 @@ export class CharacterSheetDock {
     this.element = document.createElement("div");
     this.element.className = "nc-char-dock-zone";
     this.element.innerHTML = `<div class="nc-char-dock"></div>`;
-    this.element.addEventListener("mouseenter", () => {
-      this._pointerInside = true;
-      this._show();
-    });
-    this.element.addEventListener("mouseleave", () => {
-      this._pointerInside = false;
-      this._scheduleHide();
-    });
+    // The zone itself must not take clicks, so the hover is tracked on the document.
+    this._onPointerMove = event => {
+      const rect = this.element.getBoundingClientRect();
+      const target = event.target instanceof Element ? event.target : null;
+      const overDock = Boolean(target && this.element.contains(target));
+      const inZone = event.clientX >= rect.left && event.clientX <= rect.right
+        && event.clientY >= rect.top && event.clientY <= rect.bottom;
+      const overControls = !overDock && Boolean(target?.closest(".narrative-director-actors-bar"));
+      const inside = inZone && !overControls;
+      if (inside === this._pointerInside) return;
+      this._pointerInside = inside;
+      if (inside) this._show();
+      else this._scheduleHide();
+    };
+    document.addEventListener("pointermove", this._onPointerMove, { passive: true });
     LayerRoot.append(this.element);
 
     this._hookIds.push([
@@ -63,6 +70,7 @@ export class CharacterSheetDock {
 
   destroy() {
     clearTimeout(this._hideTimer);
+    document.removeEventListener("pointermove", this._onPointerMove);
     this._sheetObserver?.disconnect();
     this._sheetObserver = null;
     for (const [hook, id] of this._hookIds) Hooks.off(hook, id);

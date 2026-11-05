@@ -3527,7 +3527,7 @@ body.acd-nc-active {
     width: 33.333vw;
     height: 100px;
     z-index: 902;
-    pointer-events: auto;
+    pointer-events: none;
 }
 
 .nc-char-dock-zone[hidden] {
@@ -3549,6 +3549,7 @@ body.acd-nc-active {
 
 .nc-char-dock-zone.is-visible .nc-char-dock {
     transform: translateY(0);
+    pointer-events: auto;
 }
 
 .nc-char-token {
