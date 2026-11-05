@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.1] - 2026-11-05
+
+### Changed
+
+- Journal Viewer: the page badge carousel is replaced by a combobox with the pages of the journal. The text size buttons sit to the right of it.
+
+### Fixed
+
+- Journal Viewer: the text size buttons are shown again and keep the chosen size when switching pages.
+
 ## [0.14.0] - 2026-11-05
 
 ### Added
