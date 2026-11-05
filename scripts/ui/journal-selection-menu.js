@@ -10,9 +10,13 @@ function normalizeText(text) {
     .trim();
 }
 
+/** Direct speech in German („…“, »…«), English (“…”, "…") and French («…») quotation marks. */
+const QUOTE_PATTERN = /„[^„“”]{2,}?[“”]|“[^“”]{2,}”|"[^"]{2,}"|»[^»«]{2,}«|«[^«»]{2,}»/g;
+const QUOTE_BUTTON_CLASS = "nc-quote-button";
+
 /**
  * Journal Viewer helpers that send text to the dialogue input: a context menu for the
- * selected text and a button on each read-aloud block.
+ * selected text, a button on each read-aloud block and a button behind direct speech.
  */
 export class JournalSelectionMenu {
   #isEnabled;
@@ -40,12 +44,22 @@ export class JournalSelectionMenu {
       this.#decorateFrame = requestAnimationFrame(() => {
         this.#decorateFrame = null;
         this.#decorateReadAloudBlocks(root);
+        this.#decorateQuotes(root);
       });
     });
     this.#observer.observe(root, { childList: true, subtree: true });
     this.#decorateReadAloudBlocks(root);
+    this.#decorateQuotes(root);
 
     root.addEventListener("click", event => {
+      const quoteButton = event.target instanceof Element ? event.target.closest(`.${QUOTE_BUTTON_CLASS}`) : null;
+      if (quoteButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (quoteButton.dataset.quote) this.#onUseText(quoteButton.dataset.quote);
+        return;
+      }
+
       const button = event.target instanceof Element ? event.target.closest(".nc-read-aloud-button") : null;
       if (!button) return;
 
@@ -91,6 +105,43 @@ export class JournalSelectionMenu {
       button.innerHTML = `<i class="fas fa-comment-dots" aria-hidden="true"></i>`;
       block.appendChild(button);
     });
+  }
+
+  /** Adds a button behind each direct speech; CSS shows it only while the dialogue system is active. */
+  #decorateQuotes(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: node => {
+        const parent = node.parentElement;
+        const accepted = parent?.closest(".journal-page-body")
+          && !parent.closest(`button, script, style, .nc-read-aloud-target`);
+        return accepted ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    const textNodes = [];
+    while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+    const label = game.i18n.localize("NARRATIVE_CANVAS.Dialogue.UseQuote");
+    for (const node of textNodes) {
+      const matches = [...node.nodeValue.matchAll(QUOTE_PATTERN)].reverse();
+      for (const match of matches) {
+        const quote = match[0].slice(1, -1).trim();
+        const end = match.index + match[0].length;
+        const isDecorated = end === node.nodeValue.length
+          && node.nextSibling?.classList?.contains(QUOTE_BUTTON_CLASS);
+        if (!quote || isDecorated) continue;
+
+        if (end < node.nodeValue.length) node.splitText(end);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = QUOTE_BUTTON_CLASS;
+        button.dataset.quote = quote;
+        button.title = label;
+        button.setAttribute("aria-label", label);
+        button.contentEditable = "false";
+        button.innerHTML = `<i class="fas fa-comment-dots" aria-hidden="true"></i>`;
+        node.after(button);
+      }
+    }
   }
 
   #open(x, y, text) {

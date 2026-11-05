@@ -217,6 +217,7 @@
   "NARRATIVE_CANVAS.Settings.ReadAloudCustomClassHint": "Wird nur bei \"Eigene CSS-Klasse\" verwendet (ohne führenden Punkt).",
   "NARRATIVE_CANVAS.Dialogue.UseReadAloud": "Vorlesetext in Dialogzeile übernehmen",
   "NARRATIVE_CANVAS.Dialogue.UseSelection": "Auswahl in Dialogzeile übernehmen",
+  "NARRATIVE_CANVAS.Dialogue.UseQuote": "Wörtliche Rede in Dialogzeile übernehmen",
   "NARRATIVE_CANVAS.Dialogue.Voice": "Text mit der Stimme des Akteurs vorlesen",
   "NARRATIVE_CANVAS.Dialogue.Language": "Sprache",
   "NARRATIVE_CANVAS.Dialogue.TextPlaceholder": "Dialogzeile eingeben …",

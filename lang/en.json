@@ -217,6 +217,7 @@
   "NARRATIVE_CANVAS.Settings.ReadAloudCustomClassHint": "Only used with \"Custom CSS class\" (without leading dot).",
   "NARRATIVE_CANVAS.Dialogue.UseReadAloud": "Use read-aloud text as dialogue line",
   "NARRATIVE_CANVAS.Dialogue.UseSelection": "Use selection as dialogue line",
+  "NARRATIVE_CANVAS.Dialogue.UseQuote": "Use quote as dialogue line",
   "NARRATIVE_CANVAS.Dialogue.Voice": "Read the text aloud with the actor's voice",
   "NARRATIVE_CANVAS.Dialogue.Language": "Language",
   "NARRATIVE_CANVAS.Dialogue.TextPlaceholder": "Enter dialogue line…",
