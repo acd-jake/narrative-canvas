@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-11-06
+
+### Added
+
+- Dialogue lines: the text output of a dialogue or narrator line can be paused and resumed.
+- Handout layout strategies: the module setting "Handouts: Layout strategy" chooses between "Free" (move and scale manually, as before) and "Comic panels".
+- Comic panels: handouts are arranged automatically like panels on a comic page and keep their aspect ratios. Settings: panel row width as a share of the viewport, maximum images per row (default 2), reading direction (left to right or right to left for manga) and caption position (top or bottom of the image). Descriptions appear as a caption inside the panel.
+- Comic panels: the GM can reorder handouts by dragging a panel. The remaining panels move aside live and the new order is sent to the players.
+- Actor layout strategies: the module setting "Visual Novel actors: Layout strategy" chooses how actors are arranged in the Visual Novel overlay: "Row" (as before), "Alternating left and right", "Speaker in the middle, others at the sides", "Semicircle" and "Overlapping stack". Changes glide smoothly in every strategy.
+- Each layout strategy in the module settings has a short explanation in the tooltip of its option.
+- The Director's handout list marks every displayed handout. Clicking a displayed handout again, its new close button or a right-click closes it, like the actors in the carousel.
+
+### Changed
+
+- The former on/off switch for the comic layout is migrated into the handout layout strategy ("Comic panels") and no longer appears in the settings.
+- When a handout is closed, the remaining handouts rearrange themselves in the comic layout.
+- The layout settings are grouped in their own section "Handouts: comic layout" and next to the actor image height.
+
+### Fixed
+
+- Journal Viewer: the quotation mark pattern for detecting direct speech is corrected.
+
 ## [0.15.0] - 2026-11-06
 
 ### Added
