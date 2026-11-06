@@ -97,8 +97,14 @@ export class DirectorImageControls {
   }
 
   #createTemplateContext(context) {
+    const shownPaths = new Set((context.handoutImageOverlays || []).map(overlay => overlay.src));
+    const scene = context.currentSceneData;
     return {
       ...context,
+      currentSceneData: scene && {
+        ...scene,
+        handoutImages: scene.handoutImages?.map(image => ({ ...image, isOnStage: shownPaths.has(image.path) }))
+      },
       tileSize: NarrativeSettings.getTileSize(),
       isPanelCollapsed: this.#isPanelCollapsed,
       isAudioCollapsed: this.#isAudioCollapsed,

@@ -295,5 +295,14 @@ export class NarrativeDirector extends NarrativeCanvas {
       }
 
     }, { capture: true, signal: this.globalClickAbortController.signal });
+
+    document.addEventListener("contextmenu", event => {
+      const handoutCard = this.stageElement && event.target instanceof Element
+        ? event.target.closest(".handout-thumbnail-card.is-on-stage")
+        : null;
+      if (!handoutCard?.dataset.handoutImagePath) return;
+      event.preventDefault();
+      this.callbacks.onHandoutImageChange?.(handoutCard.dataset.handoutImagePath);
+    }, { signal: this.globalClickAbortController.signal });
   }
 }

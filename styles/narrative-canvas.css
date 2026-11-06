@@ -515,6 +515,14 @@ body.acd-nc-active {
 
         .btn-resize-handout-image { display: none; }
 
+        &.director-view .narrative-scene-handout-image { cursor: grab; }
+
+        .narrative-scene-handout-image-frame.is-reordering {
+            transition: none;
+            cursor: grabbing;
+            filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.75));
+        }
+
         .narrative-scene-handout-image-description {
             left: 0;
             right: auto;
@@ -1623,6 +1631,26 @@ body.acd-nc-active {
             object-fit: contain;
         }
         &.is-active-bg { border: 2px solid #7a6842; }
+    }
+
+    .btn-remove-handout {
+        position: absolute;
+        right: 3px;
+        bottom: 26px;
+        z-index: 2;
+        display: grid;
+        width: 22px;
+        height: 22px;
+        padding: 0;
+        place-items: center;
+        border: 1px solid #662222;
+        border-radius: 3px;
+        background: rgba(140, 30, 30, 0.9);
+        color: #fff;
+        font-size: 0.7rem;
+        cursor: pointer;
+
+        &:hover { border-color: #ff5555; background: #ff3333; }
     }
 
     .bg-thumb-label {

@@ -178,6 +178,7 @@
   "NARRATIVE_CANVAS.Director.ShowName": "Show name on stage",
   "NARRATIVE_CANVAS.Director.HideName": "Hide name on stage",
   "NARRATIVE_CANVAS.Director.RemoveFromStage": "Remove from stage (or right-click)",
+  "NARRATIVE_CANVAS.Director.RemoveHandout": "Close handout (or right-click)",
   "NARRATIVE_CANVAS.Settings.UnknownSpeakerLabel": "Name for unknown speakers",
   "NARRATIVE_CANVAS.Settings.UnknownSpeakerHint": "Shown by the dialogue system instead of the actor name when the name may not be displayed. Leave empty for the default text.",
   "NARRATIVE_CANVAS.Dialogue.UnknownSpeaker": "Unknown speaker",

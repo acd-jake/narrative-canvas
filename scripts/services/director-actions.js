@@ -207,6 +207,11 @@ export class NarrativeDirectorActions {
       },
       onBackgroundChange: path => this.handleDisplayUpdate({ background: path }),
       onHandoutImageChange: path => {
+        const shown = (this.getState().handoutImageOverlays || []).find(overlay => overlay.src === path);
+        if (shown) {
+          this.#closeHandoutOverlay(shown.id);
+          return;
+        }
         const image = this.getState().currentSceneData?.handoutImages?.find(item => item.path === path);
         if (!image) return;
         this.handleDisplayUpdate({
@@ -219,20 +224,7 @@ export class NarrativeDirectorActions {
           })
         });
       },
-      onHandoutImageClose: overlayId => {
-        const state = this.getState();
-        const currentOverlays = state.handoutImageOverlays || [];
-        const closingOverlay = currentOverlays.find(overlay => overlay.id === overlayId);
-        const remainingOverlays = currentOverlays.filter(overlay => overlay.id !== overlayId);
-        const selectedHandoutWasClosed = closingOverlay?.src === state.handoutImage;
-
-        this.handleDisplayUpdate({
-          handoutImage: selectedHandoutWasClosed
-            ? remainingOverlays[remainingOverlays.length - 1]?.src || ""
-            : state.handoutImage,
-          handoutImageOverlays: remainingOverlays
-        });
-      },
+      onHandoutImageClose: overlayId => this.#closeHandoutOverlay(overlayId),
       onHandoutImageLayoutChange: (layout, isFinal) =>
         this.handleHandoutImageLayout(layout, isFinal),
       onImageDescriptionToggle: async (collectionName, index) => {
@@ -256,6 +248,21 @@ export class NarrativeDirectorActions {
       onReopenPlayers: () => this.reopenPlayerCanvases(),
       onShutdown: () => this.toggleCanvasState(false)
     };
+  }
+
+  #closeHandoutOverlay(overlayId) {
+    const state = this.getState();
+    const currentOverlays = state.handoutImageOverlays || [];
+    const closingOverlay = currentOverlays.find(overlay => overlay.id === overlayId);
+    const remainingOverlays = currentOverlays.filter(overlay => overlay.id !== overlayId);
+    const selectedHandoutWasClosed = closingOverlay?.src === state.handoutImage;
+
+    this.handleDisplayUpdate({
+      handoutImage: selectedHandoutWasClosed
+        ? remainingOverlays[remainingOverlays.length - 1]?.src || ""
+        : state.handoutImage,
+      handoutImageOverlays: remainingOverlays
+    });
   }
 
   /** Adds an actor on the right when an odd number is staged, otherwise on the left. */

@@ -178,6 +178,7 @@
   "NARRATIVE_CANVAS.Director.ShowName": "Name auf der Bühne anzeigen",
   "NARRATIVE_CANVAS.Director.HideName": "Name auf der Bühne verbergen",
   "NARRATIVE_CANVAS.Director.RemoveFromStage": "Von der Bühne entfernen (oder Rechtsklick)",
+  "NARRATIVE_CANVAS.Director.RemoveHandout": "Handout schließen (oder Rechtsklick)",
   "NARRATIVE_CANVAS.Settings.UnknownSpeakerLabel": "Name für unbekannte Sprecher",
   "NARRATIVE_CANVAS.Settings.UnknownSpeakerHint": "Wird im Dialogsystem statt des Akteursnamens angezeigt, wenn der Name nicht angezeigt werden darf. Leer lassen für den Standardtext.",
   "NARRATIVE_CANVAS.Dialogue.UnknownSpeaker": "Unbekannter Sprecher",

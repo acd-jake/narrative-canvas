@@ -5,6 +5,7 @@ export class HandoutImageOverlayController {
     this.getLayoutOptions = getLayoutOptions;
     this.layout = LayoutRegistry.create("handout", LayoutRegistry.getDefaultId("handout"));
     this.managed = false;
+    this.panels = new Map();
     this.resizeObserver = null;
     this.animateOpacity = animateOpacity;
     this.fadeOutAndRemove = fadeOutAndRemove;
@@ -168,6 +169,7 @@ export class HandoutImageOverlayController {
     const orderChanged = nextOrder.some((id, index) => id !== this.overlayOrder[index]);
     if (orderChanged) {
       this.#setOverlayOrder(nextOrder);
+      this.#syncLayout();
     }
   }
 
@@ -258,6 +260,8 @@ export class HandoutImageOverlayController {
     overlays.forEach((overlay, index) => {
       const panel = panels[index];
       if (!panel) return;
+      this.panels.set(overlay.dataset.overlayId, panel);
+      if (this.drag?.mode === "reorder" && this.drag.overlayId === overlay.dataset.overlayId) return;
       const frame = overlay.querySelector(".narrative-scene-handout-image-frame");
       frame.style.left = `${panel.left * 100}%`;
       frame.style.top = `${panel.top * 100}%`;
@@ -360,9 +364,74 @@ export class HandoutImageOverlayController {
     })), isFinal);
   }
 
+  #startReorder(event) {
+    const image = event.target instanceof Element ? event.target.closest(".narrative-scene-handout-image") : null;
+    const overlay = image?.closest(".narrative-handout-image-overlay");
+    if (!overlay || !this.stage.contains(overlay)) return;
+
+    const frame = image.closest(".narrative-scene-handout-image-frame");
+    const frameBounds = frame.getBoundingClientRect();
+    this.drag = {
+      mode: "reorder",
+      pointerId: event.pointerId,
+      overlayId: overlay.dataset.overlayId,
+      frame,
+      startX: event.clientX,
+      startY: event.clientY,
+      offsetX: event.clientX - frameBounds.left,
+      offsetY: event.clientY - frameBounds.top,
+      moved: false
+    };
+    image.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  }
+
+  /** The dragged panel follows the pointer; the order changes to the slot nearest to it. */
+  #moveReorder(event) {
+    const drag = this.drag;
+    if (!drag.moved) {
+      if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) < 6) return;
+      drag.moved = true;
+      drag.frame.classList.add("is-reordering");
+    }
+    event.preventDefault();
+
+    const layer = this.stage.querySelector(".narrative-handout-image-layer") ?? this.stage;
+    const bounds = layer.getBoundingClientRect();
+    const overlay = drag.frame.closest(".narrative-handout-image-overlay");
+    overlay.style.zIndex = "999";
+    drag.frame.style.left = `${(event.clientX - drag.offsetX - bounds.left) / bounds.width * 100}%`;
+    drag.frame.style.top = `${(event.clientY - drag.offsetY - bounds.top) / bounds.height * 100}%`;
+
+    const pointer = { x: (event.clientX - bounds.left) / bounds.width, y: (event.clientY - bounds.top) / bounds.height };
+    let nearestId = null;
+    let nearestDistance = Infinity;
+    for (const [id, panel] of this.panels) {
+      if (!this.overlayOrder.includes(id)) continue;
+      const distance = Math.hypot(pointer.x - (panel.left + panel.width / 2), pointer.y - (panel.top + panel.height / 2));
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestId = id;
+      }
+    }
+    if (!nearestId || nearestId === drag.overlayId) return;
+
+    const nextOrder = this.overlayOrder.filter(id => id !== drag.overlayId);
+    nextOrder.splice(this.overlayOrder.indexOf(nearestId), 0, drag.overlayId);
+    this.#setOverlayOrder(nextOrder);
+    overlay.style.zIndex = "999";
+    this.#syncLayout();
+    this.pendingLayoutChange = true;
+    this.#scheduleLayoutChange();
+  }
+
   #bindPointerHandlers() {
     const pointerdown = (event) => {
-      if (!this.canControl?.() || this.managed) return;
+      if (!this.canControl?.()) return;
+      if (this.managed) {
+        this.#startReorder(event);
+        return;
+      }
       const overlay = event.target.closest(".narrative-handout-image-overlay");
       if (!overlay || !this.stage.contains(overlay)) return;
       this.#raiseOverlay(overlay);
@@ -416,6 +485,10 @@ export class HandoutImageOverlayController {
     };
     const pointermove = (event) => {
       if (!this.canControl?.() || !this.drag || this.drag.pointerId !== event.pointerId) return;
+      if (this.drag.mode === "reorder") {
+        this.#moveReorder(event);
+        return;
+      }
       if (this.drag.mode === "resize") {
         const widthChange = (event.clientX - this.drag.startX) / this.drag.startWidth;
         const heightChange = (event.clientY - this.drag.startY) / this.drag.startHeight;
@@ -440,7 +513,14 @@ export class HandoutImageOverlayController {
     const finishDrag = (event) => {
       const hasPointerDrag = this.drag?.pointerId === event.pointerId;
       if (!hasPointerDrag && !this.pendingLayoutChange) return;
+      const reorder = hasPointerDrag && this.drag.mode === "reorder" ? this.drag : null;
       this.drag = null;
+      if (reorder) {
+        reorder.frame.classList.remove("is-reordering");
+        this.#applyOverlayOrder(this.overlayOrder);
+        this.#syncLayout();
+        if (!reorder.moved && !this.pendingLayoutChange) return;
+      }
       this.pendingLayoutChange = false;
       if (this.layoutChangeFrame !== null) {
         cancelAnimationFrame(this.layoutChangeFrame);

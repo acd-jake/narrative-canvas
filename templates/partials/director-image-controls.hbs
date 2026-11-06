@@ -46,7 +46,7 @@
         </header>
         <div class="director-image-list" id="director-handout-image-list" {{#if isHandoutsCollapsed}}hidden{{/if}}>
             {{#each currentSceneData.handoutImages}}
-                <div class="handout-thumbnail-card {{#if (eq ../handoutImage this.path)}}is-active-bg{{/if}}" data-handout-image-path="{{this.path}}">
+                <div class="handout-thumbnail-card {{#if this.isOnStage}}is-active-bg is-on-stage{{/if}}" data-handout-image-path="{{this.path}}">
                     <img src="{{this.path}}" alt="{{this.name}}" />
                     {{#unless ../currentSceneData.isJournalAssetSource}}
                     <div class="bg-thumbnail-actions">
@@ -55,6 +55,11 @@
                         </button>
                     </div>
                     {{/unless}}
+                    {{#if this.isOnStage}}
+                    <button type="button" class="btn-remove-handout" title="{{localize 'NARRATIVE_CANVAS.Director.RemoveHandout'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.RemoveHandout'}}">
+                        <i class="fas fa-times" aria-hidden="true"></i>
+                    </button>
+                    {{/if}}
                     <span class="bg-thumb-label" title="{{this.name}}">{{this.name}}</span>
                 </div>
             {{else}}
