@@ -1,4 +1,10 @@
 import { NarrativeSettings } from "./settings.js";
+import { LayoutRegistry } from "../ui/layout/layout-registry.js";
+
+const STRATEGY_SETTINGS = [
+  [NarrativeSettings.SETTING_HANDOUT_LAYOUT, "handout"],
+  [NarrativeSettings.SETTING_ACTOR_LAYOUT, "actor"]
+];
 
 const SECTIONS = [
   {
@@ -77,6 +83,13 @@ export class NarrativeSettingsLayout {
     if (!root) return;
 
     const findGroup = key => root.querySelector(`[name="narrative-canvas.${key}"]`)?.closest(".form-group") ?? null;
+    for (const [key, kind] of STRATEGY_SETTINGS) {
+      const select = root.querySelector(`select[name="narrative-canvas.${key}"]`);
+      const hints = LayoutRegistry.getHints(kind);
+      select?.querySelectorAll("option").forEach(option => {
+        if (hints[option.value]) option.title = game.i18n.localize(hints[option.value]);
+      });
+    }
     const firstGroup = SECTIONS.flatMap(section => section.keys).map(findGroup).find(Boolean);
     if (!firstGroup || root.querySelector(".nc-settings-heading")) return;
 

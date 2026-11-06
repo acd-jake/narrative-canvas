@@ -69,6 +69,12 @@ describe("LayoutRegistry", () => {
     });
   });
 
+  it("attaches actors alternately to the right and left in the alternating strategy", () => {
+    const layout = LayoutRegistry.create("actor", "alternating");
+    const [a, b, c, d] = layout.compute([{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }], {});
+    expect([c.x, a.x, b.x, d.x]).toEqual([...[c.x, a.x, b.x, d.x]].sort((x, y) => x - y));
+  });
+
   it("centers the speaker in the speaker-center strategy", () => {
     const layout = LayoutRegistry.create("actor", "speaker-center");
     const placements = layout.compute([{ id: "a" }, { id: "b", isSpeaker: true }, { id: "c" }], {});

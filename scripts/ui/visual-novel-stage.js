@@ -96,7 +96,6 @@ export class VisualNovelStage {
     this.#vnStage.classList.toggle("has-speaker", Boolean(context.hasActiveSpeaker));
     this.#vnStage.classList.toggle("is-hidden-from-players", context.isVisualNovelOverlayVisible === false);
     const fadeDuration = context.fadeDuration ?? 500;
-    const isCustomLayout = this.#syncLayout();
 
     const targetActors = context.activeActors || [];
     const targetMap = new Map(targetActors.map(a => [a.id, a]));
@@ -111,6 +110,7 @@ export class VisualNovelStage {
     for (const el of activeCharEls) {
       firstRects.set(el.dataset.actorId, el.getBoundingClientRect());
     }
+    this.#syncLayout();
     const stageRect = this.#vnStage.getBoundingClientRect();
 
     // 2. Identify exiting characters: animate smooth fade-out and slide-down
@@ -162,12 +162,13 @@ export class VisualNovelStage {
       const first = firstRects.get(actorId);
       const last = lastRects.get(actorId);
 
-      if (first && last && !isCustomLayout) {
-        const deltaX = first.left - last.left;
-        const deltaY = first.top - last.top;
+      if (first && last) {
+        // Center-bottom is stable against the scale origin, so scaled actors glide correctly.
+        const deltaX = first.left + first.width / 2 - (last.left + last.width / 2);
+        const deltaY = first.bottom - last.bottom;
 
         if (Math.abs(deltaX) > 0.5 || Math.abs(deltaY) > 0.5) {
-          el.style.transition = "none";
+          el.style.transition = `scale ${fadeDuration}ms ease`;
           const isSpeaker = el.classList.contains("is-speaker");
           const baseTransform = isSpeaker ? "scale(1.25)" : "";
           el.style.transform = `translate(${deltaX}px, ${deltaY}px) ${baseTransform}`;
@@ -185,9 +186,7 @@ export class VisualNovelStage {
         const isDimmed = this.#vnStage.classList.contains("has-speaker") && !isSpeaker;
         const baseTransform = isSpeaker ? "scale(1.25)" : "";
 
-        if (!isCustomLayout) {
-          el.style.transition = `transform ${fadeDuration}ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity ${fadeDuration}ms ease, filter ${fadeDuration}ms ease`;
-        }
+        el.style.transition = `transform ${fadeDuration}ms cubic-bezier(0.2, 0.8, 0.2, 1), scale ${fadeDuration}ms ease, opacity ${fadeDuration}ms ease, filter ${fadeDuration}ms ease`;
         el.style.transform = baseTransform;
         el.style.opacity = isDimmed ? "0.78" : "1";
 
@@ -228,15 +227,15 @@ export class VisualNovelStage {
 
     el.classList.add("is-exiting");
     el.classList.remove("is-speaker");
-    el.style.position = "absolute";
-    el.style.left = `${left}px`;
-    el.style.top = `${top}px`;
-    el.style.width = `${rect.width}px`;
-    el.style.height = `${rect.height}px`;
-    el.style.margin = "0";
-    el.style.bottom = "auto";
-    el.style.translate = "none";
-    el.style.scale = "none";
+    // Explicitly placed actors keep their coordinates and only fade out in place.
+    if (!this.#vnStage.classList.contains("is-custom-layout")) {
+      el.style.position = "absolute";
+      el.style.left = `${left}px`;
+      el.style.top = `${top}px`;
+      el.style.width = `${rect.width}px`;
+      el.style.height = `${rect.height}px`;
+      el.style.margin = "0";
+    }
 
     // Softly fade out and glide slightly downward
     requestAnimationFrame(() => {
