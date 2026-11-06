@@ -186,6 +186,13 @@ export class NarrativeDirectorActions {
       onDialogueSpeedChange: multiplier => NarrativeSettings.setDialogueSpeedMultiplier(multiplier),
       onDialogueSpeedLive: multiplier => this.#applyLiveSpeed(multiplier),
       onDialogueVoiceChange: dialogueVoice => this.handleDisplayUpdate({ dialogueVoice: dialogueVoice === true }),
+      onDialoguePauseToggle: ({ paused, pausedGroup }) => {
+        const line = this.getState().dialogueLine;
+        if (!line || line.dismissed) return;
+        this.handleDisplayUpdate({
+          dialogueLine: { ...line, paused, pausedGroup: paused ? pausedGroup : undefined }
+        });
+      },
       onDialogueDismiss: () => {
         const line = this.getState().dialogueLine;
         if (line && !line.dismissed) this.handleDisplayUpdate({ dialogueLine: { ...line, dismissed: true } });

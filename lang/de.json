@@ -234,6 +234,8 @@
   "NARRATIVE_CANVAS.Status.VoiceBlocked": "Sprachausgabe pausiert",
   "NARRATIVE_CANVAS.Status.VoiceBlockedTooltip": "Die Sprachausgabe ist aktiviert, wird aber erst vorgelesen, wenn der Canvas für die Spieler freigegeben ist.",
   "NARRATIVE_CANVAS.Dialogue.Send": "Dialogzeile senden",
+  "NARRATIVE_CANVAS.Dialogue.Pause": "Textausgabe pausieren",
+  "NARRATIVE_CANVAS.Dialogue.Resume": "Textausgabe fortsetzen",
   "NARRATIVE_CANVAS.Dialogue.Speed": "Geschwindigkeit des Dialogtexts (Multiplikator ×0,5 bis ×5)",
   "NARRATIVE_CANVAS.Director.ClearActorStage": "Alle Akteure aus dem VisualNovel-Overlay entfernen",
   "NARRATIVE_CANVAS.Director.HideVisualNovelFromPlayers": "VisualNovel-Overlay für Spielende ausblenden",

@@ -234,6 +234,8 @@
   "NARRATIVE_CANVAS.Status.VoiceBlocked": "Voice paused",
   "NARRATIVE_CANVAS.Status.VoiceBlockedTooltip": "Voice output is enabled but lines are only read aloud once the canvas is released to the players.",
   "NARRATIVE_CANVAS.Dialogue.Send": "Send dialogue line",
+  "NARRATIVE_CANVAS.Dialogue.Pause": "Pause text output",
+  "NARRATIVE_CANVAS.Dialogue.Resume": "Resume text output",
   "NARRATIVE_CANVAS.Dialogue.Speed": "Dialogue text speed (multiplier ×0.5 to ×5)",
   "NARRATIVE_CANVAS.Director.ClearActorStage": "Remove all actors from the Visual Novel overlay",
   "NARRATIVE_CANVAS.Director.HideVisualNovelFromPlayers": "Hide the Visual Novel overlay from players",

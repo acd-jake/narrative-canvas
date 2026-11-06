@@ -38,7 +38,8 @@ export class NarrativeCanvas {
     });
     this.dialogueLineController = new DialogueLineController({
       onDismiss: () => this._onDialogueDismiss(),
-      onBusyChange: busy => this._onDialogueBusyChange(busy)
+      onBusyChange: busy => this._onDialogueBusyChange(busy),
+      onPausedChange: paused => this._onDialoguePausedChange(paused)
     });
     this.handoutImageOverlayController = new HandoutImageOverlayController({
       animateOpacity: (element, opacity, duration) => this._animateElementOpacity(element, opacity, duration),
@@ -417,6 +418,8 @@ export class NarrativeCanvas {
   _onDialogueDismiss() {}
 
   _onDialogueBusyChange(busy) {}
+
+  _onDialoguePausedChange(paused) {}
 
   applyHandoutImageLayout(layout) {
     this.handoutImageOverlayController.applyLayout(layout);

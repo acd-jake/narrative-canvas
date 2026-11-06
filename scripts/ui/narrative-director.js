@@ -61,6 +61,15 @@ export class NarrativeDirector extends NarrativeCanvas {
       },
       onDialogueSpeedChange: speed => this.callbacks.onDialogueSpeedChange?.(speed),
       onDialogueSpeedLive: speed => this.callbacks.onDialogueSpeedLive?.(speed),
+      onDialoguePauseToggle: () => {
+        const controller = this.dialogueLineController;
+        if (controller.isPaused) {
+          this.callbacks.onDialoguePauseToggle?.({ paused: false });
+          return;
+        }
+        const pausedGroup = controller.requestPause();
+        if (pausedGroup !== null) this.callbacks.onDialoguePauseToggle?.({ paused: true, pausedGroup });
+      },
       onDialogueVoiceChange: voice => this.callbacks.onDialogueVoiceChange?.(voice)
     });
     this._setupGlobalDelegatedListeners();
@@ -218,6 +227,10 @@ export class NarrativeDirector extends NarrativeCanvas {
 
   _onDialogueBusyChange(busy) {
     this.carousel?.setDialogueBusy(busy);
+  }
+
+  _onDialoguePausedChange(paused) {
+    this.carousel?.setDialoguePaused(paused);
   }
 
   /**

@@ -15,6 +15,7 @@ export class DirectorActorCarousel {
   #stopLayoutTracking = null;
   #dialogueBusy = false;
   #busyConfirmed = false;
+  #dialoguePaused = false;
   #busyFallbackTimer = null;
 
   /**
@@ -366,7 +367,14 @@ export class DirectorActorCarousel {
       event.preventDefault();
       event.stopPropagation();
       const text = textInput?.value.trim();
-      if (!text || this.#dialogueBusy) return;
+      if (this.#dialogueBusy) {
+        // Only the button toggles the pause; Enter in the input must not.
+        if (this.#busyConfirmed && event.submitter?.classList.contains("dialogue-send")) {
+          this.#callbacks.onDialoguePauseToggle?.();
+        }
+        return;
+      }
+      if (!text) return;
 
       // Lock right away; the stage confirms once the line is shown.
       this.#lockForSend();
@@ -388,6 +396,13 @@ export class DirectorActorCarousel {
     this.#busyFallbackTimer = null;
     this.#busyConfirmed = busy;
     this.#dialogueBusy = busy;
+    if (!busy) this.#dialoguePaused = false;
+    this.#applyDialogueBusy();
+  }
+
+  /** Called by the stage: the shown line was paused (true) or resumed (false). */
+  setDialoguePaused(paused) {
+    this.#dialoguePaused = paused;
     this.#applyDialogueBusy();
   }
 
@@ -407,7 +422,17 @@ export class DirectorActorCarousel {
 
     form.classList.toggle("is-busy", this.#dialogueBusy);
     const sendButton = form.querySelector(".dialogue-send");
-    if (sendButton) sendButton.disabled = this.#dialogueBusy;
+    if (!sendButton) return;
+
+    // Send while idle, pause while a line is shown, resume while paused.
+    const mode = !this.#dialogueBusy ? "Send" : this.#dialoguePaused ? "Resume" : "Pause";
+    const icon = { Send: "fa-paper-plane", Pause: "fa-pause", Resume: "fa-play" }[mode];
+    const label = game.i18n.localize(`NARRATIVE_CANVAS.Dialogue.${mode}`);
+    sendButton.disabled = this.#dialogueBusy && !this.#busyConfirmed;
+    sendButton.title = label;
+    sendButton.setAttribute("aria-label", label);
+    const iconElement = sendButton.querySelector("i");
+    if (iconElement) iconElement.className = `fas ${icon}`;
   }
 
   #bindListeners(element) {

@@ -24,13 +24,22 @@ export class DialogueLineController {
   #shiftAnimation = null;
   #onDismiss;
   #onBusyChange;
+  #onPausedChange;
   #busy = false;
+  #paused = false;
+  #pausedRemainingMs = 0;
+  #pausedAnimations = [];
+  #pendingPauseGroup = null;
+  #lastNotifiedPaused = false;
+  #pauseTimer = null;
+  #endAt = 0;
   #isGM = false;
 
-  /** @param {{onDismiss?: () => void, onBusyChange?: (busy: boolean) => void}} [options] */
-  constructor({ onDismiss, onBusyChange } = {}) {
+  /** @param {{onDismiss?: () => void, onBusyChange?: (busy: boolean) => void, onPausedChange?: (paused: boolean) => void}} [options] */
+  constructor({ onDismiss, onBusyChange, onPausedChange } = {}) {
     this.#onDismiss = onDismiss;
     this.#onBusyChange = onBusyChange;
+    this.#onPausedChange = onPausedChange;
   }
 
   /** True from the moment a line starts until it has completely faded out. */
@@ -38,7 +47,44 @@ export class DialogueLineController {
     return this.#busy;
   }
 
+  /** True once a pause was requested, also while the current word or paragraph is still being shown. */
+  get isPaused() {
+    return this.#paused || this.#pendingPauseGroup !== null;
+  }
+
+  /**
+   * Requests a pause at the end of the current word (character mode) or paragraph (line and paragraph mode).
+   * @returns {number|null} The group to pause at, or null if no line can be paused.
+   */
+  requestPause() {
+    const active = this.#active;
+    const element = this.#element;
+    if (this.isPaused || !active || !element?.classList.contains("is-visible")
+      || element.classList.contains("is-fading-out")) return null;
+
+    const elapsed = this.#elapsedMs();
+    const started = active.words.filter(word => word.startMs <= elapsed + 1);
+    const group = started.length ? started[started.length - 1].group : 0;
+    this.#pendingPauseGroup = group;
+    this.#notifyPaused();
+    this.#armPause();
+    return group;
+  }
+
+  #notifyPaused() {
+    const paused = this.isPaused;
+    if (paused === this.#lastNotifiedPaused) return;
+    this.#lastNotifiedPaused = paused;
+    this.#onPausedChange?.(paused);
+  }
+
   #setBusy(busy) {
+    if (!busy) {
+      this.#pendingPauseGroup = null;
+      this.#paused = false;
+      this.#pausedAnimations = [];
+      this.#notifyPaused();
+    }
     if (this.#busy === busy) return;
     this.#busy = busy;
     this.#onBusyChange?.(busy);
@@ -74,7 +120,13 @@ export class DialogueLineController {
     if (!line) return;
     if (line.id === this.#lastLineId) {
       if (line.dismissed) this.#dismiss();
-      else this.#retime(line);
+      else {
+        this.#syncPause(line);
+        if (!this.#paused) {
+          this.#retime(line);
+          this.#armPause();
+        }
+      }
       return;
     }
     this.#lastLineId = line.id;
@@ -118,6 +170,8 @@ export class DialogueLineController {
   #clearTimers() {
     this.#timers.forEach(timer => clearTimeout(timer));
     this.#timers = [];
+    clearTimeout(this.#pauseTimer);
+    this.#pauseTimer = null;
     if (this.#scrollFrame !== null) cancelAnimationFrame(this.#scrollFrame);
     this.#scrollFrame = null;
     this.#stage?.classList.remove("is-speaking");
@@ -146,6 +200,7 @@ export class DialogueLineController {
   }
 
   #scheduleEnd(element, textEl, delayMs) {
+    this.#endAt = performance.now() + delayMs;
     this.#timers.push(setTimeout(() => {
       element.classList.add("is-fading-out");
     }, delayMs));
@@ -156,6 +211,83 @@ export class DialogueLineController {
       this.#resetShift();
       this.#setBusy(false);
     }, delayMs + FADE_OUT_MS));
+  }
+
+  /** Follows the paused state of the line; a pause stops after the group the GM paused at. */
+  #syncPause(line) {
+    if (line.paused === true && !this.#paused) {
+      const group = Number(line.pausedGroup);
+      this.#pendingPauseGroup = Number.isFinite(group) ? group : 0;
+      this.#notifyPaused();
+      this.#armPause();
+    } else if (line.paused !== true) {
+      this.#pendingPauseGroup = null;
+      clearTimeout(this.#pauseTimer);
+      this.#pauseTimer = null;
+      if (this.#paused) this.#resume();
+      this.#notifyPaused();
+    }
+  }
+
+  #elapsedMs() {
+    const animations = this.#active?.textEl.getAnimations({ subtree: true }) ?? [];
+    return Math.min(this.#active?.revealMs ?? 0, Math.max(0, ...animations.map(item => Number(item.currentTime) || 0)));
+  }
+
+  /** Keeps revealing until the pending pause group is fully shown, then pauses. */
+  #armPause() {
+    const active = this.#active;
+    if (this.#pendingPauseGroup === null || !active || this.#paused) return;
+
+    const group = this.#pendingPauseGroup;
+    const ends = active.words.filter(word => word.group === group).map(word => word.endMs);
+    const target = ends.length ? Math.max(...ends) : active.revealMs;
+    const rate = active.factor / active.baseFactor;
+    const delayMs = (target - this.#elapsedMs()) / rate;
+    clearTimeout(this.#pauseTimer);
+    if (delayMs <= 0) {
+      this.#pause();
+      return;
+    }
+    this.#pauseTimer = setTimeout(() => {
+      this.#pauseTimer = null;
+      this.#pause();
+    }, delayMs);
+  }
+
+  /** Freezes reveal, scrolling and the end timer of the line that is being shown. */
+  #pause() {
+    const active = this.#active;
+    const element = this.#element;
+    if (!active || !element?.classList.contains("is-visible") || element.classList.contains("is-fading-out")) return;
+
+    this.#paused = true;
+    this.#pendingPauseGroup = null;
+    this.#pausedRemainingMs = Math.max(0, this.#endAt - performance.now());
+    this.#clearTimers();
+    this.#pausedAnimations = active.textEl.getAnimations({ subtree: true }).filter(item => item.playState === "running");
+    this.#pausedAnimations.forEach(item => item.pause());
+    this.#notifyPaused();
+  }
+
+  #resume() {
+    const active = this.#active;
+    const element = this.#element;
+    this.#paused = false;
+    const animations = this.#pausedAnimations;
+    this.#pausedAnimations = [];
+    this.#notifyPaused();
+    if (!active || !element?.isConnected) return;
+
+    const elapsed = Math.min(active.revealMs, Math.max(0, ...animations.map(item => Number(item.currentTime) || 0)));
+    animations.forEach(item => item.play());
+    const rate = active.factor / active.baseFactor;
+    const remainingMs = Math.max(0, (active.revealMs - elapsed) / rate);
+    if (!active.isNarrator) this.#stage?.classList.add("is-speaking");
+    if (active.fillMs !== null) {
+      this.#runScroll(active.textEl, Math.max(0, (active.fillMs - elapsed) / rate), remainingMs, active.textEl.scrollTop);
+    }
+    this.#scheduleEnd(element, active.textEl, this.#pausedRemainingMs);
   }
 
   /** Applies a changed speed multiplier to the line that is currently being shown. */
@@ -202,6 +334,8 @@ export class DialogueLineController {
 
   #play(line, isGM) {
     this.#clearTimers();
+    this.#pendingPauseGroup = null;
+    this.#notifyPaused();
     this.#active = null;
     this.#resetShift();
     this.#setBusy(true);
@@ -309,12 +443,14 @@ export class DialogueLineController {
 
     let startMs = 0;
     let revealMs = 0;
+    const elementTimings = new Map();
     for (const [unitIndex, unit] of units.entries()) {
       const unitMs = mode === "char" ? 1000 / cps : Math.max(MIN_NARRATION_LINE_MS, unit.length / cps * 1000);
       const fadeMs = mode === "char" ? CHAR_FADE_MS : Math.min(MAX_NARRATION_FADE_MS, unitMs);
       unit.startMs = startMs;
       for (const el of unit.els) {
         el.style.animation = `nc-dialogue-char-in ${fadeMs}ms ease-in ${Math.round(startMs)}ms both`;
+        elementTimings.set(el, { startMs, endMs: startMs + fadeMs });
       }
       revealMs = startMs + fadeMs;
       startMs += unitMs;
@@ -352,6 +488,14 @@ export class DialogueLineController {
       id: line.id,
       textEl,
       isNarrator,
+      words: words.map((word, wordIndex) => {
+        const items = (word.chars.length ? word.chars : [word.el]).map(el => elementTimings.get(el)).filter(Boolean);
+        return {
+          group: mode === "char" ? wordIndex : word.paragraph,
+          startMs: items.length ? Math.min(...items.map(item => item.startMs)) : 0,
+          endMs: items.length ? Math.max(...items.map(item => item.endMs)) : 0
+        };
+      }),
       baseFactor: timing.factor,
       factor: timing.factor,
       revealMs,
