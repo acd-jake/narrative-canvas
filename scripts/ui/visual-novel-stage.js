@@ -1,4 +1,5 @@
 import { getSortableDropTarget } from "./sortable-list-controller.js";
+import { LayoutRegistry } from "./layout/layout-registry.js";
 
 /**
  * Controller responsible for the Visual Novel character overlay layer.
@@ -7,6 +8,8 @@ import { getSortableDropTarget } from "./sortable-list-controller.js";
  */
 export class VisualNovelStage {
   #onActorOrderChange;
+  #getLayoutStrategy;
+  #layout;
   /** @type {HTMLElement|null} */
   #stageElement = null;
 
@@ -25,8 +28,35 @@ export class VisualNovelStage {
   #dragGhostElement = null;
   #dragGhostOffset = null;
 
-  constructor({ onActorOrderChange } = {}) {
+  constructor({ onActorOrderChange, getLayoutStrategy } = {}) {
     this.#onActorOrderChange = onActorOrderChange;
+    this.#getLayoutStrategy = getLayoutStrategy;
+    this.#layout = LayoutRegistry.create("actor", LayoutRegistry.getDefaultId("actor"));
+  }
+
+  /** Switches the strategy when the setting changed and tells whether actors are placed explicitly. */
+  #syncLayout() {
+    const id = this.#getLayoutStrategy?.() ?? LayoutRegistry.getDefaultId("actor");
+    if (id !== this.#layout.constructor.id) this.#layout = LayoutRegistry.create("actor", id);
+    this.#vnStage.classList.toggle("is-custom-layout", !this.#layout.isManual);
+    return !this.#layout.isManual;
+  }
+
+  #applyPlacements(actors) {
+    const placements = this.#layout.isManual
+      ? null
+      : this.#layout.compute(actors.map(actor => ({ id: actor.id, isSpeaker: Boolean(actor.isSpeaker) })));
+    actors.forEach((actor, index) => {
+      const charEl = this.#vnStage.querySelector(
+        `.narrative-vn-character:not(.is-exiting)[data-actor-id="${actor.id}"]`
+      );
+      if (!charEl) return;
+      const placement = placements?.[index];
+      for (const [name, value] of [["--vn-x", placement && placement.x * 100 + "%"], ["--vn-y", placement && placement.y * 100 + "%"], ["--vn-scale", placement?.scale], ["--vn-z", placement?.z]]) {
+        if (value === undefined || value === null) charEl.style.removeProperty(name);
+        else charEl.style.setProperty(name, String(value));
+      }
+    });
   }
 
   /**
@@ -66,6 +96,7 @@ export class VisualNovelStage {
     this.#vnStage.classList.toggle("has-speaker", Boolean(context.hasActiveSpeaker));
     this.#vnStage.classList.toggle("is-hidden-from-players", context.isVisualNovelOverlayVisible === false);
     const fadeDuration = context.fadeDuration ?? 500;
+    const isCustomLayout = this.#syncLayout();
 
     const targetActors = context.activeActors || [];
     const targetMap = new Map(targetActors.map(a => [a.id, a]));
@@ -114,6 +145,7 @@ export class VisualNovelStage {
       );
       if (charEl) this.#vnStage.appendChild(charEl);
     }
+    this.#applyPlacements(targetActors);
 
     // FLIP - Step 2: LAST (Record new screen coordinates of all in-flow characters)
     const inFlowElements = Array.from(
@@ -130,7 +162,7 @@ export class VisualNovelStage {
       const first = firstRects.get(actorId);
       const last = lastRects.get(actorId);
 
-      if (first && last) {
+      if (first && last && !isCustomLayout) {
         const deltaX = first.left - last.left;
         const deltaY = first.top - last.top;
 
@@ -153,7 +185,9 @@ export class VisualNovelStage {
         const isDimmed = this.#vnStage.classList.contains("has-speaker") && !isSpeaker;
         const baseTransform = isSpeaker ? "scale(1.25)" : "";
 
-        el.style.transition = `transform ${fadeDuration}ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity ${fadeDuration}ms ease, filter ${fadeDuration}ms ease`;
+        if (!isCustomLayout) {
+          el.style.transition = `transform ${fadeDuration}ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity ${fadeDuration}ms ease, filter ${fadeDuration}ms ease`;
+        }
         el.style.transform = baseTransform;
         el.style.opacity = isDimmed ? "0.78" : "1";
 
@@ -200,6 +234,9 @@ export class VisualNovelStage {
     el.style.width = `${rect.width}px`;
     el.style.height = `${rect.height}px`;
     el.style.margin = "0";
+    el.style.bottom = "auto";
+    el.style.translate = "none";
+    el.style.scale = "none";
 
     // Softly fade out and glide slightly downward
     requestAnimationFrame(() => {

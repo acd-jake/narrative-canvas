@@ -22,6 +22,7 @@ export class NarrativeBootstrapper {
     });
 
     Hooks.once("ready", () => {
+      NarrativeSettings.migrateLayoutSettings();
       const manager = game.modules.get("narrative-canvas").manager;
       if (manager) {
         if (game.user.isGM) {

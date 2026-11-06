@@ -1,9 +1,10 @@
-import { computeComicLayout } from "./comic-layout.js";
+import { LayoutRegistry } from "./layout/layout-registry.js";
 
 export class HandoutImageOverlayController {
-  constructor({ animateOpacity, fadeOutAndRemove, isAnimatingOpacity, onLayoutChange, onCloseImage, canControl, getComicOptions }) {
-    this.getComicOptions = getComicOptions;
-    this.comic = { enabled: false, direction: "ltr", captionPosition: "bottom" };
+  constructor({ animateOpacity, fadeOutAndRemove, isAnimatingOpacity, onLayoutChange, onCloseImage, canControl, getLayoutOptions }) {
+    this.getLayoutOptions = getLayoutOptions;
+    this.layout = LayoutRegistry.create("handout", LayoutRegistry.getDefaultId("handout"));
+    this.managed = false;
     this.resizeObserver = null;
     this.animateOpacity = animateOpacity;
     this.fadeOutAndRemove = fadeOutAndRemove;
@@ -39,9 +40,9 @@ export class HandoutImageOverlayController {
     this.domOrder = [...this.overlayOrder];
     this.#bindPointerHandlers();
     overlays.forEach(overlay => this.#watchImage(overlay.querySelector(".narrative-scene-handout-image")));
-    this.resizeObserver = new ResizeObserver(() => this.#syncComicLayout());
+    this.resizeObserver = new ResizeObserver(() => this.#syncLayout());
     this.resizeObserver.observe(stage);
-    this.#syncComicLayout();
+    this.#syncLayout();
   }
 
   update(overlays, duration) {
@@ -111,7 +112,7 @@ export class HandoutImageOverlayController {
         this.#setOverlayOrder(nextOrder);
       }
     }
-    this.#syncComicLayout();
+    this.#syncLayout();
   }
 
   destroy() {
@@ -216,23 +217,28 @@ export class HandoutImageOverlayController {
   }
 
   #watchImage(image) {
-    image?.addEventListener("load", () => this.#syncComicLayout());
+    image?.addEventListener("load", () => this.#syncLayout());
   }
 
-  /** Applies or clears the automatic comic panel layout according to the module settings. */
-  #syncComicLayout() {
+  /** Applies the configured layout strategy, or restores manual placement when it has none. */
+  #syncLayout() {
     if (!this.stage) return;
-    const wasEnabled = this.comic.enabled;
-    this.comic = this.getComicOptions?.() ?? { enabled: false, direction: "ltr", captionPosition: "bottom" };
-    this.stage.classList.toggle("comic-layout", this.comic.enabled);
-    this.stage.dataset.comicCaption = this.comic.captionPosition;
+    const wasManaged = this.managed;
+    const options = this.getLayoutOptions?.() ?? {};
+    if ((options.strategy ?? LayoutRegistry.getDefaultId("handout")) !== this.layout.constructor.id) {
+      if (this.layout.cssClass) this.stage.classList.remove(this.layout.cssClass);
+      this.layout = LayoutRegistry.create("handout", options.strategy);
+    }
+    this.managed = !this.layout.isManual;
+    if (this.layout.cssClass) this.stage.classList.add(this.layout.cssClass);
+    this.stage.dataset.comicCaption = options.captionPosition ?? "bottom";
 
     const overlays = this.overlayOrder
       .map(id => this.stage.querySelector(`.narrative-handout-image-overlay[data-overlay-id="${id}"]`))
       .filter(Boolean);
 
-    if (!this.comic.enabled) {
-      if (!wasEnabled) return;
+    if (!this.managed) {
+      if (!wasManaged) return;
       for (const overlay of overlays) {
         const frame = overlay.querySelector(".narrative-scene-handout-image-frame");
         frame.style.width = "";
@@ -244,17 +250,11 @@ export class HandoutImageOverlayController {
 
     const layer = this.stage.querySelector(".narrative-handout-image-layer") ?? this.stage;
     const bounds = layer.getBoundingClientRect();
-    const ratios = overlays.map(overlay => {
+    const items = overlays.map(overlay => {
       const image = overlay.querySelector(".narrative-scene-handout-image");
-      return image.naturalWidth && image.naturalHeight ? image.naturalWidth / image.naturalHeight : 0;
+      return { ratio: image.naturalWidth && image.naturalHeight ? image.naturalWidth / image.naturalHeight : 0 };
     });
-    const panels = computeComicLayout(ratios, {
-      width: bounds.width,
-      height: bounds.height,
-      direction: this.comic.direction,
-      maxWidthRatio: this.comic.maxWidthRatio,
-      maxPerRow: this.comic.maxPerRow
-    });
+    const panels = this.layout.compute(items, bounds, options) ?? [];
     overlays.forEach((overlay, index) => {
       const panel = panels[index];
       if (!panel) return;
@@ -296,7 +296,7 @@ export class HandoutImageOverlayController {
   }
 
   #applyPosition(overlay, position) {
-    if (!overlay || this.comic.enabled) return;
+    if (!overlay || this.managed) return;
     const frame = overlay.querySelector(".narrative-scene-handout-image-frame");
     const size = this.sizes.get(overlay.dataset.overlayId) ?? 1;
     frame.style.left = `${position.x * 100}%`;
@@ -362,7 +362,7 @@ export class HandoutImageOverlayController {
 
   #bindPointerHandlers() {
     const pointerdown = (event) => {
-      if (!this.canControl?.() || this.comic.enabled) return;
+      if (!this.canControl?.() || this.managed) return;
       const overlay = event.target.closest(".narrative-handout-image-overlay");
       if (!overlay || !this.stage.contains(overlay)) return;
       this.#raiseOverlay(overlay);

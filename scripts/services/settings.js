@@ -1,6 +1,7 @@
 import { JournalBrowser } from "./journal-browser.js";
 import { ThemeCatalog } from "./themes/theme-catalog.js";
 import { SystemAdapters } from "../systems/system-registry.js";
+import { LayoutRegistry } from "../ui/layout/layout-registry.js";
 
 /**
  * Handles module configurations and permissions.
@@ -42,7 +43,9 @@ export class NarrativeSettings {
   static SETTING_DIALOGUE_SCROLL_SPEED = "dialogueScrollSpeed";
   static SETTING_NARRATION_HOLD_BASE = "narrationHoldBase";
   static SETTING_NARRATION_HOLD_PER_LINE = "narrationHoldPerLine";
-  static SETTING_COMIC_LAYOUT = "handoutComicLayout";
+  static SETTING_COMIC_LAYOUT = "handoutComicLayout"; // Legacy on/off switch, migrated into SETTING_HANDOUT_LAYOUT.
+  static SETTING_HANDOUT_LAYOUT = "handoutLayoutStrategy";
+  static SETTING_ACTOR_LAYOUT = "actorLayoutStrategy";
   static SETTING_COMIC_DIRECTION = "handoutComicDirection";
   static SETTING_COMIC_CAPTION_POSITION = "handoutComicCaptionPosition";
   static SETTING_COMIC_MAX_WIDTH = "handoutComicMaxWidth";
@@ -128,12 +131,31 @@ export class NarrativeSettings {
     const refreshView = () => game.modules?.get("narrative-canvas")?.manager?.refreshView();
 
     game.settings.register("narrative-canvas", this.SETTING_COMIC_LAYOUT, {
-      name: "NARRATIVE_CANVAS.Settings.ComicLayoutLabel",
-      hint: "NARRATIVE_CANVAS.Settings.ComicLayoutHint",
+      scope: "world",
+      config: false,
+      type: Boolean,
+      default: false
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_HANDOUT_LAYOUT, {
+      name: "NARRATIVE_CANVAS.Settings.HandoutLayoutLabel",
+      hint: "NARRATIVE_CANVAS.Settings.HandoutLayoutHint",
       scope: "world",
       config: true,
-      type: Boolean,
-      default: false,
+      type: String,
+      default: LayoutRegistry.getDefaultId("handout"),
+      choices: LayoutRegistry.getChoices("handout"),
+      onChange: refreshView
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_ACTOR_LAYOUT, {
+      name: "NARRATIVE_CANVAS.Settings.ActorLayoutLabel",
+      hint: "NARRATIVE_CANVAS.Settings.ActorLayoutHint",
+      scope: "world",
+      config: true,
+      type: String,
+      default: LayoutRegistry.getDefaultId("actor"),
+      choices: LayoutRegistry.getChoices("actor"),
       onChange: refreshView
     });
 
@@ -640,9 +662,21 @@ export class NarrativeSettings {
     return game.settings.get("narrative-canvas", this.SETTING_ACTOR_IMAGE_HEIGHT);
   }
 
-  static getComicLayoutOptions() {
+  /** Converts the legacy comic on/off switch into the handout strategy choice. */
+  static async migrateLayoutSettings() {
+    if (!game.user.isGM || game.settings.get("narrative-canvas", this.SETTING_COMIC_LAYOUT) !== true) return;
+    await game.settings.set("narrative-canvas", this.SETTING_HANDOUT_LAYOUT, "comic");
+    await game.settings.set("narrative-canvas", this.SETTING_COMIC_LAYOUT, false);
+  }
+
+  static getActorLayoutStrategy() {
+    return game.settings.get("narrative-canvas", this.SETTING_ACTOR_LAYOUT);
+  }
+
+  static getHandoutLayoutOptions() {
+    const legacyComic = game.settings.get("narrative-canvas", this.SETTING_COMIC_LAYOUT) === true;
     return {
-      enabled: game.settings.get("narrative-canvas", this.SETTING_COMIC_LAYOUT) === true,
+      strategy: legacyComic ? "comic" : game.settings.get("narrative-canvas", this.SETTING_HANDOUT_LAYOUT),
       maxWidthRatio: game.settings.get("narrative-canvas", this.SETTING_COMIC_MAX_WIDTH) / 100,
       maxPerRow: game.settings.get("narrative-canvas", this.SETTING_COMIC_MAX_PER_ROW),
       direction: game.settings.get("narrative-canvas", this.SETTING_COMIC_DIRECTION) === "rtl" ? "rtl" : "ltr",

@@ -34,7 +34,8 @@ export class NarrativeCanvas {
     this.rollToast = new RollToast();
     this.bgController = new StageBackgroundController();
     this.vnStageController = new VisualNovelStage({
-      onActorOrderChange: actorIds => this._onActorOrderChange(actorIds)
+      onActorOrderChange: actorIds => this._onActorOrderChange(actorIds),
+      getLayoutStrategy: () => NarrativeSettings.getActorLayoutStrategy()
     });
     this.dialogueLineController = new DialogueLineController({
       onDismiss: () => this._onDialogueDismiss(),
@@ -48,7 +49,7 @@ export class NarrativeCanvas {
       onLayoutChange: layout => this._onHandoutImageLayoutChange(layout),
       onCloseImage: overlayId => this._onHandoutImageClose(overlayId),
       canControl: () => game.user.isGM,
-      getComicOptions: () => NarrativeSettings.getComicLayoutOptions()
+      getLayoutOptions: () => NarrativeSettings.getHandoutLayoutOptions()
     });
   }
 

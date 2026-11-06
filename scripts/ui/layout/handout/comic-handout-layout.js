@@ -1,3 +1,5 @@
+import { LayoutController } from "../layout-controller.js";
+
 const FALLBACK_RATIO = 1.5;
 const MAX_ENUMERATED_IMAGES = 16;
 
@@ -81,4 +83,28 @@ export function computeComicLayout(ratios, {
   });
 
   return result;
+}
+
+/** Packs handouts into comic panel rows. Items: `{ ratio }` (width / height). */
+export class ComicHandoutLayout extends LayoutController {
+  static id = "comic";
+  static labelKey = "NARRATIVE_CANVAS.Settings.LayoutStrategies.Handout.Comic";
+
+  get cssClass() {
+    return "comic-layout";
+  }
+
+  get isManual() {
+    return false;
+  }
+
+  compute(items, bounds, options = {}) {
+    return computeComicLayout(items.map(item => item.ratio), {
+      width: bounds.width,
+      height: bounds.height,
+      direction: options.direction,
+      maxWidthRatio: options.maxWidthRatio,
+      maxPerRow: options.maxPerRow
+    });
+  }
 }

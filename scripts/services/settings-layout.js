@@ -17,13 +17,14 @@ const SECTIONS = [
       NarrativeSettings.SETTING_BG_COLOR,
       NarrativeSettings.SETTING_DEFAULT_BG_IMAGE,
       NarrativeSettings.SETTING_ACTOR_IMAGE_HEIGHT,
+      NarrativeSettings.SETTING_ACTOR_LAYOUT,
       NarrativeSettings.SETTING_FADE_DURATION
     ]
   },
   {
     label: "NARRATIVE_CANVAS.Settings.Sections.HandoutComic",
     keys: [
-      NarrativeSettings.SETTING_COMIC_LAYOUT,
+      NarrativeSettings.SETTING_HANDOUT_LAYOUT,
       NarrativeSettings.SETTING_COMIC_MAX_WIDTH,
       NarrativeSettings.SETTING_COMIC_MAX_PER_ROW,
       NarrativeSettings.SETTING_COMIC_DIRECTION,
