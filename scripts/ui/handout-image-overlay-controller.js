@@ -5,6 +5,7 @@ export class HandoutImageOverlayController {
     this.getLayoutOptions = getLayoutOptions;
     this.layout = LayoutRegistry.create("handout", LayoutRegistry.getDefaultId("handout"));
     this.managed = false;
+    this.maxHeightRatio = 0.76;
     this.panels = new Map();
     this.resizeObserver = null;
     this.animateOpacity = animateOpacity;
@@ -227,6 +228,8 @@ export class HandoutImageOverlayController {
     if (!this.stage) return;
     const wasManaged = this.managed;
     const options = this.getLayoutOptions?.() ?? {};
+    this.maxHeightRatio = options.maxHeightRatio ?? 0.76;
+    this.stage.style.setProperty("--nc-handout-height", `${this.maxHeightRatio * 100}%`);
     if ((options.strategy ?? LayoutRegistry.getDefaultId("handout")) !== this.layout.constructor.id) {
       if (this.layout.cssClass) this.stage.classList.remove(this.layout.cssClass);
       this.layout = LayoutRegistry.create("handout", options.strategy);
@@ -445,7 +448,7 @@ export class HandoutImageOverlayController {
         const startSize = this.sizes.get(overlayId) ?? 1;
         const baseWidth = frameBounds.width / startSize;
         const baseHeight = frameBounds.height / startSize;
-        const maxSize = Math.min(1.5, stageBounds.width * 0.88 / baseWidth, stageBounds.height * 0.76 / baseHeight);
+        const maxSize = Math.min(1.5, stageBounds.width * 0.88 / baseWidth, stageBounds.height * this.maxHeightRatio / baseHeight);
         this.drag = {
           mode: "resize",
           pointerId: event.pointerId,

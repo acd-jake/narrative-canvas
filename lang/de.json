@@ -232,6 +232,8 @@
   "NARRATIVE_CANVAS.Settings.LayoutStrategies.Actor.SpeakerCenterHint": "Der sprechende Akteur steht in der Mitte, die übrigen verteilen sich links und rechts davon.",
   "NARRATIVE_CANVAS.Settings.LayoutStrategies.Actor.ArcHint": "Die Akteure stehen auf einem Halbkreis; die mittleren stehen weiter hinten und wirken kleiner.",
   "NARRATIVE_CANVAS.Settings.LayoutStrategies.Actor.StackedHint": "Die Akteure überlappen sich wie auf einem Gruppenfoto; Sprecher und spätere Akteure stehen vorn.",
+  "NARRATIVE_CANVAS.Settings.HandoutMaxHeightLabel": "Handouts: Höhe (% der Bühnenhöhe)",
+  "NARRATIVE_CANVAS.Settings.HandoutMaxHeightHint": "Anfängliche Höhe eines Handouts im freien Layout und maximale Höhe des Bereichs, den das Comic-Layout nutzen darf.",
   "NARRATIVE_CANVAS.Settings.ComicMaxWidthLabel": "Comic: Breite einer Panel-Reihe (% des Viewports)",
   "NARRATIVE_CANVAS.Settings.ComicMaxWidthHint": "Eine Reihe nimmt höchstens diese Breite des Viewports ein; weitere Bilder brechen in die nächste Reihe um.",
   "NARRATIVE_CANVAS.Settings.ComicMaxPerRowLabel": "Comic: Maximale Bilder pro Reihe",

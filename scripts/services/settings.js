@@ -49,6 +49,7 @@ export class NarrativeSettings {
   static SETTING_COMIC_DIRECTION = "handoutComicDirection";
   static SETTING_COMIC_CAPTION_POSITION = "handoutComicCaptionPosition";
   static SETTING_COMIC_MAX_WIDTH = "handoutComicMaxWidth";
+  static SETTING_HANDOUT_MAX_HEIGHT = "handoutMaxHeight";
   static SETTING_COMIC_MAX_PER_ROW = "handoutComicMaxPerRow";
 
   static DIALOGUE_SPEED_MIN = 0.5;
@@ -156,6 +157,17 @@ export class NarrativeSettings {
       type: String,
       default: LayoutRegistry.getDefaultId("actor"),
       choices: LayoutRegistry.getChoices("actor"),
+      onChange: refreshView
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_HANDOUT_MAX_HEIGHT, {
+      name: "NARRATIVE_CANVAS.Settings.HandoutMaxHeightLabel",
+      hint: "NARRATIVE_CANVAS.Settings.HandoutMaxHeightHint",
+      scope: "world",
+      config: true,
+      type: Number,
+      range: { min: 30, max: 100, step: 5 },
+      default: 76,
       onChange: refreshView
     });
 
@@ -678,6 +690,7 @@ export class NarrativeSettings {
     return {
       strategy: legacyComic ? "comic" : game.settings.get("narrative-canvas", this.SETTING_HANDOUT_LAYOUT),
       maxWidthRatio: game.settings.get("narrative-canvas", this.SETTING_COMIC_MAX_WIDTH) / 100,
+      maxHeightRatio: game.settings.get("narrative-canvas", this.SETTING_HANDOUT_MAX_HEIGHT) / 100,
       maxPerRow: game.settings.get("narrative-canvas", this.SETTING_COMIC_MAX_PER_ROW),
       direction: game.settings.get("narrative-canvas", this.SETTING_COMIC_DIRECTION) === "rtl" ? "rtl" : "ltr",
       captionPosition: game.settings.get("narrative-canvas", this.SETTING_COMIC_CAPTION_POSITION) === "top" ? "top" : "bottom"

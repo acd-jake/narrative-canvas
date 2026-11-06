@@ -31,6 +31,7 @@ const SECTIONS = [
     label: "NARRATIVE_CANVAS.Settings.Sections.HandoutComic",
     keys: [
       NarrativeSettings.SETTING_HANDOUT_LAYOUT,
+      NarrativeSettings.SETTING_HANDOUT_MAX_HEIGHT,
       NarrativeSettings.SETTING_COMIC_MAX_WIDTH,
       NarrativeSettings.SETTING_COMIC_MAX_PER_ROW,
       NarrativeSettings.SETTING_COMIC_DIRECTION,

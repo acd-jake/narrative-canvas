@@ -427,7 +427,7 @@ body.acd-nc-active {
         z-index: 1;
         display: flex;
         width: max-content;
-        height: 76%;
+        height: var(--nc-handout-height, 76%);
         align-items: flex-end;
         justify-content: center;
         transform: translate(-50%, -50%);

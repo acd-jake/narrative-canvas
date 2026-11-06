@@ -34,20 +34,22 @@ function fitRows(rowSizes, ratios, width, height, gap) {
 
 /**
  * Packs images into comic-style rows that preserve each aspect ratio.
- * Each row spans at most `maxWidthRatio` of the stage width and holds at most `maxPerRow` images.
+ * Each row spans at most `maxWidthRatio` of the stage width, all rows together at most `maxHeightRatio` of its height,
+ * and a row holds at most `maxPerRow` images.
  * @param {number[]} ratios - width / height per image, in reading order.
  * @param {{ width: number, height: number, gap?: number, margin?: number, direction?: "ltr"|"rtl", maxWidthRatio?: number, maxPerRow?: number }} options
  * @returns {{ left: number, top: number, width: number, height: number }[]} Stage fractions in input order.
  */
 export function computeComicLayout(ratios, {
-  width, height, gap = 12, margin = 24, direction = "ltr", maxWidthRatio = 1, maxPerRow = Infinity
+  width, height, gap = 12, margin = 24, direction = "ltr", maxWidthRatio = 1, maxHeightRatio = 1, maxPerRow = Infinity
 }) {
   if (!ratios.length || width <= 0 || height <= 0) return [];
   const safeRatios = ratios.map(ratio => (Number.isFinite(ratio) && ratio > 0 ? ratio : FALLBACK_RATIO));
   const perRow = Math.max(1, Math.min(maxPerRow, safeRatios.length));
   const innerWidth = Math.max(1, Math.min(width - margin * 2, width * maxWidthRatio));
-  const innerHeight = Math.max(1, height - margin * 2);
+  const innerHeight = Math.max(1, Math.min(height - margin * 2, height * maxHeightRatio));
   const originX = (width - innerWidth) / 2;
+  const originY = (height - innerHeight) / 2;
 
   const candidates = safeRatios.length <= MAX_ENUMERATED_IMAGES
     ? enumerateRowSizes(safeRatios.length, perRow)
@@ -61,7 +63,7 @@ export function computeComicLayout(ratios, {
   const rowHeights = best.rowHeights.map(rowHeight => rowHeight * best.scale);
   const contentHeight = rowHeights.reduce((sum, rowHeight) => sum + rowHeight, 0) + (rowHeights.length - 1) * gap;
   const result = new Array(safeRatios.length);
-  let top = margin + (innerHeight - contentHeight) / 2;
+  let top = originY + (innerHeight - contentHeight) / 2;
   let index = 0;
 
   best.rowSizes.forEach((size, rowIndex) => {
@@ -104,6 +106,7 @@ export class ComicHandoutLayout extends LayoutController {
       height: bounds.height,
       direction: options.direction,
       maxWidthRatio: options.maxWidthRatio,
+      maxHeightRatio: options.maxHeightRatio,
       maxPerRow: options.maxPerRow
     });
   }
