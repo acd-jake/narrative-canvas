@@ -1,5 +1,10 @@
+import { computeComicLayout } from "./comic-layout.js";
+
 export class HandoutImageOverlayController {
-  constructor({ animateOpacity, fadeOutAndRemove, isAnimatingOpacity, onLayoutChange, onCloseImage, canControl }) {
+  constructor({ animateOpacity, fadeOutAndRemove, isAnimatingOpacity, onLayoutChange, onCloseImage, canControl, getComicOptions }) {
+    this.getComicOptions = getComicOptions;
+    this.comic = { enabled: false, direction: "ltr", captionPosition: "bottom" };
+    this.resizeObserver = null;
     this.animateOpacity = animateOpacity;
     this.fadeOutAndRemove = fadeOutAndRemove;
     this.isAnimatingOpacity = isAnimatingOpacity;
@@ -33,6 +38,10 @@ export class HandoutImageOverlayController {
     this.overlayOrder = overlays.map(overlay => overlay.dataset.overlayId);
     this.domOrder = [...this.overlayOrder];
     this.#bindPointerHandlers();
+    overlays.forEach(overlay => this.#watchImage(overlay.querySelector(".narrative-scene-handout-image")));
+    this.resizeObserver = new ResizeObserver(() => this.#syncComicLayout());
+    this.resizeObserver.observe(stage);
+    this.#syncComicLayout();
   }
 
   update(overlays, duration) {
@@ -102,9 +111,12 @@ export class HandoutImageOverlayController {
         this.#setOverlayOrder(nextOrder);
       }
     }
+    this.#syncComicLayout();
   }
 
   destroy() {
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
     this.drag = null;
     if (this.layoutChangeFrame !== null) {
       cancelAnimationFrame(this.layoutChangeFrame);
@@ -171,6 +183,7 @@ export class HandoutImageOverlayController {
     image.src = data.src;
     image.alt = data.title || "";
     image.draggable = false;
+    this.#watchImage(image);
 
     const description = document.createElement("div");
     description.className = "narrative-scene-handout-image-description";
@@ -202,6 +215,59 @@ export class HandoutImageOverlayController {
     return overlay;
   }
 
+  #watchImage(image) {
+    image?.addEventListener("load", () => this.#syncComicLayout());
+  }
+
+  /** Applies or clears the automatic comic panel layout according to the module settings. */
+  #syncComicLayout() {
+    if (!this.stage) return;
+    const wasEnabled = this.comic.enabled;
+    this.comic = this.getComicOptions?.() ?? { enabled: false, direction: "ltr", captionPosition: "bottom" };
+    this.stage.classList.toggle("comic-layout", this.comic.enabled);
+    this.stage.dataset.comicCaption = this.comic.captionPosition;
+
+    const overlays = this.overlayOrder
+      .map(id => this.stage.querySelector(`.narrative-handout-image-overlay[data-overlay-id="${id}"]`))
+      .filter(Boolean);
+
+    if (!this.comic.enabled) {
+      if (!wasEnabled) return;
+      for (const overlay of overlays) {
+        const frame = overlay.querySelector(".narrative-scene-handout-image-frame");
+        frame.style.width = "";
+        frame.style.height = "";
+        this.#applyPosition(overlay, this.positions.get(overlay.dataset.overlayId) ?? { x: 0.5, y: 0.5 });
+      }
+      return;
+    }
+
+    const layer = this.stage.querySelector(".narrative-handout-image-layer") ?? this.stage;
+    const bounds = layer.getBoundingClientRect();
+    const ratios = overlays.map(overlay => {
+      const image = overlay.querySelector(".narrative-scene-handout-image");
+      return image.naturalWidth && image.naturalHeight ? image.naturalWidth / image.naturalHeight : 0;
+    });
+    const panels = computeComicLayout(ratios, {
+      width: bounds.width,
+      height: bounds.height,
+      direction: this.comic.direction,
+      maxWidthRatio: this.comic.maxWidthRatio,
+      maxPerRow: this.comic.maxPerRow
+    });
+    overlays.forEach((overlay, index) => {
+      const panel = panels[index];
+      if (!panel) return;
+      const frame = overlay.querySelector(".narrative-scene-handout-image-frame");
+      frame.style.left = `${panel.left * 100}%`;
+      frame.style.top = `${panel.top * 100}%`;
+      frame.style.width = `${panel.width * 100}%`;
+      frame.style.height = `${panel.height * 100}%`;
+      frame.style.transform = "none";
+      frame.style.setProperty("--handout-image-scale-inverse", "1");
+    });
+  }
+
   #readPosition(overlay) {
     const rawX = overlay.dataset.positionX;
     const rawY = overlay.dataset.positionY;
@@ -230,7 +296,7 @@ export class HandoutImageOverlayController {
   }
 
   #applyPosition(overlay, position) {
-    if (!overlay) return;
+    if (!overlay || this.comic.enabled) return;
     const frame = overlay.querySelector(".narrative-scene-handout-image-frame");
     const size = this.sizes.get(overlay.dataset.overlayId) ?? 1;
     frame.style.left = `${position.x * 100}%`;
@@ -296,7 +362,7 @@ export class HandoutImageOverlayController {
 
   #bindPointerHandlers() {
     const pointerdown = (event) => {
-      if (!this.canControl?.()) return;
+      if (!this.canControl?.() || this.comic.enabled) return;
       const overlay = event.target.closest(".narrative-handout-image-overlay");
       if (!overlay || !this.stage.contains(overlay)) return;
       this.#raiseOverlay(overlay);

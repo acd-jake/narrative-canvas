@@ -47,7 +47,8 @@ export class NarrativeCanvas {
       isAnimatingOpacity: element => this._opacityAnimations.has(element),
       onLayoutChange: layout => this._onHandoutImageLayoutChange(layout),
       onCloseImage: overlayId => this._onHandoutImageClose(overlayId),
-      canControl: () => game.user.isGM
+      canControl: () => game.user.isGM,
+      getComicOptions: () => NarrativeSettings.getComicLayoutOptions()
     });
   }
 

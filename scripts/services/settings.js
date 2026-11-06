@@ -42,6 +42,11 @@ export class NarrativeSettings {
   static SETTING_DIALOGUE_SCROLL_SPEED = "dialogueScrollSpeed";
   static SETTING_NARRATION_HOLD_BASE = "narrationHoldBase";
   static SETTING_NARRATION_HOLD_PER_LINE = "narrationHoldPerLine";
+  static SETTING_COMIC_LAYOUT = "handoutComicLayout";
+  static SETTING_COMIC_DIRECTION = "handoutComicDirection";
+  static SETTING_COMIC_CAPTION_POSITION = "handoutComicCaptionPosition";
+  static SETTING_COMIC_MAX_WIDTH = "handoutComicMaxWidth";
+  static SETTING_COMIC_MAX_PER_ROW = "handoutComicMaxPerRow";
 
   static DIALOGUE_SPEED_MIN = 0.5;
   static DIALOGUE_SPEED_MAX = 5;
@@ -118,6 +123,68 @@ export class NarrativeSettings {
         const manager = game.modules?.get("narrative-canvas")?.manager;
         manager?.refreshView();
       }
+    });
+
+    const refreshView = () => game.modules?.get("narrative-canvas")?.manager?.refreshView();
+
+    game.settings.register("narrative-canvas", this.SETTING_COMIC_LAYOUT, {
+      name: "NARRATIVE_CANVAS.Settings.ComicLayoutLabel",
+      hint: "NARRATIVE_CANVAS.Settings.ComicLayoutHint",
+      scope: "world",
+      config: true,
+      type: Boolean,
+      default: false,
+      onChange: refreshView
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_COMIC_MAX_WIDTH, {
+      name: "NARRATIVE_CANVAS.Settings.ComicMaxWidthLabel",
+      hint: "NARRATIVE_CANVAS.Settings.ComicMaxWidthHint",
+      scope: "world",
+      config: true,
+      type: Number,
+      range: { min: 30, max: 100, step: 5 },
+      default: 90,
+      onChange: refreshView
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_COMIC_MAX_PER_ROW, {
+      name: "NARRATIVE_CANVAS.Settings.ComicMaxPerRowLabel",
+      hint: "NARRATIVE_CANVAS.Settings.ComicMaxPerRowHint",
+      scope: "world",
+      config: true,
+      type: Number,
+      range: { min: 1, max: 6, step: 1 },
+      default: 2,
+      onChange: refreshView
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_COMIC_DIRECTION, {
+      name: "NARRATIVE_CANVAS.Settings.ComicDirectionLabel",
+      hint: "NARRATIVE_CANVAS.Settings.ComicDirectionHint",
+      scope: "world",
+      config: true,
+      type: String,
+      default: "ltr",
+      choices: {
+        ltr: "NARRATIVE_CANVAS.Settings.ComicDirection.Ltr",
+        rtl: "NARRATIVE_CANVAS.Settings.ComicDirection.Rtl"
+      },
+      onChange: refreshView
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_COMIC_CAPTION_POSITION, {
+      name: "NARRATIVE_CANVAS.Settings.ComicCaptionPositionLabel",
+      hint: "NARRATIVE_CANVAS.Settings.ComicCaptionPositionHint",
+      scope: "world",
+      config: true,
+      type: String,
+      default: "bottom",
+      choices: {
+        top: "NARRATIVE_CANVAS.Settings.ComicCaptionPosition.Top",
+        bottom: "NARRATIVE_CANVAS.Settings.ComicCaptionPosition.Bottom"
+      },
+      onChange: refreshView
     });
 
     game.settings.register("narrative-canvas", this.SETTING_THEME, {
@@ -571,6 +638,16 @@ export class NarrativeSettings {
 
   static getActorImageHeight() {
     return game.settings.get("narrative-canvas", this.SETTING_ACTOR_IMAGE_HEIGHT);
+  }
+
+  static getComicLayoutOptions() {
+    return {
+      enabled: game.settings.get("narrative-canvas", this.SETTING_COMIC_LAYOUT) === true,
+      maxWidthRatio: game.settings.get("narrative-canvas", this.SETTING_COMIC_MAX_WIDTH) / 100,
+      maxPerRow: game.settings.get("narrative-canvas", this.SETTING_COMIC_MAX_PER_ROW),
+      direction: game.settings.get("narrative-canvas", this.SETTING_COMIC_DIRECTION) === "rtl" ? "rtl" : "ltr",
+      captionPosition: game.settings.get("narrative-canvas", this.SETTING_COMIC_CAPTION_POSITION) === "top" ? "top" : "bottom"
+    };
   }
 
   static getThemeId() {

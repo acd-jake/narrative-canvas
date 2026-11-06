@@ -496,6 +496,43 @@ body.acd-nc-active {
         p { margin: 0; }
     }
 
+    &.comic-layout {
+        .narrative-scene-handout-image-frame {
+            transition:
+                left var(--nc-fade-duration, 400ms) ease-in-out,
+                top var(--nc-fade-duration, 400ms) ease-in-out,
+                width var(--nc-fade-duration, 400ms) ease-in-out,
+                height var(--nc-fade-duration, 400ms) ease-in-out;
+        }
+
+        .narrative-scene-handout-image {
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+            cursor: default;
+            box-shadow: 0 0 0 3px #111, 0 6px 18px rgba(0, 0, 0, 0.6);
+        }
+
+        .btn-resize-handout-image { display: none; }
+
+        .narrative-scene-handout-image-description {
+            left: 0;
+            right: auto;
+            width: auto;
+            max-width: 85%;
+            max-height: 45%;
+            transform: none;
+            border-radius: 0;
+            text-align: left;
+            font-size: min(var(--nc-theme-handout-caption-font-size, 1.05rem), 2.2vh);
+            bottom: auto;
+            top: auto;
+        }
+
+        &[data-comic-caption="top"] .narrative-scene-handout-image-description { top: 0; }
+        &[data-comic-caption="bottom"] .narrative-scene-handout-image-description { bottom: 0; }
+    }
+
     .narrative-vn-name-plate {
         position: absolute;
         right: 0;

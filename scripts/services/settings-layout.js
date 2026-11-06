@@ -21,6 +21,16 @@ const SECTIONS = [
     ]
   },
   {
+    label: "NARRATIVE_CANVAS.Settings.Sections.HandoutComic",
+    keys: [
+      NarrativeSettings.SETTING_COMIC_LAYOUT,
+      NarrativeSettings.SETTING_COMIC_MAX_WIDTH,
+      NarrativeSettings.SETTING_COMIC_MAX_PER_ROW,
+      NarrativeSettings.SETTING_COMIC_DIRECTION,
+      NarrativeSettings.SETTING_COMIC_CAPTION_POSITION
+    ]
+  },
+  {
     label: "NARRATIVE_CANVAS.Settings.Sections.Journal",
     keys: [
       NarrativeSettings.SETTING_JOURNAL_ROOT_FOLDER,
