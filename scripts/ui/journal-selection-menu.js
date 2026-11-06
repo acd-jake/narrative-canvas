@@ -11,7 +11,7 @@ function normalizeText(text) {
 }
 
 /** Direct speech in German („…“, »…«), English (“…”, "…") and French («…») quotation marks. */
-const QUOTE_PATTERN = /„[^„“”]{2,}?[“”]|“[^“”]{2,}”|"[^"]{2,}"|»[^»«]{2,}«|«[^«»]{2,}»/g;
+const QUOTE_PATTERN = /„[^„“”"]{2,}?[“”"]|“[^“”]{2,}”|"[^"]{2,}"|»[^»«]{2,}«|«[^«»]{2,}»/g;
 const QUOTE_BUTTON_CLASS = "nc-quote-button";
 const BLOCK_SELECTOR = "p, li, blockquote, td, th, h1, h2, h3, h4, h5, h6, .journal-page-body";
 
