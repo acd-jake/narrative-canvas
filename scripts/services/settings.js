@@ -61,7 +61,7 @@ export class NarrativeSettings {
     ["narrationTextScale", 100, 50, 200, 5, "NarrationTextScale"],
     ["narrationMaxHeight", 66, 30, 90, 1, "NarrationMaxHeight"],
     ["dialogueRevealSpeed", 40, 5, 200, 5, "DialogueRevealSpeed"],
-    ["narrationReadingSpeed", 50, 25, 150, 5, "NarrationReadingSpeed"],
+    ["narrationReadingSpeed", 40, 5, 200, 5, "NarrationReadingSpeed"],
     ["dialogueScrollSpeed", 100, 25, 400, 5, "DialogueScrollSpeed"],
     ["narrationHoldBase", 2, 0, 20, 0.5, "NarrationHoldBase"],
     ["narrationHoldPerLine", 0.8, 0, 5, 0.1, "NarrationHoldPerLine"]
