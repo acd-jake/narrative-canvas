@@ -23,6 +23,8 @@ For story-driven sessions, it offers an alternative to Foundry's usual map and t
 - A Director interface for preparing a presentation privately and publishing it to players when ready.
 - A visual-novel-style actor display with speaker highlighting and configurable nameplates.
 - Director controls to clear all staged actors, hide the Visual Novel overlay from players while keeping a dimmed GM preview, and reorder actors by dragging them on the stage.
+- Actor and handout layouts, as well as actor positioning around dialogue, can be changed temporarily in the Director and reset to the module defaults.
+- A GM macro API with direct actions and pausable, cancellable flows for presenting scenes, handouts, actors, dialogue, and audio.
 - Drag to reorder scenes, background and handout images, actors, and audio entries in the Scene Configurator. Playlist entries move as a group.
 - Multiple handout image overlays that the GM can move, resize, and close independently.
 - Selectable themes (Fantasy, Dark Fantasy, Science Fiction, Noir, Cyberpunk, Cosmic Horror, Western, Art Deco) for subtitles, handout images, and actors. Set the default in the module settings or switch temporarily from the Director toolbar. Additional themes are added as directories under `themes/` with a `theme.json` and their images, registered in `module.json`.
@@ -166,6 +168,8 @@ Für erzähllastige Spielrunden bietet das Modul eine Alternative zu Foundrys ge
 - Eine Regieansicht, in der Präsentationen zunächst privat vorbereitet und anschließend für die Spielenden veröffentlicht werden können.
 - Eine Visual-Novel-artige Akteursanzeige mit Hervorhebung der sprechenden Figur und einstellbaren Namensschildern.
 - Regie-Steuerungen, um alle Bühnenakteure zu entfernen, das VisualNovel-Overlay für Spielende auszublenden und es für die Spielleitung abgedimmt vorzubereiten sowie Akteure direkt auf der Bühne per Drag-and-drop umzusortieren.
+- Akteurs- und Handout-Layouts sowie die Positionierung von Akteuren bei Dialogen lassen sich im Director vorübergehend ändern und auf die Moduleinstellungen zurücksetzen.
+- Eine Makro-API für die Spielleitung mit Einzelaktionen und pausierbaren, abbrechbaren Abläufen für Szenen, Handouts, Akteure, Dialoge und Audio.
 - Szenen, Hintergrund- und Handout-Bilder, Akteure sowie Audioeinträge lassen sich im Szeneneditor per Drag-and-drop sortieren. Playlist-Einträge werden als Gruppe verschoben.
 - Mehrere Handout-Bildüberlagerungen, die unabhängig voneinander verschoben, skaliert und geschlossen werden können.
 - Auswählbare Themes (Fantasy, Dark Fantasy, Science Fiction, Noir, Cyberpunk, Kosmischer Horror, Western, Art Déco) für Untertitel, Handout-Bilder und Akteure. Das Standard-Theme wird in den Moduleinstellungen festgelegt und lässt sich über die Regie-Werkzeugleiste temporär umschalten. Weitere Themes entstehen als Verzeichnis unter `themes/` mit einer `theme.json` und den Bilddateien und werden in `module.json` eingetragen.
