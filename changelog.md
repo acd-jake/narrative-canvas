@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Module settings are grouped by task, with dialogue reveal modes under appearance and transition controls under canvas appearance.
 - Actor images can overlap dialogue lines, move up only while a line is visible, or reserve space for dialogue; this mode can also be changed temporarily in the Director.
 - Transition easing can be selected in module settings; Fade Duration now explicitly describes its effect on position transitions.
 - Actor and handout layout strategies can now be changed temporarily from the Director and reset to the module settings.
