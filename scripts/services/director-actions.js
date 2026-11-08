@@ -113,6 +113,12 @@ export class NarrativeDirectorActions {
           handoutLayoutOverride: strategy && strategy !== defaultStrategy ? strategy : null
         });
       },
+      onActorDialoguePositionModeChange: mode => {
+        if (mode && !NarrativeSettings.ACTOR_DIALOGUE_POSITION_MODES.includes(mode)) return;
+        this.handleDisplayUpdate({
+          actorDialoguePositionModeOverride: mode && mode !== NarrativeSettings.getActorDialoguePositionMode() ? mode : null
+        });
+      },
       onActorOrderChange: actorIds => {
         const activeActors = this.getState().activeActors || [];
         const actorsById = new Map(activeActors.map(actor => [actor.id, actor]));

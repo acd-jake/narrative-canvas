@@ -34,6 +34,11 @@ export class VisualNovelStage {
     this.#layout = LayoutRegistry.create("actor", LayoutRegistry.getDefaultId("actor"));
   }
 
+  #getTransitionEasing() {
+    return getComputedStyle(this.#stageElement ?? this.#vnStage)
+      .getPropertyValue("--nc-transition-easing").trim() || "ease";
+  }
+
   /** Switches the strategy when the setting changed and tells whether actors are placed explicitly. */
   #syncLayout() {
     const id = this.#getLayoutStrategy?.() ?? LayoutRegistry.getDefaultId("actor");
@@ -112,6 +117,7 @@ export class VisualNovelStage {
     }
     this.#syncLayout();
     const stageRect = this.#vnStage.getBoundingClientRect();
+    const transitionEasing = this.#getTransitionEasing();
 
     // 2. Identify exiting characters: animate smooth fade-out and slide-down
     for (const el of activeCharEls) {
@@ -168,7 +174,7 @@ export class VisualNovelStage {
         const deltaY = first.bottom - last.bottom;
 
         if (Math.abs(deltaX) > 0.5 || Math.abs(deltaY) > 0.5) {
-          el.style.transition = `scale ${fadeDuration}ms ease`;
+          el.style.transition = `scale ${fadeDuration}ms ${transitionEasing}`;
           const isSpeaker = el.classList.contains("is-speaker");
           const baseTransform = isSpeaker ? "scale(1.25)" : "";
           el.style.transform = `translate(${deltaX}px, ${deltaY}px) ${baseTransform}`;
@@ -186,7 +192,7 @@ export class VisualNovelStage {
         const isDimmed = this.#vnStage.classList.contains("has-speaker") && !isSpeaker;
         const baseTransform = isSpeaker ? "scale(1.25)" : "";
 
-        el.style.transition = `transform ${fadeDuration}ms cubic-bezier(0.2, 0.8, 0.2, 1), scale ${fadeDuration}ms ease, opacity ${fadeDuration}ms ease, filter ${fadeDuration}ms ease`;
+        el.style.transition = `transform ${fadeDuration}ms ${transitionEasing}, scale ${fadeDuration}ms ${transitionEasing}, opacity ${fadeDuration}ms ${transitionEasing}, filter ${fadeDuration}ms ${transitionEasing}`;
         el.style.transform = baseTransform;
         el.style.opacity = isDimmed ? "0.78" : "1";
 
@@ -239,7 +245,7 @@ export class VisualNovelStage {
 
     // Softly fade out and glide slightly downward
     requestAnimationFrame(() => {
-      el.style.transition = `opacity ${fadeDuration}ms ease, transform ${fadeDuration}ms cubic-bezier(0.2, 0.8, 0.2, 1)`;
+      el.style.transition = `opacity ${fadeDuration}ms ${this.#getTransitionEasing()}, transform ${fadeDuration}ms ${this.#getTransitionEasing()}`;
       el.style.opacity = "0";
       el.style.transform = "translateY(24px) scale(0.92)";
     });

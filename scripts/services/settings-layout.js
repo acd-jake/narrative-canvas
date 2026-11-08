@@ -24,7 +24,8 @@ const SECTIONS = [
       NarrativeSettings.SETTING_DEFAULT_BG_IMAGE,
       NarrativeSettings.SETTING_ACTOR_IMAGE_HEIGHT,
       NarrativeSettings.SETTING_ACTOR_LAYOUT,
-      NarrativeSettings.SETTING_FADE_DURATION
+      NarrativeSettings.SETTING_FADE_DURATION,
+      NarrativeSettings.SETTING_TRANSITION_EASING
     ]
   },
   {
@@ -59,7 +60,8 @@ const SECTIONS = [
     keys: [
       NarrativeSettings.SETTING_DIALOGUE_TEXT_SCALE,
       NarrativeSettings.SETTING_NARRATION_TEXT_SCALE,
-      NarrativeSettings.SETTING_NARRATION_MAX_HEIGHT
+      NarrativeSettings.SETTING_NARRATION_MAX_HEIGHT,
+      NarrativeSettings.SETTING_ACTOR_DIALOGUE_POSITION_MODE
     ]
   },
   {

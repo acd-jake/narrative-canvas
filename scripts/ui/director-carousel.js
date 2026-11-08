@@ -64,6 +64,12 @@ export class DirectorActorCarousel {
       hint: game.i18n.localize(LayoutRegistry.getHints("actor")[id]),
       selected: Boolean(context.actorLayoutOverride) && id === context.actorLayoutStrategy
     }));
+    const actorDialoguePositionChoices = NarrativeSettings.ACTOR_DIALOGUE_POSITION_MODES.map(id => ({
+      id,
+      labelKey: `NARRATIVE_CANVAS.Settings.ActorDialoguePositionMode.${id[0].toUpperCase()}${id.slice(1)}`,
+      hint: game.i18n.localize(`NARRATIVE_CANVAS.Settings.ActorDialoguePositionMode.${id[0].toUpperCase()}${id.slice(1)}Hint`),
+      selected: Boolean(context.actorDialoguePositionModeOverride) && id === context.actorDialoguePositionMode
+    }));
     this.#syncDialogueSpeaker(actors, activeSpeakerId);
 
     const hasTalkingActors = game.modules.get("acd-talking-actors")?.active === true;
@@ -87,7 +93,9 @@ export class DirectorActorCarousel {
       {
         actors,
         actorLayoutChoices,
-        isActorLayoutTemporary: Boolean(context.actorLayoutOverride),
+        actorDialoguePositionChoices,
+        isActorLayoutTemporary: Boolean(context.actorLayoutOverride || context.actorDialoguePositionModeOverride),
+        isActorDialoguePositionModeTemporary: Boolean(context.actorDialoguePositionModeOverride),
         hasActiveActors: activeIds.size > 0,
         isVisualNovelOverlayVisible,
         dialogueSystemEnabled: context.dialogueSystemEnabled === true,
@@ -472,6 +480,16 @@ export class DirectorActorCarousel {
       });
     });
 
+    element.querySelectorAll("[data-actor-dialogue-position]").forEach(button => {
+      button.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        const mode = button.dataset.actorDialoguePosition || null;
+        button.closest("details")?.removeAttribute("open");
+        this.#callbacks.onActorDialoguePositionModeChange?.(mode);
+      });
+    });
+
     // 1. Left-click to deploy or toggle actor on the visual novel stage
     element.querySelectorAll(".actor-carousel-card").forEach(card => {
       card.addEventListener("click", (event) => {
@@ -559,13 +577,23 @@ export class DirectorActorCarousel {
     if (!this.#element) return;
     this.#element.querySelector(".actor-layout-picker")?.classList.toggle(
       "is-temporary",
-      Boolean(context.actorLayoutOverride)
+      Boolean(context.actorLayoutOverride || context.actorDialoguePositionModeOverride)
     );
     this.#element.querySelectorAll("[data-actor-layout]").forEach(button => {
       const strategy = button.dataset.actorLayout;
       const selected = strategy
         ? Boolean(context.actorLayoutOverride) && strategy === context.actorLayoutStrategy
         : !context.actorLayoutOverride;
+      button.setAttribute("aria-pressed", String(selected));
+      button.classList.toggle("is-selected", selected);
+      const check = button.querySelector(".layout-picker-check");
+      if (check) check.hidden = !selected;
+    });
+    this.#element.querySelectorAll("[data-actor-dialogue-position]").forEach(button => {
+      const mode = button.dataset.actorDialoguePosition;
+      const selected = mode
+        ? Boolean(context.actorDialoguePositionModeOverride) && mode === context.actorDialoguePositionMode
+        : !context.actorDialoguePositionModeOverride;
       button.setAttribute("aria-pressed", String(selected));
       button.classList.toggle("is-selected", selected);
       const check = button.querySelector(".layout-picker-check");

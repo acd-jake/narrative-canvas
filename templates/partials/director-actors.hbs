@@ -23,6 +23,17 @@
                         <i class="fas fa-check layout-picker-check" aria-hidden="true" {{#unless this.selected}}hidden{{/unless}}></i>
                     </button>
                 {{/each}}
+                <div class="layout-picker-divider">{{localize "NARRATIVE_CANVAS.Settings.ActorDialoguePositionModeLabel"}}</div>
+                <button type="button" class="layout-picker-option {{#unless isActorDialoguePositionModeTemporary}}is-selected{{/unless}}" data-actor-dialogue-position="" aria-pressed="{{#unless isActorDialoguePositionModeTemporary}}true{{else}}false{{/unless}}" title="{{localize 'NARRATIVE_CANVAS.Director.LayoutUseModuleSetting'}}">
+                    <span>{{localize "NARRATIVE_CANVAS.Director.LayoutUseModuleSetting"}}</span>
+                    <i class="fas fa-check layout-picker-check" aria-hidden="true" {{#if isActorDialoguePositionModeTemporary}}hidden{{/if}}></i>
+                </button>
+                {{#each actorDialoguePositionChoices}}
+                    <button type="button" class="layout-picker-option {{#if this.selected}}is-selected{{/if}}" data-actor-dialogue-position="{{this.id}}" aria-pressed="{{this.selected}}" title="{{this.hint}}">
+                        <span>{{localize this.labelKey}}</span>
+                        <i class="fas fa-check layout-picker-check" aria-hidden="true" {{#unless this.selected}}hidden{{/unless}}></i>
+                    </button>
+                {{/each}}
             </div>
         </details>
     </div>

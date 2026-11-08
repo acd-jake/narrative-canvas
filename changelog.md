@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Actor images can overlap dialogue lines, move up only while a line is visible, or reserve space for dialogue; this mode can also be changed temporarily in the Director.
+- Transition easing can be selected in module settings; Fade Duration now explicitly describes its effect on position transitions.
 - Actor and handout layout strategies can now be changed temporarily from the Director and reset to the module settings.
 - Dialogue and narrator lines now share one reading speed setting, alongside their shared hold-time settings.
 - Actor images and nameplates move up while a dialogue line is visible, preventing overlap with long lines.

@@ -57,6 +57,7 @@ export class NarrativeDirector extends NarrativeCanvas {
       onActorToggleName: (actorId) => this.callbacks.onActorToggleName?.(actorId),
       onVisualNovelOverlayVisibilityToggle: () => this.callbacks.onVisualNovelOverlayVisibilityToggle?.(),
       onActorLayoutChange: strategy => this.callbacks.onActorLayoutChange?.(strategy),
+      onActorDialoguePositionModeChange: mode => this.callbacks.onActorDialoguePositionModeChange?.(mode),
       onActorOrderChange: actorIds => this.callbacks.onActorOrderChange?.(actorIds),
       onDialogueSend: line => {
         if (this.dialogueLineController.isBusy) return;

@@ -19,6 +19,8 @@ export class NarrativeSettings {
   static SETTING_CHARACTER_SHEETS_RELEASED = "characterSheetsReleased";
   static CHARACTER_SHEETS_CHANGED_HOOK = "narrativeCanvas.characterSheetsChanged";
   static SETTING_FADE_DURATION = "fadeDuration";
+  static SETTING_TRANSITION_EASING = "transitionEasing";
+  static TRANSITION_EASINGS = ["linear", "ease", "ease-in", "ease-out", "ease-in-out"];
   static SETTING_LOG_LEVEL = "logLevel";
   static SETTING_SCENES_DATA = "configuredScenesDataset";
   static SETTING_TILE_SIZE = "editorTileSize";
@@ -45,6 +47,8 @@ export class NarrativeSettings {
   static SETTING_COMIC_LAYOUT = "handoutComicLayout"; // Legacy on/off switch, migrated into SETTING_HANDOUT_LAYOUT.
   static SETTING_HANDOUT_LAYOUT = "handoutLayoutStrategy";
   static SETTING_ACTOR_LAYOUT = "actorLayoutStrategy";
+  static SETTING_ACTOR_DIALOGUE_POSITION_MODE = "actorDialoguePositionMode";
+  static ACTOR_DIALOGUE_POSITION_MODES = ["overlap", "dynamic", "reserved"];
   static SETTING_COMIC_DIRECTION = "handoutComicDirection";
   static SETTING_COMIC_CAPTION_POSITION = "handoutComicCaptionPosition";
   static SETTING_COMIC_MAX_WIDTH = "handoutComicMaxWidth";
@@ -155,6 +159,21 @@ export class NarrativeSettings {
       type: String,
       default: LayoutRegistry.getDefaultId("actor"),
       choices: LayoutRegistry.getChoices("actor"),
+      onChange: refreshView
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_ACTOR_DIALOGUE_POSITION_MODE, {
+      name: "NARRATIVE_CANVAS.Settings.ActorDialoguePositionModeLabel",
+      hint: "NARRATIVE_CANVAS.Settings.ActorDialoguePositionModeHint",
+      scope: "world",
+      config: true,
+      type: String,
+      default: "dynamic",
+      choices: {
+        overlap: "NARRATIVE_CANVAS.Settings.ActorDialoguePositionMode.Overlap",
+        dynamic: "NARRATIVE_CANVAS.Settings.ActorDialoguePositionMode.Dynamic",
+        reserved: "NARRATIVE_CANVAS.Settings.ActorDialoguePositionMode.Reserved"
+      },
       onChange: refreshView
     });
 
@@ -269,6 +288,23 @@ export class NarrativeSettings {
       type: Number,
       range: { min: 0, max: 5000, step: 50 },
       default: 500,
+      onChange: () => {
+        const manager = game.modules?.get("narrative-canvas")?.manager;
+        manager?.refreshView();
+      }
+    });
+
+    game.settings.register("narrative-canvas", this.SETTING_TRANSITION_EASING, {
+      name: "NARRATIVE_CANVAS.Settings.TransitionEasingLabel",
+      hint: "NARRATIVE_CANVAS.Settings.TransitionEasingHint",
+      scope: "world",
+      config: true,
+      type: String,
+      default: "ease",
+      choices: Object.fromEntries(this.TRANSITION_EASINGS.map(easing => [
+        easing,
+        `NARRATIVE_CANVAS.Settings.TransitionEasing.${easing.replaceAll("-", "")}`
+      ])),
       onChange: () => {
         const manager = game.modules?.get("narrative-canvas")?.manager;
         manager?.refreshView();
@@ -668,6 +704,11 @@ export class NarrativeSettings {
     return game.settings.get("narrative-canvas", this.SETTING_FADE_DURATION);
   }
 
+  static getTransitionEasing() {
+    const easing = game.settings.get("narrative-canvas", this.SETTING_TRANSITION_EASING);
+    return this.TRANSITION_EASINGS.includes(easing) ? easing : "ease";
+  }
+
   static getActorImageHeight() {
     return game.settings.get("narrative-canvas", this.SETTING_ACTOR_IMAGE_HEIGHT);
   }
@@ -681,6 +722,11 @@ export class NarrativeSettings {
 
   static getActorLayoutStrategy() {
     return game.settings.get("narrative-canvas", this.SETTING_ACTOR_LAYOUT);
+  }
+
+  static getActorDialoguePositionMode() {
+    const mode = game.settings.get("narrative-canvas", this.SETTING_ACTOR_DIALOGUE_POSITION_MODE);
+    return this.ACTOR_DIALOGUE_POSITION_MODES.includes(mode) ? mode : "dynamic";
   }
 
   static getHandoutLayoutOptions() {

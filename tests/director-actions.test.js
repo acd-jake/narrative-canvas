@@ -102,6 +102,7 @@ describe("NarrativeDirectorActions", () => {
   it("sets temporary layout strategies and clears overrides for module defaults", () => {
     vi.spyOn(NarrativeSettings, "getActorLayoutStrategy").mockReturnValue("row");
     vi.spyOn(NarrativeSettings, "getHandoutLayoutOptions").mockReturnValue({ strategy: "free" });
+    vi.spyOn(NarrativeSettings, "getActorDialoguePositionMode").mockReturnValue("dynamic");
     const handleDisplayUpdate = vi.fn();
     const actions = new NarrativeDirectorActions({
       getState: () => ({}),
@@ -118,12 +119,16 @@ describe("NarrativeDirectorActions", () => {
     callbacks.onActorLayoutChange("row");
     callbacks.onHandoutLayoutChange("comic");
     callbacks.onHandoutLayoutChange("free");
+    callbacks.onActorDialoguePositionModeChange("overlap");
+    callbacks.onActorDialoguePositionModeChange("dynamic");
 
     expect(handleDisplayUpdate.mock.calls).toEqual([
       [{ actorLayoutOverride: "arc" }],
       [{ actorLayoutOverride: null }],
       [{ handoutLayoutOverride: "comic" }],
-      [{ handoutLayoutOverride: null }]
+      [{ handoutLayoutOverride: null }],
+      [{ actorDialoguePositionModeOverride: "overlap" }],
+      [{ actorDialoguePositionModeOverride: null }]
     ]);
   });
 

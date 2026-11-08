@@ -104,11 +104,14 @@ export class NarrativeCanvas {
     const defaultHandoutLayoutOptions = NarrativeSettings.getHandoutLayoutOptions();
     const actorLayoutStrategy = state.actorLayoutOverride || NarrativeSettings.getActorLayoutStrategy();
     const handoutLayoutStrategy = state.handoutLayoutOverride || defaultHandoutLayoutOptions.strategy;
+    const actorDialoguePositionMode = state.actorDialoguePositionModeOverride
+      || NarrativeSettings.getActorDialoguePositionMode();
     const context = {
       ...state,
       actorLayoutStrategy,
       handoutLayoutOptions: { ...defaultHandoutLayoutOptions, strategy: handoutLayoutStrategy },
       handoutLayoutStrategy,
+      actorDialoguePositionMode,
       background: effectiveBackground,
       selectedBackground: state.background || "",
       selectedHandoutImage: state.handoutImage || "",
@@ -120,6 +123,7 @@ export class NarrativeCanvas {
       dialogueVoiceState: this._getDialogueVoiceState(state),
       customBgColor: NarrativeSettings.getBackgroundColor(),
       fadeDuration: NarrativeSettings.getFadeDuration(),
+      transitionEasing: NarrativeSettings.getTransitionEasing(),
       actorImageHeight: NarrativeSettings.getActorImageHeight()
     };
     this._layoutContext = context;
@@ -147,6 +151,7 @@ export class NarrativeCanvas {
     newStage.classList.add("acd-nc", this.viewClass);
     newStage.style.setProperty("--nc-custom-bg", context.customBgColor || "#000000");
     newStage.style.setProperty("--nc-fade-duration", `${context.fadeDuration}ms`);
+    newStage.style.setProperty("--nc-transition-easing", context.transitionEasing);
     newStage.style.setProperty("--nc-vn-actor-image-height", `${context.actorImageHeight}vh`);
     this.#applyDialogueStyle(newStage);
     ThemeManager.applyTo(newStage);
@@ -170,6 +175,7 @@ export class NarrativeCanvas {
     this.rollToast.mount();
     this._recordContext(context);
     document.body.style.setProperty("--nc-fade-duration", `${context.fadeDuration}ms`);
+    document.body.style.setProperty("--nc-transition-easing", context.transitionEasing);
     document.body.classList.add("acd-nc-active");
     await this._animateElementOpacity(newStage, 1, context.fadeDuration);
 
@@ -265,10 +271,12 @@ export class NarrativeCanvas {
 
     const fadeDuration = context.fadeDuration;
     this.stageElement.style.setProperty("--nc-fade-duration", `${fadeDuration}ms`);
+    this.stageElement.style.setProperty("--nc-transition-easing", context.transitionEasing);
     this.stageElement.style.setProperty("--nc-vn-actor-image-height", `${context.actorImageHeight}vh`);
     this.#applyDialogueStyle(this.stageElement);
     ThemeManager.applyTo(this.stageElement);
     document.body.style.setProperty("--nc-fade-duration", `${fadeDuration}ms`);
+    document.body.style.setProperty("--nc-transition-easing", context.transitionEasing);
 
     // 1. Update background and actor layers
     this.bgController.update(context.background, fadeDuration);
@@ -448,7 +456,7 @@ export class NarrativeCanvas {
 
     const animation = element.animate(
       [{ opacity: currentOpacity }, { opacity: targetOpacity }],
-      { duration, easing: "ease-in-out", fill: "forwards" }
+      { duration, easing: NarrativeSettings.getTransitionEasing(), fill: "forwards" }
     );
     this._opacityAnimations.set(element, animation);
 
@@ -485,6 +493,7 @@ export class NarrativeCanvas {
       await this._animateElementOpacity(closingStage, 0, NarrativeSettings.getFadeDuration());
     }
 
+    this.dialogueLineController.destroy();
     this.bgController.destroy();
     this.vnStageController.destroy();
 
@@ -499,6 +508,7 @@ export class NarrativeCanvas {
     if (!document.querySelector("#narrative-player-display, #narrative-canvas-director")) {
       document.body.classList.remove("acd-nc-active");
       document.body.style.removeProperty("--nc-fade-duration");
+      document.body.style.removeProperty("--nc-transition-easing");
     }
 
     if (this.stageElement === closingStage) {

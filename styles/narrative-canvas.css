@@ -5,7 +5,7 @@ body.acd-nc-active {
     #ui-left, #ui-top, #ui-bottom, #sidebar, #navigation, #players, #hotbar, #controls {
         opacity: 0 !important;
         pointer-events: none !important;
-        transition: opacity var(--nc-fade-duration, 400ms) ease;
+        transition: opacity var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease);
     }
 }
 
@@ -372,7 +372,7 @@ body.acd-nc-active {
         background-position: center;
         background-repeat: no-repeat;
         opacity: 0;
-        transition: opacity var(--nc-fade-duration, 800ms) ease-in-out;
+        transition: opacity var(--nc-fade-duration, 800ms) var(--nc-transition-easing, ease);
         pointer-events: none;
 
         &.is-active {
@@ -435,9 +435,9 @@ body.acd-nc-active {
 
     &.player-view .narrative-scene-handout-image-frame {
         transition:
-            left var(--nc-fade-duration, 400ms) ease-in-out,
-            top var(--nc-fade-duration, 400ms) ease-in-out,
-            transform var(--nc-fade-duration, 400ms) ease-in-out;
+            left var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease),
+            top var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease),
+            transform var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease);
     }
 
     .narrative-scene-handout-image {
@@ -499,10 +499,10 @@ body.acd-nc-active {
     &.comic-layout {
         .narrative-scene-handout-image-frame {
             transition:
-                left var(--nc-fade-duration, 400ms) ease-in-out,
-                top var(--nc-fade-duration, 400ms) ease-in-out,
-                width var(--nc-fade-duration, 400ms) ease-in-out,
-                height var(--nc-fade-duration, 400ms) ease-in-out;
+                left var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease),
+                top var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease),
+                width var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease),
+                height var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease);
         }
 
         .narrative-scene-handout-image {
@@ -843,11 +843,11 @@ body.acd-nc-active {
 
     /* Utility Animations */
     .animate-fade-in {
-        animation: nc-fadeIn var(--nc-fade-duration, 350ms) cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        animation: nc-fadeIn var(--nc-fade-duration, 350ms) var(--nc-transition-easing, ease) forwards;
     }
 
     .animate-slide-up {
-        animation: nc-slideUp var(--nc-fade-duration, 350ms) cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+        animation: nc-slideUp var(--nc-fade-duration, 350ms) var(--nc-transition-easing, ease) forwards;
     }
 
     .nc-status-badge {
@@ -881,7 +881,7 @@ body.acd-nc-active {
         gap: 40px;
         pointer-events: none;
         z-index: 2;
-        transition: all var(--nc-fade-duration, 300ms) ease;
+        transition: all var(--nc-fade-duration, 300ms) var(--nc-transition-easing, ease);
 
         &.has-speaker {
             .narrative-vn-character:not(.is-speaker):not(.is-exiting) {
@@ -940,7 +940,7 @@ body.acd-nc-active {
         display: flex;
         justify-content: center;
         align-items: flex-end;
-        transition: transform var(--nc-fade-duration, 400ms) cubic-bezier(0.2, 0.8, 0.2, 1), filter var(--nc-fade-duration, 400ms) ease, opacity var(--nc-fade-duration, 400ms) ease, margin 180ms ease;
+        transition: transform var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease), filter var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease), opacity var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease), margin 180ms ease;
         position: relative;
         transform-origin: center bottom;
         will-change: transform, opacity;
@@ -972,10 +972,10 @@ body.acd-nc-active {
         translate: -50% 0;
         scale: var(--vn-scale, 1);
         transition:
-            transform var(--nc-fade-duration, 400ms) cubic-bezier(0.2, 0.8, 0.2, 1),
-            filter var(--nc-fade-duration, 400ms) ease,
-            opacity var(--nc-fade-duration, 400ms) ease,
-            scale var(--nc-fade-duration, 400ms) ease;
+            transform var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease),
+            filter var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease),
+            opacity var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease),
+            scale var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease);
     }
 
     .narrative-vn-image-wrapper {
@@ -1001,7 +1001,7 @@ body.acd-nc-active {
             content: "";
             opacity: 0;
             pointer-events: none;
-            transition: opacity var(--nc-fade-duration, 400ms) ease-in-out;
+            transition: opacity var(--nc-fade-duration, 400ms) var(--nc-transition-easing, ease);
         }
     }
 
@@ -1026,7 +1026,9 @@ body.acd-nc-active {
        ========================================================================== */
     /* Plain selectors on purpose: the block is no longer inside the .acd-nc nesting scope. */
 .acd-nc {
-    --nc-dialogue-line-space: 76px;
+    --nc-dialogue-line-padding-block: 10px;
+    --nc-dialogue-line-gap: 5px;
+    --nc-dialogue-reserved-line-space: calc(4 * 1.35 * var(--nc-theme-dialogue-text-font-size, var(--nc-theme-subtitle-font-size, 1.15rem)) * var(--nc-dialogue-text-scale, 1) + 2 * var(--nc-dialogue-line-padding-block) + 2 * var(--nc-theme-subtitle-frame-width, 0px) + var(--nc-dialogue-line-gap));
     --nc-dialogue-controls-height: 50px;
     --nc-dialogue-carousel-raise: calc(var(--nc-dialogue-controls-height) + 1px - 20px);
 }
@@ -1035,24 +1037,24 @@ body.acd-nc-active {
     bottom: 20px;
 }
 
-.acd-nc.player-view.has-dialogue-system .narrative-visual-novel-stage {
-    bottom: calc(20px + var(--nc-dialogue-line-space));
-}
-
 .acd-nc.director-view.has-dialogue-system .narrative-dialogue-line {
     bottom: calc(160px + var(--nc-dialogue-carousel-raise) + 8px);
 }
 
-.acd-nc.director-view.has-dialogue-system .narrative-visual-novel-stage {
-    bottom: calc(160px + var(--nc-dialogue-carousel-raise) + var(--nc-dialogue-line-space));
+.acd-nc.player-view.has-dialogue-system.actor-dialogue-position-dynamic.is-speaking .narrative-visual-novel-stage {
+    bottom: calc(20px + var(--nc-dialogue-line-space, 0px));
 }
 
-.acd-nc.player-view.is-speaking .narrative-visual-novel-stage {
-    bottom: calc(20px + 4 * 1.35 * var(--nc-theme-dialogue-text-font-size, var(--nc-theme-subtitle-font-size, 1.15rem)) * var(--nc-dialogue-text-scale, 1) + 36px);
+.acd-nc.director-view.has-dialogue-system.actor-dialogue-position-dynamic.is-speaking .narrative-visual-novel-stage {
+    bottom: calc(160px + var(--nc-dialogue-carousel-raise) + 8px + var(--nc-dialogue-line-space, 0px));
 }
 
-.acd-nc.director-view.is-speaking .narrative-visual-novel-stage {
-    bottom: calc(160px + var(--nc-dialogue-carousel-raise) + 8px + 4 * 1.35 * var(--nc-theme-dialogue-text-font-size, var(--nc-theme-subtitle-font-size, 1.15rem)) * var(--nc-dialogue-text-scale, 1) + 36px);
+.acd-nc.player-view.has-dialogue-system.actor-dialogue-position-reserved .narrative-visual-novel-stage {
+    bottom: calc(20px + var(--nc-dialogue-reserved-line-space));
+}
+
+.acd-nc.director-view.has-dialogue-system.actor-dialogue-position-reserved .narrative-visual-novel-stage {
+    bottom: calc(160px + var(--nc-dialogue-carousel-raise) + 8px + var(--nc-dialogue-reserved-line-space));
 }
 
 .acd-nc.director-view .narrative-dialogue-line {
@@ -1113,7 +1115,7 @@ body.acd-nc-active {
         z-index: 3;
         box-sizing: border-box;
         min-height: 2.6em;
-        padding: 10px 24px;
+        padding: var(--nc-dialogue-line-padding-block, 10px) 24px;
         border-style: solid;
         border-color: transparent;
         border-width: var(--nc-theme-subtitle-frame-width, 0);
@@ -1141,7 +1143,7 @@ body.acd-nc-active {
 
         &.is-fading-out {
             opacity: 0;
-            transition: opacity 700ms ease-in-out;
+            transition: opacity 700ms var(--nc-transition-easing, ease);
         }
 
         .narrative-dialogue-speaker {
@@ -1806,7 +1808,9 @@ body.acd-nc-active {
             display: none;
             min-width: 220px;
             max-width: min(300px, calc(100vw - 24px));
+            max-height: min(70vh, 480px);
             gap: 2px;
+            overflow-y: auto;
             padding: 4px;
             border: 1px solid rgba(255,255,255,0.18);
             border-radius: 4px;
@@ -1833,6 +1837,15 @@ body.acd-nc-active {
             &:hover, &:focus-visible { background: rgba(255,255,255,0.1); color: #fff; }
             &.is-selected { color: #fff; background: rgba(224,184,76,0.16); }
             .layout-picker-check[hidden] { display: none; }
+        }
+
+        .layout-picker-divider {
+            padding: 7px 9px 3px;
+            border-top: 1px solid rgba(255,255,255,0.16);
+            color: #aaa;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
         }
     }
 

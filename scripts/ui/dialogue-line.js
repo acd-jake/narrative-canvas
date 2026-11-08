@@ -29,6 +29,7 @@ export class DialogueLineController {
   #paused = false;
   #pausedRemainingMs = 0;
   #pausedAnimations = [];
+  #lineResizeObserver = null;
   #pendingPauseGroup = null;
   #lastNotifiedPaused = false;
   #pauseTimer = null;
@@ -50,6 +51,18 @@ export class DialogueLineController {
   /** True once a pause was requested, also while the current word or paragraph is still being shown. */
   get isPaused() {
     return this.#paused || this.#pendingPauseGroup !== null;
+  }
+
+  destroy() {
+    this.#clearTimers();
+    this.#lineResizeObserver?.disconnect();
+    this.#lineResizeObserver = null;
+    this.#element?.remove();
+    this.#element = null;
+    this.#stage?.style.removeProperty("--nc-dialogue-line-space");
+    this.#stage = null;
+    this.#active = null;
+    this.#setBusy(false);
   }
 
   /**
@@ -97,6 +110,8 @@ export class DialogueLineController {
   update(stageElement, context = {}) {
     if (this.#stage !== stageElement) {
       this.#clearTimers();
+      this.#lineResizeObserver?.disconnect();
+      this.#lineResizeObserver = null;
       this.#stage = stageElement;
       this.#element = null;
       this.#setBusy(false);
@@ -104,16 +119,30 @@ export class DialogueLineController {
 
     const enabled = context.dialogueSystemEnabled === true;
     stageElement.classList.toggle("has-dialogue-system", enabled);
+    const positionMode = context.actorDialoguePositionMode ?? NarrativeSettings.getActorDialoguePositionMode();
+    for (const mode of NarrativeSettings.ACTOR_DIALOGUE_POSITION_MODES) {
+      stageElement.classList.toggle(`actor-dialogue-position-${mode}`, positionMode === mode);
+    }
 
     if (!enabled) {
       this.#clearTimers();
+      this.#stage?.classList.remove("is-speaking");
+      this.#stage?.style.removeProperty("--nc-dialogue-line-space");
+      this.#lineResizeObserver?.disconnect();
+      this.#lineResizeObserver = null;
       this.#element?.remove();
       this.#element = null;
       this.#setBusy(false);
       return;
     }
 
-    if (!this.#element?.isConnected) this.#element = this.#createElement(stageElement);
+    if (!this.#element?.isConnected) {
+      this.#element = this.#createElement(stageElement);
+      this.#lineResizeObserver?.disconnect();
+      this.#lineResizeObserver = new ResizeObserver(() => this.#syncLineSpace());
+      this.#lineResizeObserver.observe(this.#element);
+    }
+    this.#syncLineSpace();
 
     const line = context.dialogueLine;
     this.#isGM = context.isGM === true;
@@ -143,8 +172,10 @@ export class DialogueLineController {
     element.classList.add("is-fading-out");
     this.#timers.push(setTimeout(() => {
       element.classList.remove("is-visible", "is-fading-out");
+      this.#stage?.classList.remove("is-speaking");
       element.querySelector(".narrative-dialogue-text")?.replaceChildren();
       this.#resetShift();
+      this.#syncLineSpace();
       this.#setBusy(false);
     }, FADE_OUT_MS));
   }
@@ -167,6 +198,19 @@ export class DialogueLineController {
     this.#shiftAnimation = null;
   }
 
+  #syncLineSpace() {
+    if (!this.#stage?.classList.contains("is-speaking")
+      || !this.#element?.classList.contains("is-visible")) {
+      this.#stage?.style.removeProperty("--nc-dialogue-line-space");
+      return;
+    }
+    const paddingTop = Number.parseFloat(getComputedStyle(this.#element).paddingTop) || 0;
+    this.#stage.style.setProperty(
+      "--nc-dialogue-line-space",
+      `${this.#element.getBoundingClientRect().height + paddingTop / 2}px`
+    );
+  }
+
   #clearTimers() {
     this.#timers.forEach(timer => clearTimeout(timer));
     this.#timers = [];
@@ -174,7 +218,10 @@ export class DialogueLineController {
     this.#pauseTimer = null;
     if (this.#scrollFrame !== null) cancelAnimationFrame(this.#scrollFrame);
     this.#scrollFrame = null;
-    this.#stage?.classList.remove("is-speaking");
+    if (!this.#element?.classList.contains("is-visible")) {
+      this.#stage?.classList.remove("is-speaking");
+      this.#stage?.style.removeProperty("--nc-dialogue-line-space");
+    }
   }
 
   /** Scrolls linearly so the text reaches its end at endMs; scrollFactor speeds up the scroll. */
@@ -209,6 +256,7 @@ export class DialogueLineController {
       this.#stage?.classList.remove("is-speaking");
       textEl.replaceChildren();
       this.#resetShift();
+      this.#syncLineSpace();
       this.#setBusy(false);
     }, delayMs + FADE_OUT_MS));
   }
@@ -333,6 +381,8 @@ export class DialogueLineController {
 
   #play(line, isGM) {
     this.#clearTimers();
+    this.#stage?.classList.remove("is-speaking");
+    this.#stage?.style.removeProperty("--nc-dialogue-line-space");
     this.#pendingPauseGroup = null;
     this.#notifyPaused();
     this.#active = null;
@@ -460,6 +510,7 @@ export class DialogueLineController {
     void textEl.offsetHeight;
     element.classList.add("is-visible");
     if (!isNarrator) this.#stage?.classList.add("is-speaking");
+    this.#syncLineSpace();
 
     // Scrolling starts when the first unit that no longer fits begins to appear.
     const overflowUnit = units.find(unit => unit.bottom > textEl.clientHeight);
