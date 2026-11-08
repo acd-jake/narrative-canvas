@@ -88,13 +88,13 @@ export class NarrativeDirectorActions {
           });
         }
 
-        this.handleDisplayUpdate({ activeActors: activeList, activeSpeakerId });
+        return this.handleDisplayUpdate({ activeActors: activeList, activeSpeakerId });
       },
       onActorStageRemove: actorId => {
         const state = this.getState();
         const activeList = state.activeActors.filter(actor => actor.id !== actorId);
         const activeSpeakerId = state.activeSpeakerId === actorId ? null : state.activeSpeakerId;
-        this.handleDisplayUpdate({ activeActors: activeList, activeSpeakerId });
+        return this.handleDisplayUpdate({ activeActors: activeList, activeSpeakerId });
       },
       onActorStageClear: () => this.handleDisplayUpdate({ activeActors: [], activeSpeakerId: null }),
       onVisualNovelOverlayVisibilityToggle: () => this.handleDisplayUpdate({
@@ -102,20 +102,20 @@ export class NarrativeDirectorActions {
       }),
       onActorLayoutChange: strategy => {
         if (strategy && !Object.hasOwn(LayoutRegistry.getChoices("actor"), strategy)) return;
-        this.handleDisplayUpdate({
+        return this.handleDisplayUpdate({
           actorLayoutOverride: strategy && strategy !== NarrativeSettings.getActorLayoutStrategy() ? strategy : null
         });
       },
       onHandoutLayoutChange: strategy => {
         if (strategy && !Object.hasOwn(LayoutRegistry.getChoices("handout"), strategy)) return;
         const defaultStrategy = NarrativeSettings.getHandoutLayoutOptions().strategy;
-        this.handleDisplayUpdate({
+        return this.handleDisplayUpdate({
           handoutLayoutOverride: strategy && strategy !== defaultStrategy ? strategy : null
         });
       },
       onActorDialoguePositionModeChange: mode => {
         if (mode && !NarrativeSettings.ACTOR_DIALOGUE_POSITION_MODES.includes(mode)) return;
-        this.handleDisplayUpdate({
+        return this.handleDisplayUpdate({
           actorDialoguePositionModeOverride: mode && mode !== NarrativeSettings.getActorDialoguePositionMode() ? mode : null
         });
       },
@@ -124,7 +124,7 @@ export class NarrativeDirectorActions {
         const actorsById = new Map(activeActors.map(actor => [actor.id, actor]));
         const orderedActors = actorIds.map(actorId => actorsById.get(actorId)).filter(Boolean);
         const orderedIds = new Set(orderedActors.map(actor => actor.id));
-        this.handleDisplayUpdate({
+        return this.handleDisplayUpdate({
           activeActors: [...orderedActors, ...activeActors.filter(actor => !orderedIds.has(actor.id))]
         });
       },
@@ -156,7 +156,7 @@ export class NarrativeDirectorActions {
           isSpeaker: actor.id === activeSpeakerId
         }));
 
-        this.handleDisplayUpdate({ activeActors: activeList, activeSpeakerId });
+        return this.handleDisplayUpdate({ activeActors: activeList, activeSpeakerId });
       },
       onActorToggleName: async actorId => {
         const state = this.getState();
@@ -229,12 +229,11 @@ export class NarrativeDirectorActions {
       onHandoutImageChange: path => {
         const shown = (this.getState().handoutImageOverlays || []).find(overlay => overlay.src === path);
         if (shown) {
-          this.#closeHandoutOverlay(shown.id);
-          return;
+          return this.#closeHandoutOverlay(shown.id);
         }
         const image = this.getState().currentSceneData?.handoutImages?.find(item => item.path === path);
         if (!image) return;
-        this.handleDisplayUpdate({
+        return this.handleDisplayUpdate({
           handoutImage: path,
           handoutImageOverlays: this.addHandoutImageOverlay({
             src: image.path,
@@ -277,7 +276,7 @@ export class NarrativeDirectorActions {
     const remainingOverlays = currentOverlays.filter(overlay => overlay.id !== overlayId);
     const selectedHandoutWasClosed = closingOverlay?.src === state.handoutImage;
 
-    this.handleDisplayUpdate({
+    return this.handleDisplayUpdate({
       handoutImage: selectedHandoutWasClosed
         ? remainingOverlays[remainingOverlays.length - 1]?.src || ""
         : state.handoutImage,

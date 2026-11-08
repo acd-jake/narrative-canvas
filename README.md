@@ -14,6 +14,8 @@
 
 Narrative Canvas adds a Theatre of the Mind presentation stage to Foundry Virtual Tabletop. Game Masters can prepare reusable narrative scenes and present backgrounds, handout images, actors, and synchronized audio without changing the active Foundry scene.
 
+For story-driven sessions, it offers an alternative to Foundry's usual map and tactical interface. The GM controls what players see and hear, presenting locations, characters, dialogue, handouts, and sound at the right moment. By bringing these controls together in one place, Narrative Canvas helps create an immersive roleplaying experience where the group can focus on the story instead of the technical setup.
+
 ## Features
 
 - Reusable scenes with backgrounds, handout images, actors, and audio tracks.
@@ -49,6 +51,60 @@ Narrative Canvas adds a Theatre of the Mind presentation stage to Foundry Virtua
 - No specific game system is required.
 - Optional: [ACD Talking Actors](https://github.com/acd-jake/acd-talking-actors) to read dialogue lines aloud and [Polyglot](https://foundryvtt.com/packages/polyglot) for dialogue languages. Without them, only the corresponding dialogue controls are missing.
 
+## Macro API
+
+After the module has initialized, Foundry script macros can use `game.modules.get("narrative-canvas").api`. The API controls the current user's Narrative Canvas, not a Foundry scene. All mutations require a GM and return promises. Queries return detached snapshots; modifying them does not change the presentation. Scene assets can be identified by the IDs returned by the queries; backgrounds and handouts also accept their paths. Actor IDs are Foundry actor IDs, and audio IDs are Foundry PlaylistSound IDs.
+
+```js
+const api = game.modules.get("narrative-canvas").api;
+console.log(api.getScenes());
+console.log(api.getBackgrounds(), api.getHandouts(), api.getActors(), api.getAudio());
+
+await api.flow()
+	.open()
+	.selectScene("scene-id")
+	.setPlayerVisibility(true)
+	.background("background-id")
+	.showHandout("handout-id", { x: 0.25, y: 0.5, size: 0.8, zIndex: 0 })
+	.addActor("actor-id")
+	.setSpeaker("actor-id")
+	.dialogue("Good evening.", { voice: true })
+	.wait(5000)
+	.narrate("The door opens.", { voice: false })
+	.playAudio("track-id")
+	.run();
+```
+
+Each flow action is also an independent asynchronous API method, for example `await api.addActor("actor-id")`. Asset lookups use the current Narrative Canvas scene, so select a scene first. Opening an already open handout, staging an already staged actor, or setting the current speaker again does not toggle it off. Selecting an unknown or ambiguous asset, an invalid position, or insufficient permission throws an error. Closing an already closed handout and removing an absent actor are no-ops. A flow stops at the first error; previously completed actions are not rolled back. Separate flows can run concurrently and their actions may interleave.
+
+**Queries**
+
+- `getScenes()`, `getScene()`, `getState()` return available scenes, the current scene or journal asset source, and the current presentation state.
+- `getBackgrounds()`, `getHandouts()`, `getOpenHandouts()`, `getActors()`, `getStagedActors()`, `getAudio()` return the corresponding current assets or stage state. Audio entries include `playState` (`playing`, `paused`, or `stopped`).
+- `getLayouts()` returns available actor and handout layout IDs and dialogue position modes.
+
+**Actions**
+
+- Canvas and scenes: `open()`, `close()`, `setPlayerVisibility(boolean)`, `selectScene(sceneId)`; pass `null` to clear the scene.
+- Backgrounds: `background(idOrPath)`, `clearBackground()`.
+- Handouts: `showHandout(idOrPath, options)`, `positionHandout(idOrPathOrOverlayId, options)`, `closeHandout(idOrPathOrOverlayId)`, `closeAllHandouts()`. `showHandout` returns the overlay ID. Options are `x`, `y`, `size`, and `zIndex`, all optional. Positions are normalized to the stage (0 to 1); size ranges from 0.25 to 1.5. `zIndex` is a zero-based position in the open handout order, from back to front. Manual positions apply to the free handout layout; managed layouts arrange handouts themselves.
+- Actors: `addActor(id)`, `removeActor(id)`, `clearActors()`, `orderActors(ids)`, `setSpeaker(idOrNull)`, `setVisualNovelVisibility(boolean)`. Partial actor orders retain omitted actors at the end; setting a scene actor as speaker also stages them.
+- Layouts: `setActorLayout(idOrNull)`, `setHandoutLayout(idOrNull)`, `setDialoguePosition(modeOrNull)`. `null` restores the module setting.
+- Text: `setDialogueEnabled(boolean)`, `dialogue(text, options)`, `narrate(text, options)`, `dismissDialogue()`. Dialogue uses the active speaker unless `speakerId` is supplied. Options include `voice` (default `false`), `speedFactor`, and, for dialogue, a Polyglot `language` ID. Sending text enables the dialogue system. Voice uses Talking Actors only when that module is active and the canvas is published to players, just like the Director. A leading `(stage direction)` is spoken but not displayed.
+- Audio: `playAudio(trackId)`, `stopAudio(trackId)`, `playPlaylist(playlistId)`, `stopPlaylist(playlistId)`, `setVolume(0To1)`, `setMuted(boolean)`. Starting audio requires the Director canvas to be open. It stops other active scene audio as in the Director; playlist methods require a playlist group in the current scene. Audio must reference existing Foundry Playlist documents.
+
+`flow.wait(milliseconds)` is an explicit delay, not a wait for dialogue animation, speech, or audio to finish. Hold onto a flow to pause or resume it, including an active wait. Cancellation uses an `AbortSignal` and interrupts waits; an action already in progress is allowed to finish.
+
+```js
+const controller = new AbortController();
+const flow = api.flow().narrate("A moment later...").wait(10000).clearActors();
+const running = flow.run({ signal: controller.signal });
+flow.pause();
+flow.resume();
+// controller.abort(); // Cancel remaining steps instead.
+await running;
+```
+
 ## Architecture
 
 Runtime responsibilities are separated by role:
@@ -56,6 +112,7 @@ Runtime responsibilities are separated by role:
 - `scripts/services/manager.js` coordinates presentation state and lifecycle.
 - `scripts/services/active-state-store.js` persists and restores the active presentation state.
 - `scripts/services/director-actions.js` maps Director actions to state and scene operations.
+- `scripts/services/macro-api.js` exposes GM macro actions and sequential flows.
 - `scripts/services/scene-asset-resolver.js` resolves Foundry drag data into scene asset operations.
 - `scripts/services/scene-repository.js` owns scene data access and mutation; reads normalize a copy of the stored data.
 - `scripts/services/settings-layout.js` groups the module settings into sections in the settings window.
@@ -99,6 +156,8 @@ Narrative Canvas is created and maintained by [Acd-Jake](https://github.com/acd-
 ## Deutsche Fassung
 
 Narrative Canvas erweitert Foundry Virtual Tabletop um eine Präsentationsfläche für Theatre-of-the-Mind-Szenen. Spielleitungen können wiederverwendbare Szenen vorbereiten und Hintergründe, Handout-Bilder, Akteure und synchronisierte Audiospuren präsentieren, ohne die aktive Foundry-Szene zu wechseln.
+
+Für erzähllastige Spielrunden bietet das Modul eine Alternative zu Foundrys gewohnter Karten- und Taktikoberfläche. Die Spielleitung bestimmt, was die Spielenden sehen und hören, und präsentiert Schauplätze, Figuren, Dialoge, Handouts und Klänge im passenden Moment. Die gebündelten Steuerungsmöglichkeiten unterstützen ein immersives Rollenspielerlebnis, bei dem sich die Gruppe auf die Geschichte konzentrieren kann, statt sich von der technischen Einrichtung ablenken zu lassen.
 
 ## Funktionen
 

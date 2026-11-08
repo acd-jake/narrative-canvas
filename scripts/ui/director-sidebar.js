@@ -124,6 +124,12 @@ export class DirectorSidebar {
     this.#refreshAudioTracksList();
   }
 
+  trackScenePlaylist(playlistId) {
+    this.#activePlaylistIds.clear();
+    this.#activePlaylistIds.add(playlistId);
+    this.#refreshAudioTracksList();
+  }
+
   /**
    * Returns whether the sidebar is currently collapsed.
    * @returns {boolean}

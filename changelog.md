@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- GM macro API with direct actions and pausable, cancellable flows for scenes, backgrounds, handouts, actors, dialogue, layouts, and scene audio.
+
 ### Changed
 
 - Module settings are grouped by task, with dialogue reveal modes under appearance and transition controls under canvas appearance.
