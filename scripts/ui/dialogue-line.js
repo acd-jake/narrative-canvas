@@ -326,8 +326,7 @@ export class DialogueLineController {
     );
     return {
       factor,
-      charsPerSecond: NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_DIALOGUE_REVEAL_SPEED) * factor,
-      readingCharsPerSecond: NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_READING_SPEED) * factor,
+      charsPerSecond: NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_NARRATION_READING_SPEED) * factor,
       scrollFactor: NarrativeSettings.getDialogueNumber(NarrativeSettings.SETTING_DIALOGUE_SCROLL_SPEED) / 100 * Math.sqrt(factor)
     };
   }
@@ -364,7 +363,7 @@ export class DialogueLineController {
   #playText(line, text, element, textEl, timing) {
     const isNarrator = line.isNarrator === true;
     const mode = NarrativeSettings.getRevealMode(isNarrator);
-    const cps = Math.max(1, isNarrator ? timing.readingCharsPerSecond : timing.charsPerSecond);
+    const cps = Math.max(1, timing.charsPerSecond);
     const pauseMs = (isNarrator ? NARRATION_PARAGRAPH_PAUSE_CHARS : DIALOGUE_PARAGRAPH_PAUSE_CHARS) / cps * 1000;
 
     const words = [];

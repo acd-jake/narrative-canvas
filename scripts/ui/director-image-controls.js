@@ -1,4 +1,5 @@
 import { NarrativeSettings } from "../services/settings.js";
+import { LayoutRegistry } from "./layout/layout-registry.js";
 import { ResizableSectionController } from "./resizable-section-controller.js";
 import { ResizablePanelController } from "./resizable-panel-controller.js";
 
@@ -24,7 +25,8 @@ export class DirectorImageControls {
   #resizeObserver = null;
   #layoutFrame = null;
 
-  constructor() {
+  constructor({ onLayoutStrategyChange } = {}) {
+    this.onLayoutStrategyChange = onLayoutStrategyChange;
     this.#layoutState = NarrativeSettings.getDirectorLayoutState();
     const savedPanelWidthRatio = this.#layoutState.panelWidthRatios.imageControls;
     if (savedPanelWidthRatio) this.#panelWidth = savedPanelWidthRatio * window.innerWidth;
@@ -101,6 +103,13 @@ export class DirectorImageControls {
     const scene = context.currentSceneData;
     return {
       ...context,
+      handoutLayoutChoices: Object.entries(LayoutRegistry.getChoices("handout")).map(([id, labelKey]) => ({
+        id,
+        labelKey,
+        hint: game.i18n.localize(LayoutRegistry.getHints("handout")[id]),
+        selected: Boolean(context.handoutLayoutOverride) && id === context.handoutLayoutStrategy
+      })),
+      isHandoutLayoutTemporary: Boolean(context.handoutLayoutOverride),
       currentSceneData: scene && {
         ...scene,
         handoutImages: scene.handoutImages?.map(image => ({ ...image, isOnStage: shownPaths.has(image.path) }))
@@ -114,6 +123,17 @@ export class DirectorImageControls {
   }
 
   #bindListeners(root) {
+    root.addEventListener("click", event => {
+      if (!(event.target instanceof Element)) return;
+      const button = event.target.closest("[data-handout-layout]");
+      if (!button) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const strategy = button.dataset.handoutLayout || null;
+      button.closest("details")?.removeAttribute("open");
+      this.onLayoutStrategyChange?.(strategy);
+    });
+
     root.addEventListener("input", event => {
       if (!(event.target instanceof Element)) return;
       const slider = event.target.closest(".slider-tile-scale");

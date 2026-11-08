@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NarrativeDirectorActions } from "../scripts/services/director-actions.js";
 import { NarrativeSceneRepository } from "../scripts/services/scene-repository.js";
+import { NarrativeSettings } from "../scripts/services/settings.js";
 
 describe("NarrativeDirectorActions", () => {
   afterEach(() => {
@@ -96,6 +97,34 @@ describe("NarrativeDirectorActions", () => {
     actions.createCallbacks().onVisualNovelOverlayVisibilityToggle();
 
     expect(handleDisplayUpdate).toHaveBeenCalledWith({ isVisualNovelOverlayVisible: false });
+  });
+
+  it("sets temporary layout strategies and clears overrides for module defaults", () => {
+    vi.spyOn(NarrativeSettings, "getActorLayoutStrategy").mockReturnValue("row");
+    vi.spyOn(NarrativeSettings, "getHandoutLayoutOptions").mockReturnValue({ strategy: "free" });
+    const handleDisplayUpdate = vi.fn();
+    const actions = new NarrativeDirectorActions({
+      getState: () => ({}),
+      handleDisplayUpdate,
+      handleHandoutImageLayout: vi.fn(),
+      activateSceneAudio: vi.fn(),
+      reopenPlayerCanvases: vi.fn(),
+      toggleCanvasState: vi.fn(),
+      addHandoutImageOverlay: vi.fn()
+    });
+    const callbacks = actions.createCallbacks();
+
+    callbacks.onActorLayoutChange("arc");
+    callbacks.onActorLayoutChange("row");
+    callbacks.onHandoutLayoutChange("comic");
+    callbacks.onHandoutLayoutChange("free");
+
+    expect(handleDisplayUpdate.mock.calls).toEqual([
+      [{ actorLayoutOverride: "arc" }],
+      [{ actorLayoutOverride: null }],
+      [{ handoutLayoutOverride: "comic" }],
+      [{ handoutLayoutOverride: null }]
+    ]);
   });
 
   it("reorders staged actors while retaining actors omitted by a stale drag payload", () => {

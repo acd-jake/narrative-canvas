@@ -1,4 +1,5 @@
 import { NarrativeSettings } from "../services/settings.js";
+import { LayoutRegistry } from "./layout/layout-registry.js";
 
 /**
  * Controller for the Director Actor Carousel displayed at the bottom of the Narrative Canvas.
@@ -57,6 +58,12 @@ export class DirectorActorCarousel {
       isSpeaker: activeSpeakerId === actor.id,
       isDialogueSpeaker: false
     }));
+    const actorLayoutChoices = Object.entries(LayoutRegistry.getChoices("actor")).map(([id, labelKey]) => ({
+      id,
+      labelKey,
+      hint: game.i18n.localize(LayoutRegistry.getHints("actor")[id]),
+      selected: Boolean(context.actorLayoutOverride) && id === context.actorLayoutStrategy
+    }));
     this.#syncDialogueSpeaker(actors, activeSpeakerId);
 
     const hasTalkingActors = game.modules.get("acd-talking-actors")?.active === true;
@@ -79,6 +86,8 @@ export class DirectorActorCarousel {
       "modules/narrative-canvas/templates/partials/director-actors.hbs",
       {
         actors,
+        actorLayoutChoices,
+        isActorLayoutTemporary: Boolean(context.actorLayoutOverride),
         hasActiveActors: activeIds.size > 0,
         isVisualNovelOverlayVisible,
         dialogueSystemEnabled: context.dialogueSystemEnabled === true,
@@ -168,6 +177,7 @@ export class DirectorActorCarousel {
     if (clearButton) clearButton.disabled = activeIds.size === 0;
 
     this.#updateDialogueControls(context, sceneActors, activeSpeakerId);
+    this.#updateLayoutControl(context);
 
     this.#element.querySelectorAll(".actor-carousel-card").forEach(card => {
       const actorId = card.dataset.actorId;
@@ -452,6 +462,16 @@ export class DirectorActorCarousel {
       this.#callbacks.onActorStageClear?.();
     });
 
+    element.querySelectorAll("[data-actor-layout]").forEach(button => {
+      button.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        const strategy = button.dataset.actorLayout || null;
+        button.closest("details")?.removeAttribute("open");
+        this.#callbacks.onActorLayoutChange?.(strategy);
+      });
+    });
+
     // 1. Left-click to deploy or toggle actor on the visual novel stage
     element.querySelectorAll(".actor-carousel-card").forEach(card => {
       card.addEventListener("click", (event) => {
@@ -533,5 +553,23 @@ export class DirectorActorCarousel {
         }
       }, { passive: false });
     }
+  }
+
+  #updateLayoutControl(context) {
+    if (!this.#element) return;
+    this.#element.querySelector(".actor-layout-picker")?.classList.toggle(
+      "is-temporary",
+      Boolean(context.actorLayoutOverride)
+    );
+    this.#element.querySelectorAll("[data-actor-layout]").forEach(button => {
+      const strategy = button.dataset.actorLayout;
+      const selected = strategy
+        ? Boolean(context.actorLayoutOverride) && strategy === context.actorLayoutStrategy
+        : !context.actorLayoutOverride;
+      button.setAttribute("aria-pressed", String(selected));
+      button.classList.toggle("is-selected", selected);
+      const check = button.querySelector(".layout-picker-check");
+      if (check) check.hidden = !selected;
+    });
   }
 }

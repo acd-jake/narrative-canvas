@@ -16,7 +16,9 @@ export class NarrativeDirector extends NarrativeCanvas {
   constructor(callbacks) {
     super("narrative-canvas-director", "director-view");
     this.callbacks = callbacks;
-    this.imageControls = new DirectorImageControls();
+    this.imageControls = new DirectorImageControls({
+      onLayoutStrategyChange: strategy => this.callbacks.onHandoutLayoutChange?.(strategy)
+    });
     this.automaticPlaylist = null;
     this.automaticPlaylistSound = null;
     this.dialogueEnabled = false;
@@ -54,6 +56,7 @@ export class NarrativeDirector extends NarrativeCanvas {
       onActorSpeakerToggle: (actorId) => this.callbacks.onActorSpeakerToggle?.(actorId),
       onActorToggleName: (actorId) => this.callbacks.onActorToggleName?.(actorId),
       onVisualNovelOverlayVisibilityToggle: () => this.callbacks.onVisualNovelOverlayVisibilityToggle?.(),
+      onActorLayoutChange: strategy => this.callbacks.onActorLayoutChange?.(strategy),
       onActorOrderChange: actorIds => this.callbacks.onActorOrderChange?.(actorIds),
       onDialogueSend: line => {
         if (this.dialogueLineController.isBusy) return;

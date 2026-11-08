@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Actor and handout layout strategies can now be changed temporarily from the Director and reset to the module settings.
+- Dialogue and narrator lines now share one reading speed setting, alongside their shared hold-time settings.
+- Actor images and nameplates move up while a dialogue line is visible, preventing overlap with long lines.
+
 ## [0.16.2] - 2026-11-06
 
 ### Changed

@@ -32,6 +32,8 @@ export class NarrativeManager {
       dialogueSystemEnabled: false,
       dialogueVoice: false,
       dialogueLine: null,
+      actorLayoutOverride: null,
+      handoutLayoutOverride: null,
 
       activeSceneId: "",
       currentSceneData: null,
@@ -180,12 +182,16 @@ export class NarrativeManager {
       }
 
       if (active) {
+        this.narrativeState.actorLayoutOverride = null;
+        this.narrativeState.handoutLayoutOverride = null;
         this.restorePersistedState();
       }
 
       this.narrativeState.active = active;
       if (!active) {
         this.narrativeState.playerViewActive = false;
+        this.narrativeState.actorLayoutOverride = null;
+        this.narrativeState.handoutLayoutOverride = null;
         await this.persistActiveState();
       }
 

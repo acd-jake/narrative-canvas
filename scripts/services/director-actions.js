@@ -1,6 +1,7 @@
 import { NarrativeSceneRepository } from "./scene-repository.js";
 import { NarrativeSettings } from "./settings.js";
 import { NarrativeLogger } from "./logger.js";
+import { LayoutRegistry } from "../ui/layout/layout-registry.js";
 
 /**
  * @typedef {object} NarrativeDirectorActionDependencies
@@ -99,6 +100,19 @@ export class NarrativeDirectorActions {
       onVisualNovelOverlayVisibilityToggle: () => this.handleDisplayUpdate({
         isVisualNovelOverlayVisible: !this.getState().isVisualNovelOverlayVisible
       }),
+      onActorLayoutChange: strategy => {
+        if (strategy && !Object.hasOwn(LayoutRegistry.getChoices("actor"), strategy)) return;
+        this.handleDisplayUpdate({
+          actorLayoutOverride: strategy && strategy !== NarrativeSettings.getActorLayoutStrategy() ? strategy : null
+        });
+      },
+      onHandoutLayoutChange: strategy => {
+        if (strategy && !Object.hasOwn(LayoutRegistry.getChoices("handout"), strategy)) return;
+        const defaultStrategy = NarrativeSettings.getHandoutLayoutOptions().strategy;
+        this.handleDisplayUpdate({
+          handoutLayoutOverride: strategy && strategy !== defaultStrategy ? strategy : null
+        });
+      },
       onActorOrderChange: actorIds => {
         const activeActors = this.getState().activeActors || [];
         const actorsById = new Map(activeActors.map(actor => [actor.id, actor]));

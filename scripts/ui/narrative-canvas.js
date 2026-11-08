@@ -27,6 +27,7 @@ export class NarrativeCanvas {
     this.stageElement = null;
     this._resizeHandler = null;
     this._lastContext = null;
+    this._layoutContext = null;
     this._renderRequestId = 0;
     this._opacityAnimations = new WeakMap();
     this._backgroundDescriptionTransitionId = 0;
@@ -35,7 +36,7 @@ export class NarrativeCanvas {
     this.bgController = new StageBackgroundController();
     this.vnStageController = new VisualNovelStage({
       onActorOrderChange: actorIds => this._onActorOrderChange(actorIds),
-      getLayoutStrategy: () => NarrativeSettings.getActorLayoutStrategy()
+      getLayoutStrategy: () => this._layoutContext?.actorLayoutStrategy ?? NarrativeSettings.getActorLayoutStrategy()
     });
     this.dialogueLineController = new DialogueLineController({
       onDismiss: () => this._onDialogueDismiss(),
@@ -49,7 +50,7 @@ export class NarrativeCanvas {
       onLayoutChange: layout => this._onHandoutImageLayoutChange(layout),
       onCloseImage: overlayId => this._onHandoutImageClose(overlayId),
       canControl: () => game.user.isGM,
-      getLayoutOptions: () => NarrativeSettings.getHandoutLayoutOptions()
+      getLayoutOptions: () => this._layoutContext?.handoutLayoutOptions ?? NarrativeSettings.getHandoutLayoutOptions()
     });
   }
 
@@ -100,8 +101,14 @@ export class NarrativeCanvas {
     }));
     if (renderRequestId !== this._renderRequestId) return;
 
+    const defaultHandoutLayoutOptions = NarrativeSettings.getHandoutLayoutOptions();
+    const actorLayoutStrategy = state.actorLayoutOverride || NarrativeSettings.getActorLayoutStrategy();
+    const handoutLayoutStrategy = state.handoutLayoutOverride || defaultHandoutLayoutOptions.strategy;
     const context = {
       ...state,
+      actorLayoutStrategy,
+      handoutLayoutOptions: { ...defaultHandoutLayoutOptions, strategy: handoutLayoutStrategy },
+      handoutLayoutStrategy,
       background: effectiveBackground,
       selectedBackground: state.background || "",
       selectedHandoutImage: state.handoutImage || "",
@@ -115,6 +122,7 @@ export class NarrativeCanvas {
       fadeDuration: NarrativeSettings.getFadeDuration(),
       actorImageHeight: NarrativeSettings.getActorImageHeight()
     };
+    this._layoutContext = context;
 
     // If already rendered in DOM, check if we can update the stage in-place to prevent image flickering
     if (this._canUpdateInPlace(context)) {

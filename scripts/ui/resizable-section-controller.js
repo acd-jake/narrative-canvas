@@ -87,7 +87,7 @@ export class ResizableSectionController {
 
   #handlePointerDown = event => {
     if (!this.#isResizable) return;
-    if (event.target instanceof Element && event.target.closest("button")) return;
+    if (event.target instanceof Element && event.target.closest("button, summary")) return;
 
     const wasCollapsed = this.#isCollapsed;
     const startHeight = this.#section.getBoundingClientRect().height;

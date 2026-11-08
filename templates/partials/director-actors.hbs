@@ -1,11 +1,30 @@
 <div class="narrative-director-actors-bar font-foundry">
     <div class="actor-carousel-corner-actions">
-        <button type="button" class="btn-carousel-action btn-carousel-toggle-player-visibility {{#if isVisualNovelOverlayVisible}}is-active{{/if}}" aria-pressed="{{isVisualNovelOverlayVisible}}" title="{{#if isVisualNovelOverlayVisible}}{{localize 'NARRATIVE_CANVAS.Director.HideVisualNovelFromPlayers'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowVisualNovelToPlayers'}}{{/if}}" aria-label="{{#if isVisualNovelOverlayVisible}}{{localize 'NARRATIVE_CANVAS.Director.HideVisualNovelFromPlayers'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowVisualNovelToPlayers'}}{{/if}}">
-            <i class="fas {{#if isVisualNovelOverlayVisible}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
-        </button>
-        <button type="button" class="btn-carousel-action btn-carousel-clear-stage" {{#unless hasActiveActors}}disabled{{/unless}} title="{{localize 'NARRATIVE_CANVAS.Director.ClearActorStage'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.ClearActorStage'}}">
-            <i class="fas fa-users-slash" aria-hidden="true"></i>
-        </button>
+        <div class="actor-carousel-corner-group">
+            <button type="button" class="btn-carousel-action btn-carousel-toggle-player-visibility {{#if isVisualNovelOverlayVisible}}is-active{{/if}}" aria-pressed="{{isVisualNovelOverlayVisible}}" title="{{#if isVisualNovelOverlayVisible}}{{localize 'NARRATIVE_CANVAS.Director.HideVisualNovelFromPlayers'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowVisualNovelToPlayers'}}{{/if}}" aria-label="{{#if isVisualNovelOverlayVisible}}{{localize 'NARRATIVE_CANVAS.Director.HideVisualNovelFromPlayers'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.ShowVisualNovelToPlayers'}}{{/if}}">
+                <i class="fas {{#if isVisualNovelOverlayVisible}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="btn-carousel-action btn-carousel-clear-stage" {{#unless hasActiveActors}}disabled{{/unless}} title="{{localize 'NARRATIVE_CANVAS.Director.ClearActorStage'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.ClearActorStage'}}">
+                <i class="fas fa-users-slash" aria-hidden="true"></i>
+            </button>
+        </div>
+        <details class="director-layout-picker actor-layout-picker {{#if isActorLayoutTemporary}}is-temporary{{/if}}">
+            <summary class="btn-carousel-action layout-picker-toggle" title="{{localize 'NARRATIVE_CANVAS.Director.ActorLayout'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.ActorLayout'}}">
+                <i class="fas fa-users-gear" aria-hidden="true"></i>
+            </summary>
+            <div class="layout-picker-menu" role="group" aria-label="{{localize 'NARRATIVE_CANVAS.Director.ActorLayout'}}">
+                <button type="button" class="layout-picker-option {{#unless isActorLayoutTemporary}}is-selected{{/unless}}" data-actor-layout="" aria-pressed="{{#unless isActorLayoutTemporary}}true{{else}}false{{/unless}}" title="{{localize 'NARRATIVE_CANVAS.Director.LayoutUseModuleSetting'}}">
+                    <span>{{localize "NARRATIVE_CANVAS.Director.LayoutUseModuleSetting"}}</span>
+                    <i class="fas fa-check layout-picker-check" aria-hidden="true" {{#if isActorLayoutTemporary}}hidden{{/if}}></i>
+                </button>
+                {{#each actorLayoutChoices}}
+                    <button type="button" class="layout-picker-option {{#if this.selected}}is-selected{{/if}}" data-actor-layout="{{this.id}}" aria-pressed="{{this.selected}}" title="{{this.hint}}">
+                        <span>{{localize this.labelKey}}</span>
+                        <i class="fas fa-check layout-picker-check" aria-hidden="true" {{#unless this.selected}}hidden{{/unless}}></i>
+                    </button>
+                {{/each}}
+            </div>
+        </details>
     </div>
 
     <div class="carousel-nav-control">

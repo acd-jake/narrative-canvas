@@ -43,6 +43,23 @@
             <button type="button" class="btn-toggle-image-list" data-image-list="handouts" aria-expanded="{{#unless isHandoutsCollapsed}}true{{else}}false{{/unless}}" aria-controls="director-handout-image-list" title="{{#if isHandoutsCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageList'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageList'}}{{/if}}" aria-label="{{#if isHandoutsCollapsed}}{{localize 'NARRATIVE_CANVAS.Director.ExpandImageList'}}{{else}}{{localize 'NARRATIVE_CANVAS.Director.CollapseImageList'}}{{/if}}">
                 <i class="fas {{#if isHandoutsCollapsed}}fa-chevron-right{{else}}fa-chevron-down{{/if}}" aria-hidden="true"></i>
             </button>
+            <details class="director-layout-picker handout-layout-picker {{#if isHandoutLayoutTemporary}}is-temporary{{/if}}">
+                <summary class="layout-picker-toggle" title="{{localize 'NARRATIVE_CANVAS.Director.HandoutLayout'}}" aria-label="{{localize 'NARRATIVE_CANVAS.Director.HandoutLayout'}}">
+                    <i class="fas fa-table-cells-large" aria-hidden="true"></i>
+                </summary>
+                <div class="layout-picker-menu" role="group" aria-label="{{localize 'NARRATIVE_CANVAS.Director.HandoutLayout'}}">
+                    <button type="button" class="layout-picker-option {{#unless isHandoutLayoutTemporary}}is-selected{{/unless}}" data-handout-layout="" aria-pressed="{{#unless isHandoutLayoutTemporary}}true{{else}}false{{/unless}}" title="{{localize 'NARRATIVE_CANVAS.Director.LayoutUseModuleSetting'}}">
+                        <span>{{localize "NARRATIVE_CANVAS.Director.LayoutUseModuleSetting"}}</span>
+                        <i class="fas fa-check layout-picker-check" aria-hidden="true" {{#if isHandoutLayoutTemporary}}hidden{{/if}}></i>
+                    </button>
+                    {{#each handoutLayoutChoices}}
+                        <button type="button" class="layout-picker-option {{#if this.selected}}is-selected{{/if}}" data-handout-layout="{{this.id}}" aria-pressed="{{this.selected}}" title="{{this.hint}}">
+                            <span>{{localize this.labelKey}}</span>
+                            <i class="fas fa-check layout-picker-check" aria-hidden="true" {{#unless this.selected}}hidden{{/unless}}></i>
+                        </button>
+                    {{/each}}
+                </div>
+            </details>
         </header>
         <div class="director-image-list" id="director-handout-image-list" {{#if isHandoutsCollapsed}}hidden{{/if}}>
             {{#each currentSceneData.handoutImages}}
